@@ -1,7 +1,7 @@
 {
   "name": "Marginália — clube de leitura",
   "short_name": "Marginália",
-  "description": "Um clube pessoal de leitura profunda. Notas à margem, pontes entre obras, três profundidades.",
+  "description": "Um clube pessoal de leitura profunda. Notas à margem, pontes entre obras e círculos de leitura com amigos.",
   "start_url": "./Marginalia.html",
   "scope": "./",
   "display": "standalone",
