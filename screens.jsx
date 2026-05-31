@@ -2262,9 +2262,14 @@ function ChallengeCard({ challenge: c, finished }) {
           }}>✓ {progress.pct}%</div>
         )}
       </div>
-      <div style={{ fontFamily: T.serif, fontSize: 20, fontWeight: 500, lineHeight: 1.12, letterSpacing: -0.3, marginBottom: 10 }}>
+      <div style={{ fontFamily: T.serif, fontSize: 20, fontWeight: 500, lineHeight: 1.12, letterSpacing: -0.3, marginBottom: c.description ? 4 : 10 }}>
         {c.title}
       </div>
+      {c.description && (
+        <div style={{ fontFamily: T.serif, fontSize: 12.5, fontStyle: 'italic', color: T.brown, lineHeight: 1.4, marginBottom: 12 }}>
+          {c.description}
+        </div>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
         <div style={{
           fontFamily: T.serif, fontSize: 24, fontWeight: 500, color: T.ink,
@@ -2329,6 +2334,7 @@ function ChallengeEditorSheet({ challenge = null, onClose = () => {} }) {
   const [filterAuthor, setFilterAuthor] = React.useState(challenge?.filter?.author || '');
   const [customStart, setCustomStart] = React.useState(challenge?.startsAt || '');
   const [customEnd, setCustomEnd] = React.useState(challenge?.endsAt || '');
+  const [description, setDescription] = React.useState(challenge?.description || '');
   const [error, setError] = React.useState(null);
 
   const types = window.CHALLENGE_TYPES || [];
@@ -2343,6 +2349,7 @@ function ChallengeEditorSheet({ challenge = null, onClose = () => {} }) {
                  : null;
     const patch = {
       title: title.trim(),
+      description: description.trim() || null,
       type,
       target: parseInt(target) || 1,
       period,
@@ -2423,6 +2430,17 @@ function ChallengeEditorSheet({ challenge = null, onClose = () => {} }) {
             width: '100%', padding: '10px 12px', border: `1px solid ${T.hairline}`,
             borderRadius: 8, background: T.cream, color: T.ink,
             fontFamily: T.serif, fontSize: 14, outline: 'none', marginBottom: 14,
+          }}/>
+
+        {/* descrição (opcional) */}
+        <FieldLabel>Descrição (opcional)</FieldLabel>
+        <textarea value={description} onChange={e => setDescription(e.target.value)}
+          placeholder="Para que serve esta meta? Ex.: Reler os Nobel de Literatura que me marcaram."
+          rows={2}
+          style={{
+            width: '100%', padding: '10px 12px', border: `1px solid ${T.hairline}`,
+            borderRadius: 8, background: T.cream, color: T.ink, resize: 'vertical',
+            fontFamily: T.serif, fontSize: 13, outline: 'none', marginBottom: 14, lineHeight: 1.4,
           }}/>
 
         {/* target — esconde para 'free' */}
