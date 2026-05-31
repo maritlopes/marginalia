@@ -1686,12 +1686,7 @@ function ScreenGruposCloud({ onNav = () => {} }) {
     if (u) setGroups(await cloud.groups.list());
     setLoading(false);
   };
-  React.useEffect(() => {
-    refresh();
-    if (typeof window !== 'undefined' && window.__pendingJoin) {
-      setCode(window.__pendingJoin); setPane('entrar'); window.__pendingJoin = null;
-    }
-  }, []);
+  React.useEffect(() => { refresh(); }, []);
 
   const criar = async () => {
     if (!name.trim()) { setMsg('Dê um nome ao círculo.'); return; }
@@ -3247,6 +3242,18 @@ function CloudAccount() {
     if (error) { setMsg('Código inválido ou expirado. Tente novamente.'); return; }
     const u = await cloud.currentUser();
     setUser(u); setStep('idle'); setCode('');
+    // veio de um link de convite? entra no círculo automaticamente
+    if (typeof window !== 'undefined' && window.__pendingJoin && cloud.groups) {
+      const jc = window.__pendingJoin; window.__pendingJoin = null;
+      setMsg('Conectada! Entrando no círculo…');
+      const r = await cloud.groups.join(jc);
+      if (r && !r.error && r.data) {
+        if (window.__openGrupo) window.__openGrupo(r.data);
+        return;
+      }
+      setMsg('Conectada! (não encontrei o círculo do convite — pode entrar pelo código em Grupos.)');
+      return;
+    }
     setMsg('Conectada! Seus aparelhos vão sincronizar.');
   };
 
