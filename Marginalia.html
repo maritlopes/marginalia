@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"/>
+<title>Marginália — clube de leitura</title>
+<meta name="description" content="Um clube pessoal de leitura profunda. Notas à margem, pontes entre obras, três profundidades."/>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#EFE8DA" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1A1612" media="(prefers-color-scheme: dark)">
+
+<!-- iOS PWA -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Marginália">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+
+<!-- ícone padrão -->
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="icon" type="image/png" sizes="180x180" href="icon-180.png">
+
+<!-- fontes -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  html, body {
+    margin: 0; padding: 0;
+    background: #1A1612;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: #2A2620;
+    overscroll-behavior: none;
+    -webkit-touch-callout: none;
+  }
+  * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+  button { font-family: inherit; }
+
+  /* No mobile (≤480px), o app ocupa a tela inteira sem moldura iPhone */
+  /* No desktop, mostra a moldura iPhone centralizada para preview */
+
+  #root {
+    width: 100vw; min-height: 100vh; min-height: 100dvh;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .device-shell {
+    position: relative;
+    width: 402px; height: 874px;
+    border-radius: 48px; overflow: hidden;
+    background: #F2F2F7;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.4), 0 0 0 6px #1a1a1a, 0 0 0 7px #2a2a2a;
+  }
+
+  /* mobile fullscreen */
+  @media (max-width: 480px), (display-mode: standalone) {
+    body { background: #EFE8DA; }
+    .device-shell {
+      width: 100vw; height: 100vh; height: 100dvh;
+      border-radius: 0; box-shadow: none;
+    }
+    .device-shell .dynamic-island,
+    .device-shell .home-indicator { display: none; }
+  }
+
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-thumb { background: rgba(42,38,32,0.15); border-radius: 999px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<!-- React + Babel CDN — para uso em produção real, pré-compilar via build (Vite) -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<!-- Supabase — sincronização na nuvem (Fase 1) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- camadas compartilhadas (mesmas do canvas de design) -->
+<!-- scripts injetados com cache-bust por URL versionada -->
+<script>
+(function () {
+  const APP_VERSION = '0.28.0'; // bump quando alterar JSX
+  const files = [
+    'lib/sources.jsx',
+    'lib/storage.jsx',
+    'lib/i18n.jsx',
+    'lib/share.jsx',
+    'tokens.jsx',
+    'data.jsx',
+    'frames/ios-frame.jsx',
+    'home-variants.jsx',
+    'screens.jsx',
+    'lib/cloud.jsx',
+  ];
+  for (const f of files) {
+    const s = document.createElement('script');
+    s.type = 'text/babel';
+    s.src = f + '?v=' + APP_VERSION;
+    document.body.appendChild(s);
+  }
+})();
+</script>
+
+<script type="text/babel">
+// ─────────────────────────────────────────────────────────────
+// Marginalia — App real, full-window, PWA-ready
+// Diferenças vs. Clube de Leitura.html (canvas):
+//   - Sem header/footer/canvas — só o app
+//   - Prefs persistem em localStorage
+//   - Notas, livros, progresso podem persistir (próxima fase)
+// ─────────────────────────────────────────────────────────────
+
+function applyAccent(accent) {
+  const map = {
+    terracotta: { terra: '#B0533A', terraDeep: '#8E3E2A' },
+    olive:      { terra: '#5E6B3E', terraDeep: '#434E2A' },
+    ochre:      { terra: '#C48A2C', terraDeep: '#8E6418' },
+  };
+  Object.assign(window.T, map[accent] || map.terracotta);
+}
+
+// Frame — móldura iPhone no desktop, fullscreen no mobile
+function DeviceShell({ children, dark = false }) {
+  return (
+    <div className="device-shell" style={{ background: dark ? '#000' : '#F2F2F7' }}>
+      {/* dynamic island — escondido no mobile via CSS */}
+      <div className="dynamic-island" style={{
+        position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
+        width: 126, height: 37, borderRadius: 24, background: '#000', zIndex: 50,
+      }}/>
+      <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+        {children}
+      </div>
+      {/* home indicator — escondido no mobile via CSS */}
+      <div className="home-indicator" style={{
+        position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
+        width: 139, height: 5, borderRadius: 100,
+        background: dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.25)',
+        zIndex: 60, pointerEvents: 'none',
+      }}/>
+    </div>
+  );
+}
+
+// Splash screen — aparece no boot, fade out após ~1.5s
+function Splash({ visible }) {
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, zIndex: 200,
+      background: '#F4EFE6',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      opacity: visible ? 1 : 0,
+      transition: 'opacity 600ms ease',
+      pointerEvents: visible ? 'auto' : 'none',
+    }}>
+      <img src="logo.png" alt="Marginália" style={{
+        width: '70%', maxWidth: 280, height: 'auto', objectFit: 'contain',
+      }}/>
+    </div>
+  );
+}
+
+// Roteador interno do app
+function MarginaliaApp() {
+  // hidrata dados live a partir do MG (mescla com seeds)
+  if (typeof window._refreshLive === 'function') window._refreshLive();
+
+  const [prefs, setPrefs] = React.useState(() => MG.getPrefs());
+  const [route, setRoute] = React.useState('home');
+  const [summaryOpen, setSummaryOpen] = React.useState(false);
+  const [showSplash, setShowSplash] = React.useState(true);
+
+  // splash de boas-vindas: 1.5s, depois fade out
+  React.useEffect(() => {
+    const t = setTimeout(() => setShowSplash(false), 700);
+    return () => clearTimeout(t);
+  }, []);
+  const [editingBook, setEditingBook] = React.useState(null);
+  const [detailBook, setDetailBook] = React.useState(null);
+  const [openGrupo, setOpenGrupo] = React.useState(null);
+  const [sharingNote, setSharingNote] = React.useState(null);
+  const [editingChallenge, setEditingChallenge] = React.useState(null);
+  const [, forceRender] = React.useReducer(x => x + 1, 0);
+
+  // expõe re-render global para que Storage.add* possa propagar mudanças à UI
+  React.useEffect(() => {
+    window.__rerender = () => {
+      if (typeof window._refreshLive === 'function') window._refreshLive();
+      forceRender();
+    };
+    window.__editBook = (book) => setEditingBook(book);
+    window.__openBook = (book) => { window.__viewBook = book; setDetailBook(book); setRoute('book'); };
+    window.__openGrupo = (g) => setOpenGrupo(g);
+    window.__shareNote = (note, book) => setSharingNote({ note, book });
+    window.__editChallenge = (c) => setEditingChallenge(c);
+    window.__setRoute = setRoute; // útil para deep-linking e debug
+    return () => {
+      delete window.__rerender; delete window.__editBook; delete window.__openBook;
+      delete window.__openGrupo; delete window.__shareNote;
+      delete window.__editChallenge; delete window.__setRoute;
+    };
+  }, []);
+
+  // aplica acento ao carregar e a cada mudança
+  React.useEffect(() => { applyAccent(prefs.accent); }, [prefs.accent]);
+
+  // link de convite ?join=código — entra no círculo (se logada) ou guarda para depois
+  React.useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('join');
+    if (!code) return;
+    const t = setTimeout(async () => {
+      if (!window.MGCloud || !window.MGCloud.available) return;
+      const u = await window.MGCloud.currentUser();
+      if (u) {
+        const { data, error } = await window.MGCloud.groups.join(code);
+        window.history.replaceState({}, '', window.location.pathname);
+        if (!error && data) setOpenGrupo(data);
+        else setRoute('grupos');
+      } else {
+        window.__pendingJoin = code;   // após entrar na conta, pré-preenche o código
+        setRoute('grupos');
+      }
+    }, 1600);
+    return () => clearTimeout(t);
+  }, []);
+
+  const HomeComp = prefs.homeVariant === 'B' ? HomeVariantB
+                 : prefs.homeVariant === 'C' ? HomeVariantC
+                 : HomeVariantA;
+
+  const body = (() => {
+    switch (route) {
+      case 'home':      return <HomeComp onNav={setRoute}/>;
+      case 'metas':     return <ScreenMetas onNav={setRoute}/>;
+      case 'library':   return <ScreenLibrary onNav={setRoute}/>;
+      case 'book':      return <ScreenBookDetail book={detailBook} onNav={setRoute} onOpenSummary={() => setSummaryOpen(true)}/>;
+      case 'reader':    return <ScreenReader onNav={setRoute}/>;
+      case 'note':      return <ScreenNoteEditor onNav={setRoute}/>;
+      case 'pontes':    return <ScreenPontes onNav={setRoute}/>;
+      case 'desafios':  return <ScreenMetas onNav={setRoute}/>;
+      case 'grupos':    return <ScreenGruposCloud onNav={setRoute}/>;
+      case 'conversas': return <ScreenConversas onNav={setRoute}/>;
+      case 'foco':      return <ScreenFoco onNav={setRoute}/>;
+      case 'themes':    return <ScreenThemes onNav={setRoute}/>;
+      case 'schedule':  return <ScreenSchedule onNav={setRoute}/>;
+      case 'addBook':   return <ScreenAddBook onNav={setRoute}/>;
+      default:          return <HomeComp onNav={setRoute}/>;
+    }
+  })();
+
+  // tab bar ativa para qualquer rota que não seja a Home (que tem sua própria) nem reader/note/addBook (full-screen)
+  const showTabs = !['reader', 'note', 'addBook'].includes(route);
+  const showFab = ['home', 'book', 'library'].includes(route);
+
+  // mapa rota → tab ativa no tab bar
+  const tabForRoute = {
+    library: 'library', book: 'library',
+    desafios: 'desafios', metas: 'desafios',
+    grupos: 'grupos',
+    themes: 'library', schedule: 'home', pontes: 'library',
+    conversas: 'grupos',
+  };
+
+  return (
+    <DeviceShell dark={prefs.mode === 'dark'}>
+      {body}
+      {showTabs && typeof TabBar !== 'undefined' && (
+        <TabBar
+          active={tabForRoute[route] || 'home'}
+          onClick={(id) => setRoute(id)}
+        />
+      )}
+      {showFab && (
+        <button
+          aria-label="Adicionar livro"
+          onClick={() => setEditingBook({})}
+          style={{
+            position: 'absolute', right: 18, bottom: 96, zIndex: 70,
+            width: 52, height: 52, borderRadius: '50%',
+            background: '#2A2620', color: '#F7F1E4',
+            border: 0, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 28, fontWeight: 300, lineHeight: 1, paddingBottom: 4,
+            boxShadow: '0 6px 20px rgba(0,0,0,0.25), 0 0 0 1px rgba(247,241,228,0.08)',
+          }}
+        >+</button>
+      )}
+      {summaryOpen && <ScreenSummary onClose={() => setSummaryOpen(false)}/>}
+      {editingBook !== null && (
+        <BookEditorSheet
+          book={editingBook.id ? editingBook : null}
+          onClose={() => setEditingBook(null)}
+        />
+      )}
+      {openGrupo !== null && (
+        <ScreenGrupoDetalheCloud
+          grupo={openGrupo}
+          onClose={() => setOpenGrupo(null)}
+        />
+      )}
+      {sharingNote !== null && (
+        <ShareNoteSheet
+          note={sharingNote.note}
+          book={sharingNote.book}
+          onClose={() => setSharingNote(null)}
+        />
+      )}
+      {editingChallenge !== null && (
+        <ChallengeEditorSheet
+          challenge={editingChallenge.id ? editingChallenge : null}
+          onClose={() => setEditingChallenge(null)}
+        />
+      )}
+      <Splash visible={showSplash}/>
+    </DeviceShell>
+  );
+}
+
+// registro do service worker — offline básico + auto-atualização
+if ('serviceWorker' in navigator) {
+  // Quando um novo service worker assume o controle, recarrega a página uma vez
+  // para que a versão recém-publicada entre em vigor automaticamente.
+  let _swRefreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (_swRefreshing) return;
+    _swRefreshing = true;
+    window.location.reload();
+  });
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      // procura atualização a cada abertura; se houver, instala e troca na hora
+      reg.update();
+    }).catch(() => {
+      // service worker é progressive — falha silencia
+    });
+  });
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<MarginaliaApp/>);
+</script>
+
+</body>
+</html>
