@@ -155,6 +155,31 @@ const MG = {
     return next;
   },
 
+  // registro de leitura (páginas lidas por dia) — alimenta "Esta semana" e o ritmo
+  getReadingLog() {
+    const s = load();
+    return Array.isArray(s.readingLog) ? s.readingLog : [];
+  },
+  logReading(pages, bookId) {
+    const n = parseInt(pages, 10);
+    if (!n || n <= 0) return null;
+    const s = load();
+    const log = Array.isArray(s.readingLog) ? s.readingLog : [];
+    const d = new Date();
+    const date = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const entry = { id: 'r_' + Date.now(), date, pages: n, bookId: bookId || null };
+    s.readingLog = [entry, ...log];
+    save(s);
+    if (typeof window.__rerender === 'function') window.__rerender();
+    return entry;
+  },
+  removeReading(id) {
+    const s = load();
+    s.readingLog = (Array.isArray(s.readingLog) ? s.readingLog : []).filter(e => e.id !== id);
+    save(s);
+    if (typeof window.__rerender === 'function') window.__rerender();
+  },
+
   // progresso de leitura
   getProgress(bookId) {
     return load().progress[bookId] || null;

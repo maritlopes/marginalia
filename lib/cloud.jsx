@@ -81,6 +81,7 @@
       books: bothNull('books') ? null : unionById('books'),
       notes: bothNull('notes') ? null : unionById('notes'),
       challenges: unionById('challenges'),
+      readingLog: unionById('readingLog'),
       progress: { ...(older.progress || {}), ...(newer.progress || {}) },
       ecos: { ...(older.ecos || {}), ...(newer.ecos || {}) },
       prefs: { ...(older.prefs || {}), ...(newer.prefs || {}) },

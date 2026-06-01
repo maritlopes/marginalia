@@ -123,16 +123,34 @@ function HomeVariantA({ onNav = () => {} }) {
     return () => clearInterval(id);
   }, [banner.length]);
 
-  // estatísticas da semana — calcula do storage (notas + livros recentes)
-  const stats = React.useMemo(() => {
-    const notes = (typeof MG !== 'undefined' && MG.getNotes) ? MG.getNotes([]) : [];
-    const sessoes = notes.length || 3;
-    const paginas = (b.currentPage || 0) - Math.max(0, (b.currentPage || 0) - 47);
-    return { sessoes, paginas: Math.max(paginas, 47), ritmo: 'no ritmo' };
-  }, [b.currentPage]);
+  // "Esta semana" REAL — a partir do registro de leitura (segunda a domingo)
+  const [hojePag, setHojePag] = React.useState('');
+  const semana = (() => {
+    const log = (typeof MG !== 'undefined' && MG.getReadingLog) ? MG.getReadingLog() : [];
+    const now = new Date(); now.setHours(0, 0, 0, 0);
+    const dow = (now.getDay() + 6) % 7; // 0=segunda … 6=domingo
+    const monday = new Date(now); monday.setDate(now.getDate() - dow);
+    const keyOf = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const perDay = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setDate(monday.getDate() + i);
+      const k = keyOf(d);
+      perDay.push(log.filter((e) => e.date === k).reduce((s, e) => s + (e.pages || 0), 0));
+    }
+    const paginas = perDay.reduce((s, n) => s + n, 0);
+    const sessoes = perDay.filter((n) => n > 0).length;
+    const ritmo = sessoes ? Math.round(paginas / sessoes) : 0;
+    return { paginas, sessoes, ritmo, perDay };
+  })();
+  const stats = { paginas: semana.paginas, sessoes: semana.sessoes, ritmo: semana.ritmo };
+  const mosaico = semana.perDay.map((n) => n > 0);
 
-  // mosaico de 7 dias — mockado, mas estável
-  const mosaico = [false, false, true, false, true, true, true];
+  const registrarHoje = () => {
+    const n = parseInt(hojePag, 10);
+    if (!n || n <= 0) return;
+    if (typeof MG !== 'undefined' && MG.logReading) MG.logReading(n, (b && b.id) || null);
+    setHojePag('');
+  };
 
   // curadoria
   const curadoria = (window.CURADORIA || []).slice(0, 3);
@@ -335,7 +353,7 @@ function HomeVariantA({ onNav = () => {} }) {
           <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: 14 }}>
             <MicroStat n={stats.paginas} label={tt('paginas')} accent={T.terra}/>
             <MicroStat n={stats.sessoes} label={tt('sessoes')} accent={T.olive}/>
-            <MicroStat n={<span style={{ display: 'inline-block', transform: 'rotate(-45deg)' }}><Icon name="arrowRight" size={18} color={T.ochre}/></span>} label={tt('ritmo')} accent={T.ochre}/>
+            <MicroStat n={stats.ritmo > 0 ? stats.ritmo : '—'} label={tt('ritmo')} accent={T.ochre}/>
           </div>
           <div style={{ display: 'flex', gap: 6, justifyContent: 'space-around' }}>
             {['dia_seg','dia_ter','dia_qua','dia_qui','dia_sex','dia_sab','dia_dom'].map((k, i) => (
@@ -350,6 +368,15 @@ function HomeVariantA({ onNav = () => {} }) {
                 </div>
               </div>
             ))}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, paddingTop: 12, borderTop: `1px solid ${T.hairline}` }}>
+            <span style={{ fontSize: 12, color: T.brown, fontFamily: T.serif }}>Li hoje:</span>
+            <input value={hojePag} onChange={(e) => setHojePag(e.target.value)} inputMode="numeric" placeholder="0"
+              onKeyDown={(e) => e.key === 'Enter' && registrarHoje()}
+              style={{ width: 60, padding: '7px 9px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, outline: 'none', textAlign: 'center' }}/>
+            <span style={{ fontSize: 12, color: T.muted }}>páginas</span>
+            <div style={{ flex: 1 }}/>
+            <button onClick={registrarHoje} style={{ padding: '7px 14px', borderRadius: 8, border: 0, background: T.ink, color: T.cream, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Registrar</button>
           </div>
         </div>
 
