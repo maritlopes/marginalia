@@ -3410,13 +3410,30 @@ function CloudAccount() {
   const [step, setStep] = React.useState('idle'); // idle | sent
   const [busy, setBusy] = React.useState(false);
   const [msg, setMsg] = React.useState(null);
+  const [nome, setNome] = React.useState('');
   const status = (typeof window !== 'undefined' && window.__cloudStatus) || '';
 
   React.useEffect(() => {
     let alive = true;
-    if (cloud && cloud.available) cloud.currentUser().then(u => { if (alive) setUser(u); });
+    if (cloud && cloud.available) cloud.currentUser().then(u => {
+      if (!alive) return;
+      setUser(u);
+      if (u) setNome((u.user_metadata && u.user_metadata.name) || '');
+    });
     return () => { alive = false; };
   }, []);
+
+  const salvarNome = async () => {
+    if (!nome.trim() || !cloud.setName) return;
+    setBusy(true); setMsg(null);
+    const { error } = await cloud.setName(nome.trim());
+    setBusy(false);
+    if (error) { setMsg('Não foi possível salvar o nome: ' + error.message); return; }
+    const u = await cloud.currentUser();
+    setUser(u);
+    setMsg('Nome salvo! Seu avatar e seus recados no grupo agora usam "' + nome.trim() + '".');
+    if (typeof window !== 'undefined' && window.__rerender) window.__rerender();
+  };
 
   if (!cloud || !cloud.available) return null;
 
@@ -3482,6 +3499,15 @@ function CloudAccount() {
           <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', marginBottom: 12 }}>
             Seus livros e notas sincronizam entre seus aparelhos automaticamente.{status ? ` · ${status}` : ''}
           </div>
+
+          <div style={{ fontSize: 11, color: T.muted, fontFamily: T.sans, fontWeight: 600, marginBottom: 6 }}>Seu nome (aparece no avatar e nos recados do grupo)</div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+            <input type="text" placeholder="ex.: Mariana Lopes"
+              value={nome} onChange={e => setNome(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && salvarNome()} style={inputStyle}/>
+            <button onClick={salvarNome} disabled={busy} style={btnDark}>{busy ? '…' : 'Salvar'}</button>
+          </div>
+
           <button onClick={sair} style={{
             padding: '9px 14px', borderRadius: 10, border: `1px solid ${T.hairline}`,
             background: 'transparent', color: T.brown, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer',

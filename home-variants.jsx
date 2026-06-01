@@ -74,7 +74,7 @@ function UserAvatar({ size = 36 }) {
         if (!u) { setIni(null); return; }
         const nm = (u.user_metadata && u.user_metadata.name) || (u.email || '').split('@')[0] || '';
         const parts = nm.replace(/[^A-Za-zÀ-ÿ ]/g, ' ').trim().split(/\s+/).filter(Boolean);
-        const s = parts.length >= 2 ? (parts[0][0] + parts[1][0]) : nm.slice(0, 2);
+        const s = parts.length >= 2 ? (parts[0][0] + parts[parts.length - 1][0]) : nm.slice(0, 2);
         setIni((s || '?').toUpperCase());
       }).catch(() => {});
     }

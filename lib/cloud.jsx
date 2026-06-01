@@ -118,6 +118,12 @@
       setStatus('');
       if (typeof window.__rerender === 'function') window.__rerender();
     },
+    // define o nome de exibição (avatar + autoria dos recados no grupo)
+    async setName(name) {
+      const r = await sb.auth.updateUser({ data: { name: String(name || '').trim() } });
+      if (typeof window.__rerender === 'function') window.__rerender();
+      return r;
+    },
     // entrar como convidado(a): conta anônima com um nome de exibição (sem e-mail)
     // (não sincroniza aqui para não disparar re-render no meio do fluxo de ingresso;
     //  quem chama cuida de atualizar a tela depois)
