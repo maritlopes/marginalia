@@ -1963,7 +1963,7 @@ function ChallengeCardCloud({ ch, members, me, labelFor, onChanged }) {
         </div>
         {isOwner && <button onClick={() => { if (window.confirm('Apagar este desafio e todos os seus livros?')) cloud.groups.deleteChallenge(ch.id).then(onChanged); }} style={{ background: 'transparent', border: 0, color: T.muted, fontSize: 11, cursor: 'pointer', flexShrink: 0 }}>apagar</button>}
       </div>
-      {ch.description && <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', marginTop: 4, overflowWrap: 'anywhere' }}>{ch.description}</div>}
+      {ch.description && <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', marginTop: 4, overflowWrap: 'anywhere' }}>{!isList ? 'Critério: ' : ''}{ch.description}</div>}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '10px 0' }}>
         <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 500, letterSpacing: -0.5 }}>{myTotal}<span style={{ fontSize: 12, color: T.muted }}> / {target || '—'}</span></div>
@@ -2034,6 +2034,7 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
   const [cTitle, setCTitle] = React.useState('');
   const [cTarget, setCTarget] = React.useState(6);
   const [cKind, setCKind] = React.useState('list'); // 'list' (lista curada) | 'theme' (tema aberto)
+  const [cDesc, setCDesc] = React.useState(''); // critério/descrição do desafio
   const [copied, setCopied] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [posts, setPosts] = React.useState([]);
@@ -2070,10 +2071,11 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
       title: cTitle.trim(),
       kind: cKind,
       type: 'count',
+      description: cDesc.trim() || null,
       target: cKind === 'theme' ? (parseInt(cTarget) || 6) : 0, // lista curada: meta = nº de livros
     });
     setBusy(false);
-    if (!error) { setCTitle(''); setCreating(false); await load(); }
+    if (!error) { setCTitle(''); setCDesc(''); setCreating(false); await load(); }
   };
 
   const copiar = () => {
@@ -2183,8 +2185,11 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
                 <input type="number" value={cTarget} onChange={(e) => setCTarget(e.target.value)} style={{ width: 64, padding: '8px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, fontFamily: T.sans, fontSize: 13, outline: 'none' }}/>
               </div>
             )}
+            <input value={cDesc} onChange={(e) => setCDesc(e.target.value)}
+              placeholder={cKind === 'theme' ? 'Critério — ex.: ser ganhador do Nobel' : 'Descrição (opcional) — ex.: os títulos premiados'}
+              style={{ width: '100%', padding: '9px 10px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, marginBottom: 10, outline: 'none' }}/>
             <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginBottom: 10 }}>
-              {cKind === 'list' ? 'Depois de criar, você lança os livros (título, autor, ano…) e cada um marca os que leu.' : 'Cada membro adiciona os próprios livros que leu rumo à meta.'}
+              {cKind === 'list' ? 'Depois de criar, você lança os livros (título, autor, ano…) e cada um marca os que leu.' : 'Cada membro adiciona os próprios livros que leu (seguindo o critério) rumo à meta.'}
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button onClick={() => setCreating(false)} style={{ background: 'transparent', border: 0, color: T.brown, fontSize: 12, cursor: 'pointer' }}>cancelar</button>
