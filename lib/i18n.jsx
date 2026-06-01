@@ -20,7 +20,7 @@ const DICT = {
   esta_semana: { pt: 'Esta semana', en: 'This week' },
   curadoria: { pt: 'Curadoria', en: 'Curation' },
   para_voce: { pt: 'Para você', en: 'For you' },
-  prompt_de_hoje: { pt: 'Prompt de hoje', en: 'Today’s prompt' },
+  prompt_de_hoje: { pt: 'Para guardar', en: 'Worth keeping' },
   proxima_sessao: { pt: 'Próxima sessão', en: 'Next session' },
 
   // ─── actions ─────────────────────────────────────────────────

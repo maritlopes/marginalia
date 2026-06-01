@@ -387,11 +387,72 @@ function currentBook() {
 }
 
 // ─────────────────────────────────────────────────────────────
+// FRASES MARCANTES — citações de livros para a seção "Para guardar".
+// A home escolhe uma por dia (gira pela coleção). { pt, en, autor, obra }
+// ─────────────────────────────────────────────────────────────
+const FRASES_MARCANTES = [
+  { pt: 'Viver é muito perigoso.', en: 'Living is very dangerous.', autor: 'Guimarães Rosa', obra: 'Grande Sertão: Veredas' },
+  { pt: 'Tudo no mundo começou com um sim.', en: 'Everything in the world began with a yes.', autor: 'Clarice Lispector', obra: 'A Hora da Estrela' },
+  { pt: 'Ao vencedor, as batatas.', en: 'To the victor, the potatoes.', autor: 'Machado de Assis', obra: 'Quincas Borba' },
+  { pt: 'O essencial é invisível aos olhos.', en: 'What is essential is invisible to the eye.', autor: 'Saint-Exupéry', obra: 'O Pequeno Príncipe' },
+  { pt: 'Navegar é preciso; viver não é preciso.', en: 'To sail is necessary; to live is not.', autor: 'Fernando Pessoa', obra: 'Navegar é Preciso' },
+  { pt: 'A liberdade é pouco. O que desejo ainda não tem nome.', en: 'Freedom is not enough. What I want still has no name.', autor: 'Clarice Lispector', obra: 'Perto do Coração Selvagem' },
+  { pt: 'A beleza salvará o mundo.', en: 'Beauty will save the world.', autor: 'Dostoiévski', obra: 'O Idiota' },
+  { pt: 'Todas as famílias felizes se parecem; cada infeliz o é à sua maneira.', en: 'All happy families are alike; each unhappy family is unhappy in its own way.', autor: 'Tolstói', obra: 'Anna Kariênina' },
+  { pt: 'Sempre imaginei o Paraíso como uma espécie de biblioteca.', en: 'I have always imagined that Paradise will be a kind of library.', autor: 'Jorge Luis Borges', obra: 'Poema dos Dons' },
+  { pt: 'No meio do caminho tinha uma pedra.', en: 'In the middle of the road there was a stone.', autor: 'Carlos Drummond de Andrade', obra: 'No Meio do Caminho' },
+  { pt: 'É a tua hora e a tua vez. É hora e vez. De abrir a casa para a alegria.', en: 'It is your hour and your turn — to open the house to joy.', autor: 'Cora Coralina', obra: 'Vintém de Cobre' },
+  { pt: 'Um quarto só seu — e dinheiro — para escrever ficção.', en: 'A room of one’s own and money, to write fiction.', autor: 'Virginia Woolf', obra: 'Um Teto Todo Seu' },
+];
+
+// ─────────────────────────────────────────────────────────────
 // HOJE NA MARGINÁLIA — banner rotativo (curadoria editorial)
 // Cada item: {kind, headline_pt, headline_en, sub_pt, sub_en, accent}
 // kind: 'premio' | 'lancamento' | 'efemeride' | 'reedicao' | 'citacao' | 'resenha'
 // ─────────────────────────────────────────────────────────────
 const HOJE_BANNER = [
+  {
+    id: 'h7', kind: 'premio', accent: 'olive',
+    headline_pt: 'Nobel de Literatura: releia o laureado',
+    headline_en: 'Nobel Prize in Literature: revisit the laureate',
+    sub_pt: 'Um bom momento para conhecer uma voz nova.',
+    sub_en: 'A good moment to meet a new voice.',
+  },
+  {
+    id: 'h8', kind: 'efemeride', accent: 'ochre',
+    headline_pt: 'Hoje na literatura: um aniversário para celebrar',
+    headline_en: 'Today in literature: a birthday to celebrate',
+    sub_pt: 'Grandes autores nasceram em todos os dias do ano.',
+    sub_en: 'Great authors were born on every day of the year.',
+  },
+  {
+    id: 'h9', kind: 'citacao', accent: 'plum',
+    headline_pt: '"O que vale na vida não é o ponto de partida, mas a caminhada."',
+    headline_en: '"What matters in life is not the starting point, but the journey."',
+    sub_pt: 'Cora Coralina',
+    sub_en: 'Cora Coralina',
+  },
+  {
+    id: 'h10', kind: 'reedicao', accent: 'sage',
+    headline_pt: 'Reedição: clássicos brasileiros em capa dura',
+    headline_en: 'Reissue: Brazilian classics in hardcover',
+    sub_pt: 'Machado, Clarice, Guimarães Rosa de cara nova.',
+    sub_en: 'Machado, Clarice, Guimarães Rosa with a fresh look.',
+  },
+  {
+    id: 'h11', kind: 'resenha', accent: 'terra',
+    headline_pt: 'Resenha da semana: um romance que vale a travessia',
+    headline_en: 'Review of the week: a novel worth the crossing',
+    sub_pt: 'Da redação de leitores como você.',
+    sub_en: 'From readers like you.',
+  },
+  {
+    id: 'h12', kind: 'lancamento', accent: 'rose',
+    headline_pt: 'Lançamentos do mês: o que chega às livrarias',
+    headline_en: "This month's releases: what's hitting the shelves",
+    sub_pt: 'Ficção, ensaio e poesia para acompanhar.',
+    sub_en: 'Fiction, essay and poetry to follow.',
+  },
   {
     id: 'h1', kind: 'premio', accent: 'terra',
     headline_pt: 'Prêmio Camões 2026: Mia Couto',
@@ -630,7 +691,7 @@ function computeMemorias({ books, notes, today = new Date() } = {}) {
 Object.assign(window, {
   BOOK_CURRENT, NOTES_SEED, BOOKS_SEED, THEMES_STUDY, SCHEDULE, ACTIVITY,
   PONTES, PONTE_CATS, NIVEIS, NIVEL_ATUAL, DESAFIOS, GLOSSARIO, GRUPOS,
-  BOOK_STATUS, HOJE_BANNER, CURADORIA, SUGESTOES_POR_LIVRO,
+  BOOK_STATUS, HOJE_BANNER, FRASES_MARCANTES, CURADORIA, SUGESTOES_POR_LIVRO,
   CHALLENGE_TYPES, CHALLENGE_PERIODS, CHALLENGE_SUGESTOES, periodWindow,
   computeMemorias,
   _refreshLive,

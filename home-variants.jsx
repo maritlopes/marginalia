@@ -71,7 +71,9 @@ function HomeVariantA({ onNav = () => {} }) {
 
   // banner rotativo — troca a cada 7 segundos
   const banner = window.HOJE_BANNER || [];
-  const [bannerIdx, setBannerIdx] = React.useState(0);
+  // começa por um item diferente a cada dia, para o Radar parecer sempre atualizado
+  const [bannerIdx, setBannerIdx] = React.useState(() =>
+    banner.length ? Math.floor(Date.now() / 86400000) % banner.length : 0);
   React.useEffect(() => {
     if (banner.length === 0) return;
     const id = setInterval(() => setBannerIdx(i => (i + 1) % banner.length), 7000);
@@ -461,21 +463,30 @@ function HomeVariantA({ onNav = () => {} }) {
           </>
         )}
 
-        {/* PROMPT DE HOJE — mantém, agora ao final */}
+        {/* PARA GUARDAR — citação literária do dia (gira pela coleção) */}
         <SectionRule label={tt('prompt_de_hoje')}/>
-        <div onClick={() => onNav('note')} style={{
-          padding: '14px 16px', background: 'transparent',
-          border: `1px dashed ${T.hairline}`, borderRadius: 10,
-          fontFamily: T.serif, fontSize: 14, lineHeight: 1.4, color: T.ink,
-          fontStyle: 'italic', cursor: 'pointer', marginBottom: 22,
-        }}>
-          {lang === 'pt'
-            ? '"Que parte da sua vida de hoje Marco Aurélio consideraria tempo bem gasto?"'
-            : '"What part of your day today would Marcus Aurelius consider time well spent?"'}
-          <div style={{ marginTop: 8, fontFamily: T.sans, fontStyle: 'normal', fontSize: 10, color: T.terra, fontWeight: 600, letterSpacing: 0.6, textTransform: 'uppercase' }}>
-            {tt('escrever_nota')} →
-          </div>
-        </div>
+        {(() => {
+          const frases = window.FRASES_MARCANTES || [];
+          const f = frases.length ? frases[Math.floor(Date.now() / 86400000) % frases.length] : null;
+          if (!f) return null;
+          return (
+            <div onClick={() => onNav('note')} style={{
+              padding: '16px 18px', background: T.cream,
+              border: `1px solid ${T.hairline}`, borderRadius: 12,
+              cursor: 'pointer', marginBottom: 22,
+            }}>
+              <div style={{ fontFamily: T.serif, fontSize: 16, lineHeight: 1.45, color: T.ink, fontStyle: 'italic' }}>
+                “{lang === 'pt' ? f.pt : (f.en || f.pt)}”
+              </div>
+              <div style={{ marginTop: 8, fontFamily: T.serif, fontSize: 12, color: T.brown }}>
+                — {f.autor}{f.obra ? `, ${f.obra}` : ''}
+              </div>
+              <div style={{ marginTop: 10, fontFamily: T.sans, fontSize: 10, color: T.terra, fontWeight: 600, letterSpacing: 0.6, textTransform: 'uppercase' }}>
+                {tt('escrever_nota')} →
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* barra de navegação agora é a global (fixa no rodapé), renderizada pelo app */}
