@@ -2204,8 +2204,13 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
     if (!s) return 'Membro';
     return s.includes('@') ? s.split('@')[0] : s;
   };
-  // rótulo do membro: para mim, meu nome salvo; para os outros, o nome de exibição
-  const labelFor = (userId, raw) => (me && userId === me.id && me.name ? me.name : displayName(raw));
+  // rótulo do membro: meu nome salvo; nome de exibição guardado no servidor; ou parte antes do @
+  const labelFor = (userId, raw) => {
+    if (me && userId === me.id && me.name) return me.name;
+    const mm = members.find((x) => x.user_id === userId);
+    if (mm && mm.display_name && mm.display_name.trim()) return mm.display_name;
+    return displayName(raw);
+  };
   const initials = (v) => {
     const parts = displayName(v).replace(/[^A-Za-zÀ-ÿ ]/g, ' ').trim().split(/\s+/).filter(Boolean);
     const s = parts.length >= 2 ? (parts[0][0] + parts[parts.length - 1][0]) : displayName(v).slice(0, 2);

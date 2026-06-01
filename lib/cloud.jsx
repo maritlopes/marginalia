@@ -109,6 +109,8 @@
     if (!user) return;
     await checkAppApproval(user);            // porta do app: define window.__appStatus
     if (window.__appStatus === 'pending') return; // pendente: não sincroniza dados ainda
+    // propaga o nome de exibição às memberships (para os outros verem o nome certo)
+    try { const nm = (user.user_metadata && user.user_metadata.name); if (nm) await sb.rpc('set_my_member_name', { p_name: nm }); } catch (e) { /* ok */ }
     setStatus('Sincronizando…');
     const cloud = await pull();
     const local = MG.getState();
@@ -139,7 +141,9 @@
     },
     // define o nome de exibição (avatar + autoria dos recados no grupo)
     async setName(name) {
-      const r = await sb.auth.updateUser({ data: { name: String(name || '').trim() } });
+      const nm = String(name || '').trim();
+      const r = await sb.auth.updateUser({ data: { name: nm } });
+      try { if (nm) await sb.rpc('set_my_member_name', { p_name: nm }); } catch (e) { /* ok */ }
       if (typeof window.__rerender === 'function') window.__rerender();
       return r;
     },
@@ -207,7 +211,7 @@
     },
     async members(groupId) {
       const { data, error } = await sb.from('group_members')
-        .select('user_id, email, role, joined_at').eq('group_id', groupId)
+        .select('user_id, email, display_name, role, joined_at').eq('group_id', groupId)
         .order('joined_at', { ascending: true });
       return error ? [] : (data || []);
     },
