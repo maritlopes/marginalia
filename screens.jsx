@@ -1720,6 +1720,97 @@ function ScreenGrupoDetalhe({ grupo, onClose = () => {} }) {
 // ─────────────────────────────────────────────────────────────
 // Fase 2 — Círculos de leitura (grupos reais via nuvem)
 // ─────────────────────────────────────────────────────────────
+// Tela de espera — quem entrou no app mas ainda não foi aprovada pela administradora
+function ScreenAguardandoApp() {
+  const cloud = (typeof window !== 'undefined') ? window.MGCloud : null;
+  const [checking, setChecking] = React.useState(false);
+
+  const finalizar = async () => {
+    // aprovada: se veio de um convite, entra no círculo; depois libera o app
+    const jc = (typeof window !== 'undefined') ? window.__pendingJoin : null;
+    if (jc && cloud && cloud.groups) {
+      window.__pendingJoin = null;
+      try {
+        const jr = await cloud.groups.join(jc);
+        if (jr && !jr.error && jr.data && window.__openGrupo) {
+          if (window.__rerender) window.__rerender();
+          setTimeout(() => window.__openGrupo(jr.data), 60);
+          return;
+        }
+      } catch (e) { /* segue */ }
+    }
+    if (window.__rerender) window.__rerender();
+  };
+
+  React.useEffect(() => {
+    let alive = true;
+    const id = setInterval(async () => {
+      if (!cloud || !cloud.refreshAppStatus) return;
+      const s = await cloud.refreshAppStatus();
+      if (alive && s && s !== 'pending') finalizar();
+    }, 6000);
+    return () => { alive = false; clearInterval(id); };
+  }, []);
+
+  const verificar = async () => {
+    setChecking(true);
+    const s = (cloud && cloud.refreshAppStatus) ? await cloud.refreshAppStatus() : null;
+    setChecking(false);
+    if (s && s !== 'pending') finalizar(); else if (window.__rerender) window.__rerender();
+  };
+  const sair = async () => { if (cloud && cloud.signOut) await cloud.signOut(); if (window.__rerender) window.__rerender(); };
+
+  return (
+    <div style={{ width: '100%', height: '100%', background: T.bone, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 28px', textAlign: 'center', fontFamily: T.sans, color: T.ink }}>
+      <div style={{ fontSize: 40, marginBottom: 18 }}>🕊️</div>
+      <div style={{ fontFamily: T.serif, fontSize: 25, fontWeight: 500, letterSpacing: -0.4, marginBottom: 12 }}>Quase lá!</div>
+      <div style={{ fontFamily: T.serif, fontSize: 15, lineHeight: 1.5, color: T.brown, maxWidth: 300, marginBottom: 8 }}>
+        Seu acesso à Marginália está <strong>aguardando aprovação</strong> da curadora. Assim que ela liberar, o app abre sozinho.
+      </div>
+      <div style={{ fontSize: 12, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginBottom: 26 }}>Pode fechar e voltar depois — seu lugar está guardado.</div>
+      <button onClick={verificar} disabled={checking} style={{ padding: '12px 22px', borderRadius: 10, border: 0, background: T.ink, color: T.cream, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 12, opacity: checking ? 0.6 : 1 }}>{checking ? 'verificando…' : 'Já fui aprovada? Verificar'}</button>
+      <button onClick={sair} style={{ background: 'transparent', border: 0, color: T.muted, fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>sair</button>
+    </div>
+  );
+}
+
+// Painel da administradora — aprova/recusa quem entrou no app (porta única)
+function AppAdminPanel() {
+  const cloud = (typeof window !== 'undefined') ? window.MGCloud : null;
+  const [pending, setPending] = React.useState([]);
+  const load = async () => { if (cloud && cloud.appPending) setPending(await cloud.appPending()); };
+  React.useEffect(() => { load(); }, []);
+  if (!cloud || !cloud.available || !(typeof window !== 'undefined' && window.__isAppAdmin)) return null;
+
+  const nome = (m) => (m.name && m.name.trim()) || ((m.email || '').split('@')[0]) || 'Leitor(a)';
+  const ini = (m) => { const n = nome(m).replace(/[^A-Za-zÀ-ÿ ]/g, ' ').trim().split(/\s+/).filter(Boolean); return ((n.length >= 2 ? n[0][0] + n[n.length - 1][0] : nome(m).slice(0, 2)) || '?').toUpperCase(); };
+  const aprovar = async (id) => { setPending((p) => p.filter((x) => x.user_id !== id)); await cloud.appApprove(id); await load(); };
+  const recusar = async (id) => { setPending((p) => p.filter((x) => x.user_id !== id)); await cloud.appReject(id); await load(); };
+
+  return (
+    <div style={{ marginBottom: 22, borderBottom: `1px solid ${T.hairline}`, paddingBottom: 20 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 700 }}>Administradora · pessoas aguardando</div>
+        <button onClick={load} style={{ background: 'transparent', border: 0, color: T.terra, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>↻ atualizar</button>
+      </div>
+      {pending.length === 0 ? (
+        <div style={{ fontSize: 12, color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>Ninguém aguardando aprovação no momento. Quem abrir o app aparece aqui.</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {pending.map((m) => (
+            <div key={m.user_id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: T.ink, color: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: T.serif, fontSize: 11, flexShrink: 0 }}>{ini(m)}</div>
+              <div style={{ flex: 1, fontSize: 13, color: T.ink, fontFamily: T.serif, overflowWrap: 'anywhere' }}>{nome(m)}{m.email ? <span style={{ fontSize: 11, color: T.muted }}> · {m.email}</span> : null}</div>
+              <button onClick={() => aprovar(m.user_id)} style={{ padding: '6px 12px', borderRadius: 8, border: 0, background: T.olive, color: T.cream, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Aprovar</button>
+              <button onClick={() => recusar(m.user_id)} style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${T.hairline}`, background: 'transparent', color: T.brown, fontSize: 12, cursor: 'pointer' }}>Recusar</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ScreenGruposCloud({ onNav = () => {} }) {
   const cloud = (typeof window !== 'undefined') ? window.MGCloud : null;
   const [user, setUser] = React.useState(undefined);
@@ -1761,19 +1852,12 @@ function ScreenGruposCloud({ onNav = () => {} }) {
   const entrar = async () => {
     if (!code.trim()) { setMsg('Cole o código do convite.'); return; }
     setBusy(true); setMsg(null);
-    const r = await cloud.groups.requestJoin(code);
+    // círculos são livres para quem já é aprovado no app — entra direto
+    const { data, error } = await cloud.groups.join(code);
     setBusy(false);
-    if (r.error) { setMsg('Não consegui: ' + r.error.message); return; }
-    const res = r.result || {};
-    if (res.status === 'not_found') { setMsg('Código inválido. Confira e tente de novo.'); return; }
-    setCode('');
-    if (res.status === 'already_member') {
-      setPane(null); await refresh();
-      if (window.__openGrupo) window.__openGrupo({ id: res.group_id, name: res.group_name, invite_code: code.trim() });
-      return;
-    }
-    setPane(null);
-    setMsg('Pedido enviado para "' + (res.group_name || 'o círculo') + '"! A dona vai aprovar e você entra. 🙂');
+    if (error) { setMsg('Código inválido. Confira e tente de novo.'); return; }
+    setCode(''); setPane(null); await refresh();
+    if (data && window.__openGrupo) window.__openGrupo(data);
   };
 
   const [guestName, setGuestName] = React.useState('');
@@ -1781,22 +1865,25 @@ function ScreenGruposCloud({ onNav = () => {} }) {
   const entrarConvidado = async () => {
     if (!guestName.trim()) { setMsg('Digite um nome para entrar.'); return; }
     const jcode = window.__pendingJoin || (code && code.trim()) || null;
-    if (!jcode) { setMsg('Abra pelo link de convite para pedir entrada.'); return; }
     setBusy(true); setMsg(null);
     const r = await cloud.signInGuest(guestName);
     if (r.error) { setBusy(false); setMsg('Não consegui entrar: ' + r.error.message); return; }
-    window.__pendingJoin = null;
-    const jr = await cloud.groups.requestJoin(jcode, guestName);
+    // porta do app: registra e checa aprovação
+    const st = (cloud.refreshAppStatus) ? await cloud.refreshAppStatus() : 'approved';
     setBusy(false);
-    if (jr.error) { setMsg('Não consegui: ' + jr.error.message); return; }
-    const res = jr.result || {};
-    if (res.status === 'not_found') { setMsg('Convite não encontrado. Confira o link.'); return; }
-    if (res.status === 'already_member') {
-      await refresh();
-      if (window.__openGrupo) window.__openGrupo({ id: res.group_id, name: res.group_name, invite_code: jcode });
+    if (st === 'pending') {
+      if (jcode) window.__pendingJoin = jcode; // guarda o círculo para entrar após aprovação
+      if (window.__rerender) window.__rerender(); // a tela de espera assume
       return;
     }
-    setMsg('Pronto, ' + guestName + '! Seu pedido foi enviado para "' + (res.group_name || 'o círculo') + '". A dona vai aprovar e você entra. 🙂');
+    // aprovado(a) → entra no círculo direto
+    window.__pendingJoin = null;
+    if (jcode) {
+      const jr = await cloud.groups.join(jcode, guestName);
+      await refresh();
+      if (jr && !jr.error && jr.data && window.__openGrupo) { window.__openGrupo(jr.data); return; }
+    }
+    await refresh();
   };
 
   const inputStyle = { flex: 1, padding: '11px 12px', border: `1px solid ${T.hairline}`, borderRadius: 10, background: T.cream, color: T.ink, fontFamily: T.sans, fontSize: 14, outline: 'none' };
@@ -3674,20 +3761,17 @@ function CloudAccount() {
     if (error) { setMsg('Código inválido ou expirado. Tente novamente.'); return; }
     const u = await cloud.currentUser();
     setUser(u); setStep('idle'); setCode('');
-    // veio de um link de convite? pede para entrar (a dona aprova)
+    // porta do app: se ficou pendente, a tela de espera assume (mantém o convite guardado)
+    if (typeof window !== 'undefined' && window.__appStatus === 'pending') {
+      if (window.__rerender) window.__rerender();
+      return;
+    }
+    // veio de um link de convite? entra direto (círculos são livres p/ aprovados)
     if (typeof window !== 'undefined' && window.__pendingJoin && cloud.groups) {
       const jc = window.__pendingJoin; window.__pendingJoin = null;
-      setMsg('Conectada! Enviando pedido de entrada…');
-      const r = await cloud.groups.requestJoin(jc, (u && u.email) ? u.email.split('@')[0] : null);
-      const res = (r && r.result) || {};
-      if (!r.error && res.status === 'already_member') {
-        if (window.__openGrupo) window.__openGrupo({ id: res.group_id, name: res.group_name, invite_code: jc });
-        return;
-      }
-      if (!r.error && res.status === 'pending') {
-        setMsg('Conectada! Pedido enviado para "' + (res.group_name || 'o círculo') + '". A dona vai aprovar e você entra.');
-        return;
-      }
+      setMsg('Conectada! Entrando no círculo…');
+      const r = await cloud.groups.join(jc);
+      if (r && !r.error && r.data) { if (window.__openGrupo) window.__openGrupo(r.data); return; }
       setMsg('Conectada! (não encontrei o círculo do convite — confira o link.)');
       return;
     }
@@ -3711,6 +3795,8 @@ function CloudAccount() {
   };
 
   return (
+    <>
+    <AppAdminPanel/>
     <div style={{ marginBottom: 22, borderBottom: `1px solid ${T.hairline}`, paddingBottom: 20 }}>
       <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 6 }}>
         Sincronização na nuvem
@@ -3773,6 +3859,7 @@ function CloudAccount() {
         </div>
       )}
     </div>
+    </>
   );
 }
 

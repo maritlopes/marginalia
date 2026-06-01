@@ -92,7 +92,7 @@
 <!-- scripts injetados com cache-bust por URL versionada -->
 <script>
 (function () {
-  const APP_VERSION = '0.44.0'; // bump quando alterar JSX
+  const APP_VERSION = '0.45.0'; // bump quando alterar JSX
   const files = [
     'lib/sources.jsx',
     'lib/storage.jsx',
@@ -273,6 +273,15 @@ function MarginaliaApp() {
     themes: 'library', schedule: 'home', pontes: 'library',
     conversas: 'grupos',
   };
+
+  // PORTA ÚNICA DO APP: quem entrou mas ainda não foi aprovada vê a tela de espera
+  if (typeof window !== 'undefined' && window.__appStatus === 'pending' && typeof ScreenAguardandoApp !== 'undefined') {
+    return (
+      <DeviceShell dark={prefs.mode === 'dark'}>
+        <ScreenAguardandoApp/>
+      </DeviceShell>
+    );
+  }
 
   return (
     <DeviceShell dark={prefs.mode === 'dark'}>

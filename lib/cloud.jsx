@@ -5,6 +5,7 @@
 (function () {
   const SUPABASE_URL = 'https://rpsiewnsvqpeadwaqsib.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_QyDwy0ZCCRYzSFfTXCXQYQ_h3vEAL3I';
+  const ADMIN_EMAIL = 'maritei2010@gmail.com'; // administradora do app (aprova quem entra)
 
   if (!window.supabase || !window.supabase.createClient || typeof MG === 'undefined') {
     console.warn('[Marginália] nuvem indisponível (supabase-js ou MG ausente).');
@@ -89,9 +90,25 @@
     };
   }
 
+  // registra/checa a aprovação no nível do app e guarda o status (porta única)
+  async function checkAppApproval(user) {
+    try {
+      const nm = (user.user_metadata && user.user_metadata.name) || (user.email || '').split('@')[0] || '';
+      const { data, error } = await sb.rpc('register_app_member', { p_name: nm });
+      window.__isAppAdmin = (user.email === ADMIN_EMAIL);
+      window.__appStatus = error ? 'approved' : (data || 'pending'); // falha-aberto: erro nunca tranca
+    } catch (e) {
+      window.__isAppAdmin = (user.email === ADMIN_EMAIL);
+      window.__appStatus = 'approved';
+    }
+    if (typeof window.__rerender === 'function') window.__rerender();
+  }
+
   async function syncOnLogin() {
     const user = await currentUser();
     if (!user) return;
+    await checkAppApproval(user);            // porta do app: define window.__appStatus
+    if (window.__appStatus === 'pending') return; // pendente: não sincroniza dados ainda
     setStatus('Sincronizando…');
     const cloud = await pull();
     const local = MG.getState();
@@ -116,6 +133,7 @@
     },
     async signOut() {
       await sb.auth.signOut();
+      window.__appStatus = undefined; window.__isAppAdmin = false;
       setStatus('');
       if (typeof window.__rerender === 'function') window.__rerender();
     },
@@ -132,6 +150,20 @@
       return sb.auth.signInAnonymously({
         options: { data: { name: String(name || '').trim() || 'Convidado(a)' } },
       });
+    },
+    // ─── porta única do app: administradora aprova quem entra ───
+    async appPending() {
+      const { data, error } = await sb.from('app_members')
+        .select('user_id, name, email, created_at').eq('status', 'pending')
+        .order('created_at', { ascending: true });
+      return error ? [] : (data || []);
+    },
+    async appApprove(userId) { return sb.rpc('app_approve', { p_user: userId }); },
+    async appReject(userId) { return sb.rpc('app_reject', { p_user: userId }); },
+    async refreshAppStatus() {
+      const u = await currentUser();
+      if (u) await checkAppApproval(u);
+      return window.__appStatus;
     },
     schedulePush,
     syncOnLogin,
