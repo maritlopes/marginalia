@@ -1767,6 +1767,31 @@ function ScreenGruposCloud({ onNav = () => {} }) {
     if (data && window.__openGrupo) window.__openGrupo(data);
   };
 
+  const [guestName, setGuestName] = React.useState('');
+  const pendingInvite = (typeof window !== 'undefined') && !!window.__pendingJoin;
+  const entrarConvidado = async () => {
+    if (!guestName.trim()) { setMsg('Digite um nome para entrar.'); return; }
+    setBusy(true); setMsg(null);
+    const r = await cloud.signInGuest(guestName);
+    if (r.error) { setBusy(false); setMsg('Não consegui entrar: ' + r.error.message); return; }
+    const jcode = window.__pendingJoin;
+    if (jcode) {
+      window.__pendingJoin = null;
+      const jr = await cloud.groups.join(jcode, guestName);
+      setBusy(false);
+      if (jr && !jr.error && jr.data) {
+        await refresh();
+        if (window.__openGrupo) window.__openGrupo(jr.data);
+        return;
+      }
+      setMsg('Entrei, mas não achei o círculo do convite. Use o código em "Entrar com um código".');
+      await refresh();
+      return;
+    }
+    setBusy(false);
+    await refresh();
+  };
+
   const inputStyle = { flex: 1, padding: '11px 12px', border: `1px solid ${T.hairline}`, borderRadius: 10, background: T.cream, color: T.ink, fontFamily: T.sans, fontSize: 14, outline: 'none' };
   const btnDark = { padding: '11px 16px', borderRadius: 10, border: 0, background: T.ink, color: T.cream, fontFamily: T.sans, fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: busy ? 0.6 : 1 };
   const btnGhost = { width: '100%', padding: '13px 0', background: 'transparent', color: T.ink, border: `1px dashed ${T.hairline}`, borderRadius: 12, fontFamily: T.sans, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 };
@@ -1796,15 +1821,31 @@ function ScreenGruposCloud({ onNav = () => {} }) {
         <div style={{ padding: '20px 24px', color: T.muted, fontSize: 13, fontFamily: T.serif, fontStyle: 'italic' }}>Carregando…</div>
       ) : !user ? (
         <div style={{ padding: '8px 24px 0' }}>
-          <div style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '16px 18px' }}>
-            <div style={{ fontFamily: T.serif, fontSize: 16, lineHeight: 1.5, marginBottom: 12 }}>
-              Para usar os círculos, entre na sua conta primeiro.
+          {pendingInvite && (
+            <div style={{ fontFamily: T.serif, fontSize: 15, color: T.brown, fontStyle: 'italic', marginBottom: 14, lineHeight: 1.5 }}>
+              Você foi convidada(o) para um círculo de leitura. Entre com um nome para participar:
             </div>
-            <button onClick={() => onNav('library')} style={btnDark}>Ir para Sincronização</button>
-            <div style={{ fontSize: 12, color: T.muted, marginTop: 10, fontFamily: T.serif, fontStyle: 'italic' }}>
-              Em Biblioteca → rodapé → “Sincronização na nuvem”.
+          )}
+          <div style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '16px 18px' }}>
+            <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 8 }}>
+              Entrar rápido
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input value={guestName} onChange={e => setGuestName(e.target.value)}
+                placeholder="seu nome (ex.: Ana)" onKeyDown={e => e.key === 'Enter' && entrarConvidado()}
+                autoCapitalize="words" style={inputStyle}/>
+              <button onClick={entrarConvidado} disabled={busy} style={btnDark}>{busy ? '…' : 'Entrar'}</button>
+            </div>
+            <div style={{ fontSize: 11, color: T.muted, marginTop: 8, fontFamily: T.serif, fontStyle: 'italic' }}>
+              Sem e-mail, sem senha — só um nome.
             </div>
           </div>
+          <div style={{ textAlign: 'center', margin: '14px 0 0' }}>
+            <button onClick={() => onNav('library')} style={{ background: 'transparent', border: 0, color: T.brown, fontFamily: T.sans, fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>
+              ou entre com seu e-mail (conta permanente)
+            </button>
+          </div>
+          {msg && <div style={{ marginTop: 12, padding: '10px 12px', background: '#F4D9D0', borderRadius: 10, fontSize: 12, color: '#8E3E2A' }}>{msg}</div>}
         </div>
       ) : (
         <>

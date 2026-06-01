@@ -118,6 +118,14 @@
       setStatus('');
       if (typeof window.__rerender === 'function') window.__rerender();
     },
+    // entrar como convidado(a): conta anônima com um nome de exibição (sem e-mail)
+    async signInGuest(name) {
+      const r = await sb.auth.signInAnonymously({
+        options: { data: { name: String(name || '').trim() || 'Convidado(a)' } },
+      });
+      if (!r.error) await syncOnLogin();
+      return r;
+    },
     schedulePush,
     syncOnLogin,
   };
@@ -131,8 +139,11 @@
     async create(name) {
       return sb.rpc('create_group', { p_name: String(name || '').trim() });
     },
-    async join(code) {
-      return sb.rpc('join_group', { p_code: String(code || '').trim() });
+    async join(code, name) {
+      return sb.rpc('join_group', {
+        p_code: String(code || '').trim(),
+        p_name: name ? String(name).trim() : null,
+      });
     },
     async members(groupId) {
       const { data, error } = await sb.from('group_members')

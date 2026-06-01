@@ -62,6 +62,33 @@ function TabBar({ active = 'home', dark = false, onClick = () => {} }) {
 // Nova entrada convidativa: brand → banner curatorial → leitura atual →
 // stats da semana → curadoria → para você
 // ─────────────────────────────────────────────────────────────
+// Avatar do usuário logado — iniciais do nome (convidado) ou do e-mail; ícone neutro se deslogado
+function UserAvatar({ size = 36 }) {
+  const [ini, setIni] = React.useState(null);
+  React.useEffect(() => {
+    let alive = true;
+    const c = window.MGCloud;
+    if (c && c.available && c.currentUser) {
+      c.currentUser().then((u) => {
+        if (!alive) return;
+        if (!u) { setIni(null); return; }
+        const nm = (u.user_metadata && u.user_metadata.name) || (u.email || '').split('@')[0] || '';
+        const parts = nm.replace(/[^A-Za-zÀ-ÿ ]/g, ' ').trim().split(/\s+/).filter(Boolean);
+        const s = parts.length >= 2 ? (parts[0][0] + parts[1][0]) : nm.slice(0, 2);
+        setIni((s || '?').toUpperCase());
+      }).catch(() => {});
+    }
+    return () => { alive = false; };
+  }, []);
+  return (
+    <div title="Seu perfil" style={{
+      width: size, height: size, borderRadius: '50%', background: T.ink, color: T.cream,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: T.serif, fontWeight: 500, fontSize: Math.round(size * 0.42),
+    }}>{ini || <Icon name="user" size={Math.round(size * 0.45)} color={T.cream}/>}</div>
+  );
+}
+
 function HomeVariantA({ onNav = () => {} }) {
   const b = (typeof currentBook === 'function' ? currentBook() : BOOK_CURRENT);
   const lang = (typeof I18n !== 'undefined') ? I18n.current() : 'pt';
@@ -143,11 +170,7 @@ function HomeVariantA({ onNav = () => {} }) {
                 ))}
               </div>
             )}
-            <div title="Seu perfil" style={{
-              width: 36, height: 36, borderRadius: '50%', background: T.ink, color: T.cream,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: T.serif, fontWeight: 500, fontSize: 15,
-            }}>ML</div>
+            <UserAvatar size={36}/>
           </div>
         </div>
 
