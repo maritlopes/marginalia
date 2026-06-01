@@ -179,6 +179,21 @@
         value: value, updated_at: new Date().toISOString(),
       });
     },
+    // ─── mural do círculo (recados + notas compartilhadas) ───
+    async posts(groupId) {
+      const { data, error } = await sb.from('group_posts')
+        .select('*').eq('group_id', groupId).order('created_at', { ascending: true });
+      return error ? [] : (data || []);
+    },
+    async post(groupId, p) {
+      const u = await currentUser();
+      if (!u) return { error: { message: 'sem sessão' } };
+      const author = (u.user_metadata && u.user_metadata.name) || (u.email || '').split('@')[0] || 'Membro';
+      return sb.from('group_posts').insert({
+        group_id: groupId, user_id: u.id, author_name: author,
+        kind: p.kind || 'mensagem', body: p.body, book_title: p.book_title || null,
+      });
+    },
   };
 
   // ─── Ecos (IA) ──────────────────────────────────────────────

@@ -1912,14 +1912,18 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
   const [cTarget, setCTarget] = React.useState(6);
   const [copied, setCopied] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
+  const [posts, setPosts] = React.useState([]);
+  const [msgText, setMsgText] = React.useState('');
+  const [notePicker, setNotePicker] = React.useState(false);
 
-  const myReadCount = ((typeof window !== 'undefined' && window.BOOKS) || []).filter((b) => b.status === 'read').length;
+  const myReadCount =((typeof window !== 'undefined' && window.BOOKS) || []).filter((b) => b.status === 'read').length;
   const inviteBase = window.location.origin + window.location.pathname.replace(/(index|Marginalia)\.html$/, '');
   const inviteLink = inviteBase + '?join=' + (grupo.invite_code || '');
 
   const load = async () => {
     if (!cloud || !cloud.available) return;
     setMembers(await cloud.groups.members(grupo.id));
+    setPosts(await cloud.groups.posts(grupo.id));
     const chs = await cloud.groups.challenges(grupo.id);
     setChallenges(chs);
     const pm = {};
@@ -1949,6 +1953,21 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
     onClose();
     if (window.__rerender) window.__rerender();
   };
+
+  const publicar = async () => {
+    if (!msgText.trim()) return;
+    setBusy(true);
+    const r = await cloud.groups.post(grupo.id, { kind: 'mensagem', body: msgText.trim() });
+    setBusy(false);
+    if (!r || !r.error) { setMsgText(''); await load(); }
+  };
+  const compartilharNota = async (n) => {
+    setNotePicker(false); setBusy(true);
+    const r = await cloud.groups.post(grupo.id, { kind: 'nota', body: n.text || '', book_title: n.book || null });
+    setBusy(false);
+    if (!r || !r.error) await load();
+  };
+  const minhasNotas = ((typeof window !== 'undefined' && window.NOTES) || []).filter((n) => n && n.text);
 
   const initials = (email) => (email || '?').slice(0, 2).toUpperCase();
 
@@ -2037,7 +2056,53 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
           );
         })}
 
-        <button onClick={sair} style={{ marginTop: 14, width: '100%', padding: '11px', borderRadius: 10, border: `1px solid ${T.hairline}`, background: 'transparent', color: '#8E3E2A', fontFamily: T.sans, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Sair do círculo</button>
+        {/* mural do círculo — recados + notas compartilhadas */}
+        <div style={{ marginTop: 8, borderTop: `1px solid ${T.hairline}`, paddingTop: 18 }}>
+          <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 12 }}>Mural · conversas e notas</div>
+
+          {posts.length === 0 && (
+            <div style={{ fontFamily: T.serif, fontStyle: 'italic', color: T.muted, fontSize: 13, marginBottom: 12 }}>
+              Ainda sem recados. Comece a conversa ou compartilhe uma nota de leitura.
+            </div>
+          )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+            {posts.map((p) => (
+              <div key={p.id} style={{ background: p.kind === 'nota' ? T.paper : T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '12px 14px', position: 'relative', overflow: 'hidden' }}>
+                {p.kind === 'nota' && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: T.olive }}/>}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                  <div style={{ width: 22, height: 22, borderRadius: '50%', background: T.ink, color: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: T.serif, fontSize: 10 }}>{(p.author_name || '?').slice(0, 2).toUpperCase()}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: T.brown }}>{p.author_name}</div>
+                  {p.kind === 'nota' && <div style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: T.olive, fontWeight: 700 }}>nota</div>}
+                </div>
+                <div style={{ fontFamily: T.serif, fontSize: 14, lineHeight: 1.45, color: T.ink, fontStyle: p.kind === 'nota' ? 'italic' : 'normal' }}>{p.body}</div>
+                {p.book_title && <div style={{ fontSize: 11, color: T.muted, marginTop: 6, fontFamily: T.serif }}>— sobre {p.book_title}</div>}
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input value={msgText} onChange={(e) => setMsgText(e.target.value)} placeholder="Escreva um recado…"
+              onKeyDown={(e) => e.key === 'Enter' && publicar()}
+              style={{ flex: 1, padding: '11px 12px', border: `1px solid ${T.hairline}`, borderRadius: 10, background: T.cream, color: T.ink, fontFamily: T.sans, fontSize: 14, outline: 'none' }}/>
+            <button onClick={publicar} disabled={busy} style={{ padding: '11px 16px', borderRadius: 10, border: 0, background: T.ink, color: T.cream, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Publicar</button>
+          </div>
+          <button onClick={() => setNotePicker((v) => !v)} style={{ marginTop: 8, background: 'transparent', border: 0, color: T.terra, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+            {notePicker ? 'fechar' : 'compartilhar uma nota de leitura →'}
+          </button>
+          {notePicker && (
+            <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {minhasNotas.length === 0 && <div style={{ fontSize: 12, color: T.muted, fontStyle: 'italic', fontFamily: T.serif }}>Você ainda não tem notas para compartilhar.</div>}
+              {minhasNotas.slice(0, 12).map((n, i) => (
+                <div key={i} onClick={() => compartilharNota(n)} style={{ cursor: 'pointer', background: T.cream, border: `1px dashed ${T.hairline}`, borderRadius: 10, padding: '10px 12px' }}>
+                  <div style={{ fontFamily: T.serif, fontSize: 13, lineHeight: 1.35, color: T.ink }}>{(n.text || '').slice(0, 90)}{(n.text || '').length > 90 ? '…' : ''}</div>
+                  {n.book && <div style={{ fontSize: 10, color: T.muted, marginTop: 4 }}>{n.book}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <button onClick={sair} style={{ marginTop: 18, width: '100%', padding: '11px', borderRadius: 10, border: `1px solid ${T.hairline}`, background: 'transparent', color: '#8E3E2A', fontFamily: T.sans, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Sair do círculo</button>
       </div>
     </div>
   );
