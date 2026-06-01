@@ -9,7 +9,7 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
   const liveBook = (book && book.id) ? (window.BOOKS || []).find(x => x.id === book.id) : null;
   const b = liveBook || book || (typeof currentBook === 'function' ? currentBook() : BOOK_CURRENT);
   const isDemo = !b || (typeof BOOK_CURRENT !== 'undefined' && b.id === BOOK_CURRENT.id);
-  const bookNotes = (window.NOTES || []).filter(n => n.book === b.title);
+  const bookNotes = (window.NOTES || []).filter(n => (n.bookId && n.bookId === b.id) || (!n.bookId && n.book === b.title));
   const pct = typeof b.pct === 'number' ? b.pct : 0;
   const currentPage = b.currentPage || 0;
   const openEditor = () => { if (typeof window.__editBook === 'function') window.__editBook(b); };
@@ -519,7 +519,7 @@ function NoteCard({ n, onClick }) {
     e.stopPropagation();
     if (typeof window.__shareNote === 'function') {
       // procura o livro pelo título da nota; fallback: BOOK_CURRENT
-      const matched = (window.BOOKS || []).find(b => b.title === n.book) || BOOK_CURRENT;
+      const matched = (window.BOOKS || []).find(b => (n.bookId && b.id === n.bookId) || b.title === n.book) || BOOK_CURRENT;
       window.__shareNote(n, matched);
     }
   };
@@ -674,6 +674,8 @@ function ScreenNoteEditor({ onNav = () => {} }) {
   const joinedGrupos = (typeof MG !== 'undefined' && MG.getJoinedGrupos)
     ? (window.GRUPOS || []).filter(g => MG.isJoinedGrupo(g.id))
     : [];
+  // o livro REAL ao qual a nota pertence (não o exemplo)
+  const cur = window.__viewBook || (typeof currentBook === 'function' ? currentBook() : BOOK_CURRENT) || {};
   const kinds = [
     { id: 'marginal', label: 'Marginal', color: '#6E3F4E' },
     { id: 'reflexão', label: 'Reflexão', color: T.terra },
@@ -688,9 +690,8 @@ function ScreenNoteEditor({ onNav = () => {} }) {
     const trimmed = text.trim();
     if (!trimmed) { onNav('book'); return; }
     if (typeof MG !== 'undefined' && MG.addNote) {
-      const cur = window.__viewBook
-        || (typeof currentBook === 'function' ? currentBook() : BOOK_CURRENT);
       MG.addNote({
+        bookId: cur.id,
         book: cur.title,
         page: cur.currentPage || 0,
         chapter: cur.chapter || '',
@@ -746,10 +747,10 @@ function ScreenNoteEditor({ onNav = () => {} }) {
       </div>
 
       <div style={{ padding: '12px 20px', borderBottom: `1px solid ${T.hairline}`, display: 'flex', gap: 10, alignItems: 'center' }}>
-        <BookCover title={BOOK_CURRENT.title} author={BOOK_CURRENT.author} tone={BOOK_CURRENT.tone} cover={BOOK_CURRENT.cover} isbn={BOOK_CURRENT.isbn} w={36}/>
+        <BookCover title={cur.title} author={cur.author} tone={cur.tone} cover={cur.cover} isbn={cur.isbn} w={36}/>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: T.serif, fontSize: 13, fontWeight: 500 }}>{BOOK_CURRENT.title}</div>
-          <div style={{ fontSize: 10, color: T.muted }}>Livro IV · pág 182</div>
+          <div style={{ fontFamily: T.serif, fontSize: 13, fontWeight: 500, overflowWrap: 'anywhere' }}>{cur.title || 'Sua leitura'}</div>
+          <div style={{ fontSize: 10, color: T.muted }}>{cur.chapter ? cur.chapter + ' · ' : ''}{cur.currentPage ? 'pág ' + cur.currentPage : (cur.author || '')}</div>
         </div>
         <Icon name="chevron" size={16} color={T.muted}/>
       </div>
@@ -1915,6 +1916,7 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
   const [posts, setPosts] = React.useState([]);
   const [msgText, setMsgText] = React.useState('');
   const [notePicker, setNotePicker] = React.useState(false);
+  const [me, setMe] = React.useState(null);
 
   const myReadCount =((typeof window !== 'undefined' && window.BOOKS) || []).filter((b) => b.status === 'read').length;
   const inviteBase = window.location.origin + window.location.pathname.replace(/(index|Marginalia)\.html$/, '');
@@ -1922,6 +1924,8 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
 
   const load = async () => {
     if (!cloud || !cloud.available) return;
+    const _u = await cloud.currentUser();
+    setMe(_u ? { id: _u.id, name: (_u.user_metadata && _u.user_metadata.name) || '' } : null);
     setMembers(await cloud.groups.members(grupo.id));
     setPosts(await cloud.groups.posts(grupo.id));
     const chs = await cloud.groups.challenges(grupo.id);
@@ -1969,7 +1973,19 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
   };
   const minhasNotas = ((typeof window !== 'undefined' && window.NOTES) || []).filter((n) => n && n.text);
 
-  const initials = (email) => (email || '?').slice(0, 2).toUpperCase();
+  // nome de exibição: nunca mostra e-mail cru (privacidade) — usa só a parte antes do @
+  const displayName = (v) => {
+    const s = (v || '').trim();
+    if (!s) return 'Membro';
+    return s.includes('@') ? s.split('@')[0] : s;
+  };
+  // rótulo do membro: para mim, meu nome salvo; para os outros, o nome de exibição
+  const labelFor = (userId, raw) => (me && userId === me.id && me.name ? me.name : displayName(raw));
+  const initials = (v) => {
+    const parts = displayName(v).replace(/[^A-Za-zÀ-ÿ ]/g, ' ').trim().split(/\s+/).filter(Boolean);
+    const s = parts.length >= 2 ? (parts[0][0] + parts[parts.length - 1][0]) : displayName(v).slice(0, 2);
+    return (s || '?').toUpperCase();
+  };
 
   return (
     <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(42,38,32,0.5)', display: 'flex', alignItems: 'flex-end', zIndex: 80 }}>
@@ -1983,7 +1999,7 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
         <div style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '14px 16px', marginBottom: 18 }}>
           <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 6 }}>Convidar amigos</div>
           <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, lineHeight: 1.45, marginBottom: 10 }}>
-            Mande este link no WhatsApp. Quem abrir entra no círculo (precisa entrar com o e-mail).
+            Mande este link no WhatsApp. Quem abrir entra no círculo — com o e-mail ou, mais rápido, só com o nome.
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <div style={{ flex: 1, fontFamily: T.mono, fontSize: 11, color: T.ink, background: T.bone, border: `1px solid ${T.hairline}`, borderRadius: 8, padding: '9px 10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inviteLink}</div>
@@ -2000,8 +2016,8 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 22 }}>
           {members.map((m) => (
             <div key={m.user_id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 30, height: 30, borderRadius: '50%', background: T.ink, color: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: T.serif, fontSize: 12 }}>{initials(m.email)}</div>
-              <div style={{ flex: 1, fontSize: 13, color: T.ink, fontFamily: T.serif }}>{m.email}</div>
+              <div style={{ width: 30, height: 30, borderRadius: '50%', background: T.ink, color: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: T.serif, fontSize: 12, flexShrink: 0 }}>{initials(labelFor(m.user_id, m.email))}</div>
+              <div style={{ flex: 1, fontSize: 13, color: T.ink, fontFamily: T.serif, overflowWrap: 'anywhere' }}>{labelFor(m.user_id, m.email)}{me && m.user_id === me.id ? ' (você)' : ''}</div>
               {m.role === 'owner' && <div style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: T.terra, fontWeight: 700 }}>dona</div>}
             </div>
           ))}
@@ -2045,10 +2061,10 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
                 <div style={{ fontSize: 11, color: T.muted, fontFamily: T.mono }}>{pct}%</div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {rows.map((r) => (
-                  <div key={r.user_id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: T.brown }}>
-                    <span style={{ fontFamily: T.serif }}>{r.email}</span>
-                    <span style={{ fontFamily: T.mono }}>{r.value} {r.value === 1 ? 'livro' : 'livros'}</span>
+                {rows.filter((r) => (r.value || 0) > 0).map((r) => (
+                  <div key={r.user_id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 12, color: T.brown }}>
+                    <span style={{ fontFamily: T.serif, overflowWrap: 'anywhere' }}>{labelFor(r.user_id, r.email)}</span>
+                    <span style={{ fontFamily: T.mono, flexShrink: 0 }}>{r.value} {r.value === 1 ? 'livro' : 'livros'}</span>
                   </div>
                 ))}
               </div>
@@ -2070,11 +2086,11 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
               <div key={p.id} style={{ background: p.kind === 'nota' ? T.paper : T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '12px 14px', position: 'relative', overflow: 'hidden' }}>
                 {p.kind === 'nota' && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: T.olive }}/>}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-                  <div style={{ width: 22, height: 22, borderRadius: '50%', background: T.ink, color: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: T.serif, fontSize: 10 }}>{(p.author_name || '?').slice(0, 2).toUpperCase()}</div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: T.brown }}>{p.author_name}</div>
+                  <div style={{ width: 22, height: 22, borderRadius: '50%', background: T.ink, color: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: T.serif, fontSize: 10, flexShrink: 0 }}>{initials(p.author_name)}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: T.brown, overflowWrap: 'anywhere' }}>{p.author_name}</div>
                   {p.kind === 'nota' && <div style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: T.olive, fontWeight: 700 }}>nota</div>}
                 </div>
-                <div style={{ fontFamily: T.serif, fontSize: 14, lineHeight: 1.45, color: T.ink, fontStyle: p.kind === 'nota' ? 'italic' : 'normal' }}>{p.body}</div>
+                <div style={{ fontFamily: T.serif, fontSize: 14, lineHeight: 1.45, color: T.ink, fontStyle: p.kind === 'nota' ? 'italic' : 'normal', overflowWrap: 'anywhere' }}>{p.body}</div>
                 {p.book_title && <div style={{ fontSize: 11, color: T.muted, marginTop: 6, fontFamily: T.serif }}>— sobre {p.book_title}</div>}
               </div>
             ))}
@@ -2117,6 +2133,7 @@ function ScreenAddBook({ onNav = () => {} }) {
   const [busy, setBusy] = React.useState(false);
   const [results, setResults] = React.useState(null); // null | [] | array
   const [error, setError] = React.useState(null);
+  const [addStatus, setAddStatus] = React.useState('tbr'); // 'tbr' (quero ler) | 'reading' (lendo agora)
 
   const search = async () => {
     if (!query.trim() || typeof Sources === 'undefined') return;
@@ -2147,7 +2164,8 @@ function ScreenAddBook({ onNav = () => {} }) {
       pages: r.pages || null,
       pct: 0,
       currentPage: 0,
-      status: 'reading',          // entra direto em "Lendo agora"
+      status: addStatus,          // "quero ler" (padrão) ou "lendo agora", à escolha
+      readingSince: addStatus === 'reading' ? new Date().toISOString() : undefined,
       cover: r.cover || null,     // preserva a capa encontrada na busca
       isbn: r.isbn || null,
       tone: ['terra','olive','ochre','rose','sage','ink'][Math.floor(Math.random()*6)],
@@ -2226,6 +2244,19 @@ function ScreenAddBook({ onNav = () => {} }) {
         {results && results.length === 0 && (
           <div style={{ padding: '20px 0', fontSize: 13, color: T.muted, fontStyle: 'italic', fontFamily: T.serif, textAlign: 'center' }}>
             Nenhum livro encontrado. Tente outra busca.
+          </div>
+        )}
+        {results && results.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 11, color: T.muted, fontFamily: T.sans }}>Adicionar como:</span>
+            {[{ id: 'tbr', label: 'Quero ler' }, { id: 'reading', label: 'Lendo agora' }].map((o) => (
+              <button key={o.id} onClick={() => setAddStatus(o.id)} style={{
+                padding: '6px 12px', borderRadius: 20, cursor: 'pointer', fontFamily: T.sans, fontSize: 12, fontWeight: 600,
+                border: `1px solid ${addStatus === o.id ? T.ink : T.hairline}`,
+                background: addStatus === o.id ? T.ink : 'transparent',
+                color: addStatus === o.id ? T.cream : T.brown,
+              }}>{o.label}</button>
+            ))}
           </div>
         )}
         {results && results.map((r, i) => (

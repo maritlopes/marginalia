@@ -98,6 +98,20 @@ function HomeVariantA({ onNav = () => {} }) {
   const greeting = (typeof I18n !== 'undefined') ? I18n.greeting() : 'Olá';
   const dateStr = (typeof I18n !== 'undefined') ? I18n.formatDate() : '';
 
+  // primeiro nome da usuária (do nome salvo na nuvem), para a saudação
+  const [firstName, setFirstName] = React.useState('');
+  const nameTick = (typeof window !== 'undefined' && window.__cloudStatus) || '';
+  React.useEffect(() => {
+    let alive = true;
+    const c = window.MGCloud;
+    if (c && c.available && c.currentUser) c.currentUser().then((u) => {
+      if (!alive || !u) return;
+      const nm = (u.user_metadata && u.user_metadata.name) || '';
+      setFirstName(nm ? nm.trim().split(/\s+/)[0] : '');
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [nameTick]);
+
   // banner rotativo — troca a cada 7 segundos
   const banner = window.HOJE_BANNER || [];
   // começa por um item diferente a cada dia, para o Radar parecer sempre atualizado
@@ -151,7 +165,7 @@ function HomeVariantA({ onNav = () => {} }) {
                 Marginália
               </div>
               <div style={{ fontSize: 10, color: T.muted, letterSpacing: 1.2, marginTop: 4, fontFamily: T.serif }}>
-                {greeting}, Mariana · <span style={{ color: T.brown }}>{dateStr}</span>
+                {greeting}{firstName ? `, ${firstName}` : ''} · <span style={{ color: T.brown }}>{dateStr}</span>
               </div>
             </div>
           </div>
@@ -625,7 +639,7 @@ function HomeVariantB({ onNav = () => {} }) {
           <div style={{ position: 'absolute', left: 7, top: 8, bottom: 20, width: 1, background: T.hairline }}/>
 
           {/* entry 1: read */}
-          <TimelineItem dot={T.terra} time="20:00" title={`Ler ${b.title}`} sub="Livro IV, cap. 3–6 · ~14 min"
+          <TimelineItem dot={T.terra} time="" title={`Ler ${b.title}`} sub={b.pct ? `${b.pct}% lido · continue de onde parou` : 'Continue de onde parou'}
             primary
             body={
               <div onClick={() => { if (typeof window.__openBook === 'function') window.__openBook(b); else onNav('book'); }} style={{
@@ -635,10 +649,10 @@ function HomeVariantB({ onNav = () => {} }) {
               }}>
                 <BookCover title={b.title} author={b.author} tone={b.tone} cover={b.cover} isbn={b.isbn} w={52}/>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 11, color: T.muted, marginBottom: 2 }}>pág {b.currentPage} de {b.pages}</div>
-                  <LinearProgress pct={b.pct} height={3}/>
+                  <div style={{ fontSize: 11, color: T.muted, marginBottom: 2 }}>{b.pages ? `pág ${b.currentPage || 0} de ${b.pages}` : (b.currentPage ? `pág ${b.currentPage}` : 'em leitura')}</div>
+                  <LinearProgress pct={b.pct || 0} height={3}/>
                   <div style={{ fontSize: 10, color: T.muted, marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>
-                    {b.pct}% · restam ~{Math.round((b.pages - b.currentPage)/20)}h de leitura
+                    {b.pct || 0}%{b.pages ? ` · restam ~${Math.max(0, Math.round(((b.pages || 0) - (b.currentPage || 0)) / 20))}h de leitura` : ''}
                   </div>
                 </div>
               </div>
