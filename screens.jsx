@@ -2126,8 +2126,8 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
   };
 
   const isOwner = !!(me && members.some((m) => m.user_id === me.id && m.role === 'owner'));
-  const aprovar = async (userId) => { await cloud.groups.approveRequest(grupo.id, userId); await load(); };
-  const recusar = async (userId) => { await cloud.groups.rejectRequest(grupo.id, userId); await load(); };
+  const aprovar = async (userId) => { setPending((ps) => ps.filter((p) => p.user_id !== userId)); await cloud.groups.approveRequest(grupo.id, userId); await load(); };
+  const recusar = async (userId) => { setPending((ps) => ps.filter((p) => p.user_id !== userId)); await cloud.groups.rejectRequest(grupo.id, userId); await load(); };
 
   return (
     <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(42,38,32,0.5)', display: 'flex', alignItems: 'flex-end', zIndex: 80 }}>
