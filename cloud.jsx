@@ -151,6 +151,27 @@
         p_name: name ? String(name).trim() : null,
       });
     },
+    // ─── aprovação da dona: pedir para entrar + aprovar/recusar ───
+    async requestJoin(code, name) {
+      const { data, error } = await sb.rpc('request_join', {
+        p_code: String(code || '').trim(),
+        p_name: name ? String(name).trim() : null,
+      });
+      if (error) return { error };
+      return { result: (data && data[0]) || null }; // {group_id, group_name, status}
+    },
+    async pendingRequests(groupId) {
+      const { data, error } = await sb.from('group_join_requests')
+        .select('user_id, requester_name, created_at').eq('group_id', groupId)
+        .order('created_at', { ascending: true });
+      return error ? [] : (data || []);
+    },
+    async approveRequest(groupId, userId) {
+      return sb.rpc('approve_request', { p_group: groupId, p_user: userId });
+    },
+    async rejectRequest(groupId, userId) {
+      return sb.rpc('reject_request', { p_group: groupId, p_user: userId });
+    },
     async members(groupId) {
       const { data, error } = await sb.from('group_members')
         .select('user_id, email, role, joined_at').eq('group_id', groupId)

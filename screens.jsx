@@ -1761,11 +1761,19 @@ function ScreenGruposCloud({ onNav = () => {} }) {
   const entrar = async () => {
     if (!code.trim()) { setMsg('Cole o código do convite.'); return; }
     setBusy(true); setMsg(null);
-    const { data, error } = await cloud.groups.join(code);
+    const r = await cloud.groups.requestJoin(code);
     setBusy(false);
-    if (error) { setMsg('Código inválido. Confira e tente de novo.'); return; }
-    setCode(''); setPane(null); await refresh();
-    if (data && window.__openGrupo) window.__openGrupo(data);
+    if (r.error) { setMsg('Não consegui: ' + r.error.message); return; }
+    const res = r.result || {};
+    if (res.status === 'not_found') { setMsg('Código inválido. Confira e tente de novo.'); return; }
+    setCode('');
+    if (res.status === 'already_member') {
+      setPane(null); await refresh();
+      if (window.__openGrupo) window.__openGrupo({ id: res.group_id, name: res.group_name, invite_code: code.trim() });
+      return;
+    }
+    setPane(null);
+    setMsg('Pedido enviado para "' + (res.group_name || 'o círculo') + '"! A dona vai aprovar e você entra. 🙂');
   };
 
   const [guestName, setGuestName] = React.useState('');
@@ -1773,25 +1781,22 @@ function ScreenGruposCloud({ onNav = () => {} }) {
   const entrarConvidado = async () => {
     if (!guestName.trim()) { setMsg('Digite um nome para entrar.'); return; }
     const jcode = window.__pendingJoin || (code && code.trim()) || null;
+    if (!jcode) { setMsg('Abra pelo link de convite para pedir entrada.'); return; }
     setBusy(true); setMsg(null);
     const r = await cloud.signInGuest(guestName);
     if (r.error) { setBusy(false); setMsg('Não consegui entrar: ' + r.error.message); return; }
     window.__pendingJoin = null;
-    if (jcode) {
-      const jr = await cloud.groups.join(jcode, guestName);
-      if (jr && !jr.error && jr.data) {
-        await refresh();
-        setBusy(false);
-        if (window.__openGrupo) window.__openGrupo(jr.data);
-        return;
-      }
+    const jr = await cloud.groups.requestJoin(jcode, guestName);
+    setBusy(false);
+    if (jr.error) { setMsg('Não consegui: ' + jr.error.message); return; }
+    const res = jr.result || {};
+    if (res.status === 'not_found') { setMsg('Convite não encontrado. Confira o link.'); return; }
+    if (res.status === 'already_member') {
       await refresh();
-      setBusy(false);
-      setMsg('Entrei como ' + guestName + ', mas o código do convite não foi encontrado.');
+      if (window.__openGrupo) window.__openGrupo({ id: res.group_id, name: res.group_name, invite_code: jcode });
       return;
     }
-    await refresh();
-    setBusy(false);
+    setMsg('Pronto, ' + guestName + '! Seu pedido foi enviado para "' + (res.group_name || 'o círculo') + '". A dona vai aprovar e você entra. 🙂');
   };
 
   const inputStyle = { flex: 1, padding: '11px 12px', border: `1px solid ${T.hairline}`, borderRadius: 10, background: T.cream, color: T.ink, fontFamily: T.sans, fontSize: 14, outline: 'none' };
@@ -2041,6 +2046,7 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
   const [msgText, setMsgText] = React.useState('');
   const [notePicker, setNotePicker] = React.useState(false);
   const [me, setMe] = React.useState(null);
+  const [pending, setPending] = React.useState([]);
 
   const myReadCount =((typeof window !== 'undefined' && window.BOOKS) || []).filter((b) => b.status === 'read').length;
   const inviteBase = window.location.origin + window.location.pathname.replace(/(index|Marginalia)\.html$/, '');
@@ -2051,6 +2057,7 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
     const _u = await cloud.currentUser();
     setMe(_u ? { id: _u.id, name: (_u.user_metadata && _u.user_metadata.name) || '' } : null);
     setMembers(await cloud.groups.members(grupo.id));
+    setPending(await cloud.groups.pendingRequests(grupo.id));
     setPosts(await cloud.groups.posts(grupo.id));
     const chs = await cloud.groups.challenges(grupo.id);
     setChallenges(chs);
@@ -2118,6 +2125,10 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
     return (s || '?').toUpperCase();
   };
 
+  const isOwner = !!(me && members.some((m) => m.user_id === me.id && m.role === 'owner'));
+  const aprovar = async (userId) => { await cloud.groups.approveRequest(grupo.id, userId); await load(); };
+  const recusar = async (userId) => { await cloud.groups.rejectRequest(grupo.id, userId); await load(); };
+
   return (
     <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(42,38,32,0.5)', display: 'flex', alignItems: 'flex-end', zIndex: 80 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', background: T.bone, borderRadius: '24px 24px 0 0', padding: '14px 22px 32px', maxHeight: '94%', overflow: 'auto', fontFamily: T.sans, color: T.ink }}>
@@ -2130,7 +2141,7 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
         <div style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '14px 16px', marginBottom: 18 }}>
           <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 6 }}>Convidar amigos</div>
           <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, lineHeight: 1.45, marginBottom: 10 }}>
-            Mande este link no WhatsApp. Quem abrir entra no círculo — com o e-mail ou, mais rápido, só com o nome.
+            Mande este link no WhatsApp. Quem abrir <strong>pede para entrar</strong> (com e-mail ou só o nome) e <strong>você aprova</strong> — pode reencaminhar à vontade, ninguém entra sem o seu ok.
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <div style={{ flex: 1, fontFamily: T.mono, fontSize: 11, color: T.ink, background: T.bone, border: `1px solid ${T.hairline}`, borderRadius: 8, padding: '9px 10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inviteLink}</div>
@@ -2153,6 +2164,23 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
             </div>
           ))}
         </div>
+
+        {/* pedidos pendentes — só a dona vê e aprova */}
+        {isOwner && pending.length > 0 && (
+          <div style={{ background: '#F6EFE0', border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '12px 14px', marginBottom: 22 }}>
+            <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 8 }}>Pedidos para entrar · {pending.length}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {pending.map((p) => (
+                <div key={p.user_id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: T.ink, color: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: T.serif, fontSize: 11, flexShrink: 0 }}>{initials(p.requester_name)}</div>
+                  <div style={{ flex: 1, fontSize: 13, color: T.ink, fontFamily: T.serif, overflowWrap: 'anywhere' }}>{displayName(p.requester_name)}</div>
+                  <button onClick={() => aprovar(p.user_id)} style={{ padding: '6px 12px', borderRadius: 8, border: 0, background: T.olive, color: T.cream, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Aprovar</button>
+                  <button onClick={() => recusar(p.user_id)} title="recusar" style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${T.hairline}`, background: 'transparent', color: T.brown, fontSize: 12, cursor: 'pointer' }}>Recusar</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* desafios compartilhados */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
@@ -3646,16 +3674,21 @@ function CloudAccount() {
     if (error) { setMsg('Código inválido ou expirado. Tente novamente.'); return; }
     const u = await cloud.currentUser();
     setUser(u); setStep('idle'); setCode('');
-    // veio de um link de convite? entra no círculo automaticamente
+    // veio de um link de convite? pede para entrar (a dona aprova)
     if (typeof window !== 'undefined' && window.__pendingJoin && cloud.groups) {
       const jc = window.__pendingJoin; window.__pendingJoin = null;
-      setMsg('Conectada! Entrando no círculo…');
-      const r = await cloud.groups.join(jc);
-      if (r && !r.error && r.data) {
-        if (window.__openGrupo) window.__openGrupo(r.data);
+      setMsg('Conectada! Enviando pedido de entrada…');
+      const r = await cloud.groups.requestJoin(jc, (u && u.email) ? u.email.split('@')[0] : null);
+      const res = (r && r.result) || {};
+      if (!r.error && res.status === 'already_member') {
+        if (window.__openGrupo) window.__openGrupo({ id: res.group_id, name: res.group_name, invite_code: jc });
         return;
       }
-      setMsg('Conectada! (não encontrei o círculo do convite — pode entrar pelo código em Grupos.)');
+      if (!r.error && res.status === 'pending') {
+        setMsg('Conectada! Pedido enviado para "' + (res.group_name || 'o círculo') + '". A dona vai aprovar e você entra.');
+        return;
+      }
+      setMsg('Conectada! (não encontrei o círculo do convite — confira o link.)');
       return;
     }
     setMsg('Conectada! Seus aparelhos vão sincronizar.');
