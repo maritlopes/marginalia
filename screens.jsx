@@ -1903,6 +1903,128 @@ function ScreenGruposCloud({ onNav = () => {} }) {
   );
 }
 
+// Cartão de desafio curado: 'list' (lista da dona, cada um marca ✓) ou 'theme' (cada um lança os seus)
+function ChallengeCardCloud({ ch, members, me, labelFor, onChanged }) {
+  const cloud = (typeof window !== 'undefined') ? window.MGCloud : null;
+  const [books, setBooks] = React.useState([]);
+  const [dones, setDones] = React.useState([]);
+  const [adding, setAdding] = React.useState(false);
+  const [nt, setNt] = React.useState('');
+  const [na, setNa] = React.useState('');
+  const [ny, setNy] = React.useState('');
+  const [nc, setNc] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+
+  const isOwner = !!(me && ch.created_by === me.id);
+  const isList = ch.kind === 'list';
+
+  const reload = async () => {
+    if (!cloud) return;
+    setBooks(await cloud.groups.challengeBooks(ch.id));
+    setDones(await cloud.groups.challengeDones(ch.id));
+  };
+  React.useEffect(() => { reload(); }, [ch.id]);
+
+  const addBook = async () => {
+    if (!nt.trim() || !na.trim()) return;
+    setBusy(true);
+    const r = await cloud.groups.addChallengeBook(ch.id, {
+      title: nt.trim(), author: na.trim(),
+      year: ny ? parseInt(ny) : null, country: nc.trim() || null, position: books.length,
+    });
+    setBusy(false);
+    if (!r || !r.error) { setNt(''); setNa(''); setNy(''); setNc(''); setAdding(false); await reload(); }
+  };
+  const removeBook = async (id) => { if (!window.confirm('Remover este livro do desafio?')) return; await cloud.groups.removeChallengeBook(id); await reload(); };
+  const toggleDone = async (bookId, done) => { await cloud.groups.toggleBookDone(bookId, done); await reload(); };
+  const iDid = (bookId) => !!(me && dones.some((d) => d.book_id === bookId && d.user_id === me.id));
+
+  const perMember = members.map((m) => ({
+    id: m.user_id, label: labelFor(m.user_id, m.email),
+    n: isList ? dones.filter((d) => d.user_id === m.user_id).length
+              : books.filter((b) => b.created_by === m.user_id).length,
+  })).filter((p) => p.n > 0).sort((a, b) => b.n - a.n);
+
+  const target = isList ? books.length : (ch.target || 0);
+  const myTotal = isList ? (me ? dones.filter((d) => d.user_id === me.id).length : 0)
+                         : (me ? books.filter((b) => b.created_by === me.id).length : 0);
+  const myPct = target ? Math.min(100, Math.round((myTotal / target) * 100)) : 0;
+  const myBooks = isList ? books : books.filter((b) => me && b.created_by === me.id);
+  const canAdd = (isList && isOwner) || !isList;
+
+  const ciStyle = { width: '100%', padding: '8px 10px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, marginBottom: 6, outline: 'none' };
+
+  return (
+    <div style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '14px 16px', marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+        <div>
+          <div style={{ fontFamily: T.serif, fontSize: 17, fontWeight: 500, overflowWrap: 'anywhere' }}>{ch.title}</div>
+          <div style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: T.olive, fontWeight: 700, marginTop: 2 }}>{isList ? 'Lista curada' : 'Tema aberto'}</div>
+        </div>
+        {isOwner && <button onClick={() => { if (window.confirm('Apagar este desafio e todos os seus livros?')) cloud.groups.deleteChallenge(ch.id).then(onChanged); }} style={{ background: 'transparent', border: 0, color: T.muted, fontSize: 11, cursor: 'pointer', flexShrink: 0 }}>apagar</button>}
+      </div>
+      {ch.description && <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', marginTop: 4, overflowWrap: 'anywhere' }}>{ch.description}</div>}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '10px 0' }}>
+        <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 500, letterSpacing: -0.5 }}>{myTotal}<span style={{ fontSize: 12, color: T.muted }}> / {target || '—'}</span></div>
+        <div style={{ flex: 1 }}><LinearProgress pct={myPct} height={5} color={T.terra}/></div>
+        <div style={{ fontSize: 11, color: T.muted, fontFamily: T.mono }}>{isList ? 'que li' : 'meus'}</div>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 8 }}>
+        {myBooks.length === 0 && (
+          <div style={{ fontSize: 12, color: T.muted, fontStyle: 'italic', fontFamily: T.serif, marginBottom: 6 }}>
+            {isList ? (isOwner ? 'Adicione os livros da lista abaixo.' : 'A dona ainda não lançou os livros.') : 'Você ainda não lançou livros. Adicione os que leu.'}
+          </div>
+        )}
+        {myBooks.map((b) => (
+          <div key={b.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '7px 0', borderTop: `1px solid ${T.hairline}` }}>
+            {isList && (
+              <button onClick={() => toggleDone(b.id, !iDid(b.id))} title="marcar que li" style={{ width: 20, height: 20, borderRadius: 5, flexShrink: 0, cursor: 'pointer', border: `1px solid ${iDid(b.id) ? T.terra : T.hairline}`, background: iDid(b.id) ? T.terra : 'transparent', color: T.cream, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>{iDid(b.id) ? '✓' : ''}</button>
+            )}
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, overflowWrap: 'anywhere' }}>{b.title}</div>
+              <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif }}>{[b.author, b.year, b.country].filter(Boolean).join(' · ')}</div>
+            </div>
+            {((isList && isOwner) || (!isList && me && b.created_by === me.id)) && (
+              <button onClick={() => removeBook(b.id)} title="remover" style={{ background: 'transparent', border: 0, color: T.muted, fontSize: 16, lineHeight: 1, cursor: 'pointer', flexShrink: 0 }}>×</button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {canAdd && (adding ? (
+        <div style={{ background: T.bone, border: `1px solid ${T.hairline}`, borderRadius: 10, padding: 10, marginBottom: 4 }}>
+          <input value={nt} onChange={(e) => setNt(e.target.value)} placeholder="Título *" autoFocus style={ciStyle}/>
+          <input value={na} onChange={(e) => setNa(e.target.value)} placeholder="Autor *" style={ciStyle}/>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input value={ny} onChange={(e) => setNy(e.target.value)} placeholder="Ano" inputMode="numeric" style={{ ...ciStyle, width: 90 }}/>
+            <input value={nc} onChange={(e) => setNc(e.target.value)} placeholder="País (opcional)" style={ciStyle}/>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 2 }}>
+            <button onClick={() => setAdding(false)} style={{ background: 'transparent', border: 0, color: T.brown, fontSize: 12, cursor: 'pointer' }}>cancelar</button>
+            <button onClick={addBook} disabled={busy || !nt.trim() || !na.trim()} style={{ padding: '7px 14px', borderRadius: 8, border: 0, background: T.ink, color: T.cream, fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: (busy || !nt.trim() || !na.trim()) ? 0.5 : 1 }}>{busy ? '…' : 'Adicionar'}</button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => setAdding(true)} style={{ background: 'transparent', border: `1px dashed ${T.hairline}`, borderRadius: 8, padding: '8px 12px', width: '100%', color: T.terra, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>+ {isList ? 'adicionar livro à lista' : 'adicionar um livro que li'}</button>
+      ))}
+
+      {perMember.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 10, borderTop: `1px solid ${T.hairline}`, paddingTop: 8 }}>
+          <div style={{ fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 2 }}>Placar</div>
+          {perMember.map((p) => (
+            <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 12, color: T.brown }}>
+              <span style={{ fontFamily: T.serif, overflowWrap: 'anywhere' }}>{p.label}</span>
+              <span style={{ fontFamily: T.mono, flexShrink: 0 }}>{p.n}{target ? ' / ' + target : ''}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
   const cloud = (typeof window !== 'undefined') ? window.MGCloud : null;
   const [members, setMembers] = React.useState([]);
@@ -1911,6 +2033,7 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
   const [creating, setCreating] = React.useState(false);
   const [cTitle, setCTitle] = React.useState('');
   const [cTarget, setCTarget] = React.useState(6);
+  const [cKind, setCKind] = React.useState('list'); // 'list' (lista curada) | 'theme' (tema aberto)
   const [copied, setCopied] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [posts, setPosts] = React.useState([]);
@@ -1932,6 +2055,7 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
     setChallenges(chs);
     const pm = {};
     for (const ch of chs) {
+      if (ch.kind && ch.kind !== 'count') continue; // desafios curados cuidam do próprio placar
       await cloud.groups.pushProgress(ch.id, myReadCount); // publica minha contribuição
       pm[ch.id] = await cloud.groups.progress(ch.id);
     }
@@ -1942,7 +2066,12 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
   const criarDesafio = async () => {
     if (!cTitle.trim()) return;
     setBusy(true);
-    const { error } = await cloud.groups.createChallenge(grupo.id, { title: cTitle.trim(), type: 'count', target: parseInt(cTarget) || 6 });
+    const { error } = await cloud.groups.createChallenge(grupo.id, {
+      title: cTitle.trim(),
+      kind: cKind,
+      type: 'count',
+      target: cKind === 'theme' ? (parseInt(cTarget) || 6) : 0, // lista curada: meta = nº de livros
+    });
     setBusy(false);
     if (!error) { setCTitle(''); setCreating(false); await load(); }
   };
@@ -2031,13 +2160,35 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
 
         {creating && (
           <div style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '12px 14px', marginBottom: 14 }}>
-            <input value={cTitle} onChange={(e) => setCTitle(e.target.value)} placeholder="Nome (ex.: Maratona Nobel)" autoFocus style={{ width: '100%', padding: '9px 10px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, fontFamily: T.sans, fontSize: 13, marginBottom: 8, outline: 'none' }}/>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <span style={{ fontSize: 12, color: T.muted }}>Meta (livros):</span>
-              <input type="number" value={cTarget} onChange={(e) => setCTarget(e.target.value)} style={{ width: 64, padding: '8px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, fontFamily: T.sans, fontSize: 13, outline: 'none' }}/>
-              <div style={{ flex: 1 }}/>
+            <input value={cTitle} onChange={(e) => setCTitle(e.target.value)} placeholder="Nome (ex.: 6 ganhadores do Nobel)" autoFocus style={{ width: '100%', padding: '9px 10px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, fontFamily: T.sans, fontSize: 13, marginBottom: 8, outline: 'none' }}/>
+            <div style={{ fontSize: 11, color: T.muted, fontWeight: 600, marginBottom: 6 }}>Formato</div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+              {[
+                { id: 'list', label: '📋 Lista curada', sub: 'você define os livros' },
+                { id: 'theme', label: '🌍 Tema aberto', sub: 'cada um lança os seus' },
+              ].map((o) => (
+                <button key={o.id} onClick={() => setCKind(o.id)} style={{
+                  flex: 1, textAlign: 'left', padding: '9px 11px', borderRadius: 10, cursor: 'pointer',
+                  border: `1px solid ${cKind === o.id ? T.ink : T.hairline}`,
+                  background: cKind === o.id ? T.ink : 'transparent', color: cKind === o.id ? T.cream : T.brown,
+                }}>
+                  <div style={{ fontFamily: T.sans, fontSize: 12, fontWeight: 600 }}>{o.label}</div>
+                  <div style={{ fontSize: 10, opacity: 0.8, marginTop: 1 }}>{o.sub}</div>
+                </button>
+              ))}
+            </div>
+            {cKind === 'theme' && (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
+                <span style={{ fontSize: 12, color: T.muted }}>Meta (livros por pessoa):</span>
+                <input type="number" value={cTarget} onChange={(e) => setCTarget(e.target.value)} style={{ width: 64, padding: '8px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, fontFamily: T.sans, fontSize: 13, outline: 'none' }}/>
+              </div>
+            )}
+            <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginBottom: 10 }}>
+              {cKind === 'list' ? 'Depois de criar, você lança os livros (título, autor, ano…) e cada um marca os que leu.' : 'Cada membro adiciona os próprios livros que leu rumo à meta.'}
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button onClick={() => setCreating(false)} style={{ background: 'transparent', border: 0, color: T.brown, fontSize: 12, cursor: 'pointer' }}>cancelar</button>
-              <button onClick={criarDesafio} disabled={busy} style={{ padding: '8px 14px', borderRadius: 8, border: 0, background: T.ink, color: T.cream, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{busy ? '…' : 'Criar'}</button>
+              <button onClick={criarDesafio} disabled={busy || !cTitle.trim()} style={{ padding: '8px 14px', borderRadius: 8, border: 0, background: T.ink, color: T.cream, fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: (busy || !cTitle.trim()) ? 0.5 : 1 }}>{busy ? '…' : 'Criar'}</button>
             </div>
           </div>
         )}
@@ -2049,6 +2200,11 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
         )}
 
         {challenges.map((ch) => {
+          // desafios curados (lista / tema): cartão próprio
+          if (ch.kind === 'list' || ch.kind === 'theme') {
+            return <ChallengeCardCloud key={ch.id} ch={ch} members={members} me={me} labelFor={labelFor} onChanged={load}/>;
+          }
+          // legado: desafio por contagem
           const rows = progressMap[ch.id] || [];
           const total = rows.reduce((s, r) => s + (r.value || 0), 0);
           const pct = Math.min(100, Math.round((total / Math.max(1, ch.target)) * 100));
