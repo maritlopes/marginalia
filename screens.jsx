@@ -1778,9 +1778,19 @@ function ScreenAguardandoApp() {
 function AppAdminPanel() {
   const cloud = (typeof window !== 'undefined') ? window.MGCloud : null;
   const [pending, setPending] = React.useState([]);
-  const load = async () => { if (cloud && cloud.appPending) setPending(await cloud.appPending()); };
+  const [grupos, setGrupos] = React.useState([]);
+  const [copied, setCopied] = React.useState(false);
+  const load = async () => {
+    if (cloud && cloud.appPending) setPending(await cloud.appPending());
+    if (cloud && cloud.groups) setGrupos(await cloud.groups.list());
+  };
   React.useEffect(() => { load(); }, []);
   if (!cloud || !cloud.available || !(typeof window !== 'undefined' && window.__isAppAdmin)) return null;
+
+  const inviteBase = window.location.origin + window.location.pathname.replace(/(index|Marginalia)\.html$/, '');
+  const g0 = grupos[0];
+  const inviteLink = inviteBase + (g0 && g0.invite_code ? '?join=' + g0.invite_code : '');
+  const copiar = () => { if (navigator.clipboard) navigator.clipboard.writeText(inviteLink).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500); }); };
 
   const nome = (m) => (m.name && m.name.trim()) || ((m.email || '').split('@')[0]) || 'Leitor(a)';
   const ini = (m) => { const n = nome(m).replace(/[^A-Za-zÀ-ÿ ]/g, ' ').trim().split(/\s+/).filter(Boolean); return ((n.length >= 2 ? n[0][0] + n[n.length - 1][0] : nome(m).slice(0, 2)) || '?').toUpperCase(); };
@@ -1789,6 +1799,18 @@ function AppAdminPanel() {
 
   return (
     <div style={{ marginBottom: 22, borderBottom: `1px solid ${T.hairline}`, paddingBottom: 20 }}>
+      {/* convidar para o clube — link do app (porta única) */}
+      <div style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '14px 16px', marginBottom: 18 }}>
+        <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 6 }}>Convidar para o clube</div>
+        <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, lineHeight: 1.45, marginBottom: 10 }}>
+          Mande este link. Quem abrir entra no app e <strong>aguarda a sua aprovação</strong> (aqui em cima). Depois de aprovada, a pessoa já participa dos círculos e maratonas. Pode reencaminhar à vontade — ninguém entra sem o seu ok.
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ flex: 1, fontFamily: T.mono, fontSize: 11, color: T.ink, background: T.bone, border: `1px solid ${T.hairline}`, borderRadius: 8, padding: '9px 10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inviteLink}</div>
+          <button onClick={copiar} style={{ padding: '9px 14px', borderRadius: 8, border: 0, background: T.ink, color: T.cream, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{copied ? 'Copiado!' : 'Copiar'}</button>
+        </div>
+      </div>
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 700 }}>Administradora · pessoas aguardando</div>
         <button onClick={load} style={{ background: 'transparent', border: 0, color: T.terra, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>↻ atualizar</button>
@@ -2229,18 +2251,12 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
         <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 4 }}>Círculo de leitura</div>
         <div style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 500, letterSpacing: -0.4, lineHeight: 1.1, marginBottom: 16 }}>{grupo.name}</div>
 
-        {/* convite */}
-        <div style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '14px 16px', marginBottom: 18 }}>
-          <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 6 }}>Convidar amigos</div>
-          <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, lineHeight: 1.45, marginBottom: 10 }}>
-            Mande este link no WhatsApp. Quem abrir <strong>pede para entrar</strong> (com e-mail ou só o nome) e <strong>você aprova</strong> — pode reencaminhar à vontade, ninguém entra sem o seu ok.
+        {/* convite agora vive na área de administradora (Biblioteca → Sincronização) */}
+        {isOwner && (
+          <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginBottom: 18, lineHeight: 1.4 }}>
+            Para convidar gente, use o link em <strong style={{ color: T.brown }}>Biblioteca → Sincronização → Convidar para o clube</strong> — é onde você aprova e libera o acesso.
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <div style={{ flex: 1, fontFamily: T.mono, fontSize: 11, color: T.ink, background: T.bone, border: `1px solid ${T.hairline}`, borderRadius: 8, padding: '9px 10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inviteLink}</div>
-            <button onClick={copiar} style={{ padding: '9px 14px', borderRadius: 8, border: 0, background: T.ink, color: T.cream, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{copied ? 'Copiado!' : 'Copiar'}</button>
-          </div>
-          <div style={{ fontSize: 11, color: T.muted, marginTop: 8, fontFamily: T.mono }}>código: {grupo.invite_code}</div>
-        </div>
+        )}
 
         {/* membros */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
@@ -2383,16 +2399,18 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
               style={{ flex: 1, padding: '11px 12px', border: `1px solid ${T.hairline}`, borderRadius: 10, background: T.cream, color: T.ink, fontFamily: T.sans, fontSize: 14, outline: 'none' }}/>
             <button onClick={publicar} disabled={busy} style={{ padding: '11px 16px', borderRadius: 10, border: 0, background: T.ink, color: T.cream, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Publicar</button>
           </div>
-          <button onClick={() => setNotePicker((v) => !v)} style={{ marginTop: 8, background: 'transparent', border: 0, color: T.terra, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-            {notePicker ? 'fechar' : 'compartilhar uma nota de leitura →'}
+          <button onClick={() => setNotePicker((v) => !v)} style={{ marginTop: 8, width: '100%', padding: '11px', borderRadius: 10, border: `1px dashed ${notePicker ? T.terra : T.hairline}`, background: notePicker ? T.cream : 'transparent', color: T.terra, fontFamily: T.sans, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            {notePicker ? '✕  fechar' : '📖  Compartilhar uma nota de leitura'}
           </button>
           {notePicker && (
             <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {minhasNotas.length === 0 && <div style={{ fontSize: 12, color: T.muted, fontStyle: 'italic', fontFamily: T.serif }}>Você ainda não tem notas para compartilhar.</div>}
+              {minhasNotas.length === 0
+                ? <div style={{ fontSize: 12, color: T.muted, fontStyle: 'italic', fontFamily: T.serif, padding: '4px 2px' }}>Você ainda não tem notas para compartilhar. Escreva uma nota num livro e ela aparece aqui.</div>
+                : <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginBottom: 2 }}>Toque numa nota sua para publicá-la no mural:</div>}
               {minhasNotas.slice(0, 12).map((n, i) => (
                 <div key={i} onClick={() => compartilharNota(n)} style={{ cursor: 'pointer', background: T.cream, border: `1px dashed ${T.hairline}`, borderRadius: 10, padding: '10px 12px' }}>
-                  <div style={{ fontFamily: T.serif, fontSize: 13, lineHeight: 1.35, color: T.ink }}>{(n.text || '').slice(0, 90)}{(n.text || '').length > 90 ? '…' : ''}</div>
-                  {n.book && <div style={{ fontSize: 10, color: T.muted, marginTop: 4 }}>{n.book}</div>}
+                  <div style={{ fontFamily: T.serif, fontSize: 13, lineHeight: 1.35, color: T.ink, overflowWrap: 'anywhere' }}>{(n.text || '').slice(0, 90)}{(n.text || '').length > 90 ? '…' : ''}</div>
+                  {n.book && <div style={{ fontSize: 10, color: T.muted, marginTop: 4 }}>— {n.book}</div>}
                 </div>
               ))}
             </div>
