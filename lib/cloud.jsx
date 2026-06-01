@@ -119,12 +119,12 @@
       if (typeof window.__rerender === 'function') window.__rerender();
     },
     // entrar como convidado(a): conta anônima com um nome de exibição (sem e-mail)
+    // (não sincroniza aqui para não disparar re-render no meio do fluxo de ingresso;
+    //  quem chama cuida de atualizar a tela depois)
     async signInGuest(name) {
-      const r = await sb.auth.signInAnonymously({
+      return sb.auth.signInAnonymously({
         options: { data: { name: String(name || '').trim() || 'Convidado(a)' } },
       });
-      if (!r.error) await syncOnLogin();
-      return r;
     },
     schedulePush,
     syncOnLogin,

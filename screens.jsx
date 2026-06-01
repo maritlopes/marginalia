@@ -1771,25 +1771,26 @@ function ScreenGruposCloud({ onNav = () => {} }) {
   const pendingInvite = (typeof window !== 'undefined') && !!window.__pendingJoin;
   const entrarConvidado = async () => {
     if (!guestName.trim()) { setMsg('Digite um nome para entrar.'); return; }
+    const jcode = window.__pendingJoin || (code && code.trim()) || null;
     setBusy(true); setMsg(null);
     const r = await cloud.signInGuest(guestName);
     if (r.error) { setBusy(false); setMsg('Não consegui entrar: ' + r.error.message); return; }
-    const jcode = window.__pendingJoin;
+    window.__pendingJoin = null;
     if (jcode) {
-      window.__pendingJoin = null;
       const jr = await cloud.groups.join(jcode, guestName);
-      setBusy(false);
       if (jr && !jr.error && jr.data) {
         await refresh();
+        setBusy(false);
         if (window.__openGrupo) window.__openGrupo(jr.data);
         return;
       }
-      setMsg('Entrei, mas não achei o círculo do convite. Use o código em "Entrar com um código".');
       await refresh();
+      setBusy(false);
+      setMsg('Entrei como ' + guestName + ', mas o código do convite não foi encontrado.');
       return;
     }
-    setBusy(false);
     await refresh();
+    setBusy(false);
   };
 
   const inputStyle = { flex: 1, padding: '11px 12px', border: `1px solid ${T.hairline}`, borderRadius: 10, background: T.cream, color: T.ink, fontFamily: T.sans, fontSize: 14, outline: 'none' };
