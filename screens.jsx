@@ -1678,12 +1678,21 @@ function ScreenGruposCloud({ onNav = () => {} }) {
   const [code, setCode] = React.useState('');
   const [busy, setBusy] = React.useState(false);
   const [msg, setMsg] = React.useState(null);
+  const [memberCounts, setMemberCounts] = React.useState({});
 
   const refresh = async () => {
     if (!cloud || !cloud.available) { setLoading(false); return; }
     const u = await cloud.currentUser();
     setUser(u || null);
-    if (u) setGroups(await cloud.groups.list());
+    if (u) {
+      const gs = await cloud.groups.list();
+      setGroups(gs);
+      const counts = {};
+      for (const g of gs) {
+        try { counts[g.id] = (await cloud.groups.members(g.id)).length; } catch { counts[g.id] = null; }
+      }
+      setMemberCounts(counts);
+    }
     setLoading(false);
   };
   React.useEffect(() => { refresh(); }, []);
@@ -1759,7 +1768,14 @@ function ScreenGruposCloud({ onNav = () => {} }) {
                 background: T.cream, borderRadius: 14, padding: '16px 18px',
                 border: `1px solid ${T.hairline}`, cursor: 'pointer',
               }}>
-                <div style={{ fontFamily: T.serif, fontSize: 18, fontWeight: 500, lineHeight: 1.15 }}>{g.name}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+                  <div style={{ fontFamily: T.serif, fontSize: 18, fontWeight: 500, lineHeight: 1.15 }}>{g.name}</div>
+                  {memberCounts[g.id] != null && (
+                    <div style={{ fontSize: 11, color: T.terra, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      {memberCounts[g.id]} {memberCounts[g.id] === 1 ? 'membro' : 'membros'}
+                    </div>
+                  )}
+                </div>
                 <div style={{ fontSize: 11, color: T.muted, marginTop: 4, fontFamily: T.mono, letterSpacing: 0.3 }}>
                   convite: {g.invite_code}
                 </div>
@@ -1865,7 +1881,10 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
         </div>
 
         {/* membros */}
-        <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 10 }}>Membros · {members.length}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, fontWeight: 600 }}>Membros · {members.length}</div>
+          <button onClick={load} style={{ background: 'transparent', border: 0, color: T.terra, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>↻ atualizar</button>
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 22 }}>
           {members.map((m) => (
             <div key={m.user_id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
