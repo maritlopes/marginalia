@@ -65,6 +65,8 @@ function TabBar({ active = 'home', dark = false, onClick = () => {} }) {
 // Avatar do usuário logado — iniciais do nome (convidado) ou do e-mail; ícone neutro se deslogado
 function UserAvatar({ size = 36 }) {
   const [ini, setIni] = React.useState(null);
+  // re-lê quando o estado de login/sincronização muda (corrige avatar preso no e-mail)
+  const tick = (typeof window !== 'undefined' && window.__cloudStatus) || '';
   React.useEffect(() => {
     let alive = true;
     const c = window.MGCloud;
@@ -79,7 +81,7 @@ function UserAvatar({ size = 36 }) {
       }).catch(() => {});
     }
     return () => { alive = false; };
-  }, []);
+  }, [tick]);
   return (
     <div title="Seu perfil" style={{
       width: size, height: size, borderRadius: '50%', background: T.ink, color: T.cream,
