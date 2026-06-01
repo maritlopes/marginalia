@@ -170,6 +170,19 @@
     },
   };
 
+  // ─── Ecos (IA) ──────────────────────────────────────────────
+  // chama a função 'ecos' no Supabase, que pede ao Gemini as ressonâncias do livro
+  window.MGCloud.gerarEcos = async function (title, author) {
+    try {
+      const { data, error } = await sb.functions.invoke('ecos', { body: { title, author } });
+      if (error) return { error };
+      if (data && data.error) return { error: { message: data.error } };
+      return { ecos: (data && data.ecos) || [] };
+    } catch (e) {
+      return { error: { message: String(e) } };
+    }
+  };
+
   // sempre que o app salva localmente, agenda um envio à nuvem (se logada)
   window.__onLocalSave = schedulePush;
 

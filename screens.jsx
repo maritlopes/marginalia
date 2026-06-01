@@ -25,8 +25,8 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
     { n: 'VII', title: 'A cidadania do mundo', pages: '263–304', done: false },
   ];
   const chapters = isDemo ? demoChapters : [];
-  // abas: 'sobre' e 'notas' sempre; 'capítulos'/'pontes' só no livro de exemplo
-  const tabs = ['sobre', ...(chapters.length ? ['capítulos'] : []), 'notas', ...(isDemo ? ['pontes'] : [])];
+  // abas: 'sobre', 'notas' e 'ecos' sempre; 'capítulos' só no livro de exemplo
+  const tabs = ['sobre', ...(chapters.length ? ['capítulos'] : []), 'notas', 'ecos'];
   const outrosLivros = (window.BOOKS || []).filter(x => x.id !== b.id);
 
   return (
@@ -253,30 +253,7 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
           )
         )}
 
-        {tab === 'pontes' && (
-          <>
-            <div style={{
-              padding: '14px 16px', background: T.ink, color: T.cream, borderRadius: 12,
-              marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10,
-            }}>
-              <Icon name="sparkle" size={18} color={T.ochre}/>
-              <div style={{ flex: 1, fontSize: 12, lineHeight: 1.4 }}>
-                <span style={{ color: T.ochre, fontWeight: 600, letterSpacing: 0.4, textTransform: 'uppercase', fontSize: 10 }}>
-                  Pontes deste livro
-                </span>
-                <div style={{ marginTop: 2 }}>{PONTES.length} ecos — filosofia, música, arte, cinema, história.</div>
-              </div>
-              <button onClick={() => onNav('pontes')} style={{
-                background: T.terra, color: T.cream, border: 0, borderRadius: 999,
-                padding: '7px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                fontFamily: T.sans, letterSpacing: 0.3,
-              }}>Abrir</button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {PONTES.slice(0, 4).map(p => <PonteCard key={p.id} p={p}/>)}
-            </div>
-          </>
-        )}
+        {tab === 'ecos' && <EcosPanel book={b} isDemo={isDemo} onNav={onNav}/>}
       </div>
     </div>
   );
@@ -387,6 +364,80 @@ function PlanoLeitura({ book }) {
         </div>
       </div>
     </>
+  );
+}
+
+// EcosPanel — ressonâncias do livro. No exemplo, mostra a curadoria (PONTES).
+// Nos livros reais, gera com IA (função 'ecos' no Supabase) e guarda no livro.
+function EcosPanel({ book, isDemo, onNav = () => {} }) {
+  const b = book || {};
+  const seed = isDemo ? (window.PONTES || []) : (b.ecos || []);
+  const [ecos, setEcos] = React.useState(seed);
+  const [busy, setBusy] = React.useState(false);
+  const [err, setErr] = React.useState(null);
+
+  const gerar = async () => {
+    const cloud = window.MGCloud;
+    if (!cloud || !cloud.available || !cloud.gerarEcos) {
+      setErr('A geração de ecos precisa da nuvem. Tente mais tarde.'); return;
+    }
+    const u = await cloud.currentUser();
+    if (!u) { setErr('Para gerar ecos, entre na sua conta em Biblioteca → Sincronização.'); return; }
+    setBusy(true); setErr(null);
+    const r = await cloud.gerarEcos(b.title, b.author);
+    setBusy(false);
+    if (r.error) { setErr('Não consegui gerar agora. Tente novamente em instantes.'); return; }
+    const novos = r.ecos || [];
+    if (!novos.length) { setErr('Nenhum eco veio desta vez. Tente novamente.'); return; }
+    setEcos(novos);
+    if (typeof MG !== 'undefined' && MG.updateBook) MG.updateBook(b.id, { ecos: novos });
+  };
+
+  // exemplo (Meditações): curadoria fixa
+  if (isDemo) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {ecos.slice(0, 6).map((p, i) => <PonteCard key={p.id || i} p={p}/>)}
+      </div>
+    );
+  }
+
+  // livro real, ainda sem ecos → convite para gerar
+  if (!ecos.length) {
+    return (
+      <div style={{ textAlign: 'center', padding: '28px 16px' }}>
+        <Icon name="sparkle" size={26} color={T.ochre}/>
+        <div style={{ fontFamily: T.serif, fontSize: 15, lineHeight: 1.5, color: T.brown, margin: '12px 0 18px' }}>
+          Descubra os <em>ecos</em> de <strong>{b.title}</strong> — outros livros, filmes, música,
+          arte e história que ressoam com ele.
+        </div>
+        <button onClick={gerar} disabled={busy} style={{
+          background: T.ink, color: T.cream, border: 0, borderRadius: 999,
+          padding: '12px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+          fontFamily: T.sans, letterSpacing: 0.3, opacity: busy ? 0.7 : 1,
+        }}>{busy ? 'Buscando ressonâncias…' : '✨ Gerar ecos'}</button>
+        {err && <div style={{ marginTop: 14, fontSize: 12, color: '#8E3E2A', lineHeight: 1.4 }}>{err}</div>}
+      </div>
+    );
+  }
+
+  // livro real com ecos
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ fontSize: 11, color: T.muted, fontStyle: 'italic', fontFamily: T.serif }}>
+          {ecos.length} ecos deste livro
+        </div>
+        <button onClick={gerar} disabled={busy} style={{
+          background: 'transparent', border: 0, color: T.terra, fontFamily: T.sans,
+          fontSize: 12, fontWeight: 600, cursor: 'pointer',
+        }}>{busy ? '…' : '↻ regenerar'}</button>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {ecos.map((p, i) => <PonteCard key={i} p={p}/>)}
+      </div>
+      {err && <div style={{ marginTop: 12, fontSize: 12, color: '#8E3E2A' }}>{err}</div>}
+    </div>
   );
 }
 
