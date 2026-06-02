@@ -2774,14 +2774,14 @@ function ChallengeCard({ challenge: c, finished }) {
         {c.title}
       </div>
       {c.description && (
-        <div style={{ fontFamily: T.serif, fontSize: 12.5, fontStyle: 'italic', color: T.brown, lineHeight: 1.4, marginBottom: c.sharedChallengeId ? 6 : 12 }}>
+        <div style={{ fontFamily: T.serif, fontSize: 12.5, fontStyle: 'italic', color: T.brown, lineHeight: 1.4, marginBottom: c.sharedGroupCode ? 6 : 12 }}>
           {c.description}
         </div>
       )}
-      {c.sharedChallengeId && (
+      {c.sharedGroupCode && (
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 9.5,
                       color: t.tag, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 12 }}>
-          <Icon name="sparkle" size={12} color={t.tag}/> no círculo{c.sharedGroupName ? ' · ' + c.sharedGroupName : ''}
+          <Icon name="sparkle" size={12} color={t.tag}/> disponibilizado{c.sharedGroupName ? ' · ' + c.sharedGroupName : ''}
         </div>
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
@@ -2851,31 +2851,17 @@ function ChallengeEditorSheet({ challenge = null, onClose = () => {} }) {
   const [description, setDescription] = React.useState(challenge?.description || '');
   const [error, setError] = React.useState(null);
 
-  // compartilhar com o círculo (adesão): o desafio segue pessoal E nasce no grupo
+  // disponibilizar: cria um CÍRCULO NOVO (com o nome do desafio) — segue pessoal E abre roda
   const [shareBusy, setShareBusy] = React.useState(false);
   const [shareMsg, setShareMsg] = React.useState(null);
-  const [groups, setGroups] = React.useState(null); // null = ainda não carregado / sem nuvem
-  const [shareGroupId, setShareGroupId] = React.useState(null);
   const [shared, setShared] = React.useState(
-    challenge?.sharedChallengeId ? { groupName: challenge?.sharedGroupName } : null
+    challenge?.sharedGroupCode
+      ? { id: challenge.sharedGroupId, name: challenge.sharedGroupName, invite_code: challenge.sharedGroupCode }
+      : null
   );
 
   const types = window.CHALLENGE_TYPES || [];
   const periods = window.CHALLENGE_PERIODS || [];
-
-  // carrega os círculos da pessoa (para oferecer onde disponibilizar)
-  React.useEffect(() => {
-    if (!isEdit) return;
-    const cloud = (typeof window !== 'undefined') ? window.MGCloud : null;
-    if (!cloud || !cloud.available) return;
-    (async () => {
-      const u = await cloud.currentUser();
-      if (!u) return;
-      const gs = await cloud.groups.list();
-      setGroups(gs || []);
-      if (gs && gs.length) setShareGroupId(gs[0].id);
-    })();
-  }, []);
 
   const shareToCircle = async () => {
     setShareMsg(null);
@@ -2883,32 +2869,35 @@ function ChallengeEditorSheet({ challenge = null, onClose = () => {} }) {
     if (!cloud || !cloud.available) { setShareMsg('A sincronização na nuvem não está disponível agora.'); return; }
     const user = await cloud.currentUser();
     if (!user) { setShareMsg('Entre na sua conta em Biblioteca → Sincronização para disponibilizar o desafio.'); return; }
+    const nome = (title.trim() || challenge.title || 'Círculo de leitura');
     setShareBusy(true);
-    const gs = groups || await cloud.groups.list();
-    if (!gs || gs.length === 0) {
-      setShareBusy(false); setGroups([]);
-      setShareMsg('Você ainda não tem um círculo. Crie um na aba Círculos e volte aqui.');
-      return;
-    }
-    const g = gs.find(x => x.id === shareGroupId) || gs[0];
-    // monta a descrição do desafio de grupo: regras + critério do filtro pessoal
+    // 1) cria um CÍRCULO NOVO com o nome do desafio
+    const cg = await cloud.groups.create(nome);
+    if (cg && cg.error) { setShareBusy(false); setShareMsg('Não consegui criar o círculo: ' + (cg.error.message || 'erro')); return; }
+    const grupo = (cg && cg.data) ? cg.data : null;
+    if (!grupo || !grupo.id) { setShareBusy(false); setShareMsg('Não consegui criar o círculo agora. Tente de novo.'); return; }
+    // 2) cria o desafio dentro do círculo novo (tema aberto: cada um traz os seus)
     let desc = (description || '').trim();
     const crit = filterTheme ? ('Tema: ' + filterTheme.trim())
                : filterAuthor ? ('Autor: ' + filterAuthor.trim()) : '';
     if (crit) desc = desc ? (desc + ' · ' + crit) : crit;
     const tgt = (type === 'pages' || type === 'free') ? 6 : (parseInt(target) || 6);
-    const r = await cloud.groups.createChallenge(g.id, {
-      title: (title.trim() || challenge.title),
-      kind: 'theme',     // tema aberto: cada membro adere e traz os próprios livros
-      type: 'count',
-      description: desc || null,
-      target: tgt,
+    const r = await cloud.groups.createChallenge(grupo.id, {
+      title: nome, kind: 'theme', type: 'count', description: desc || null, target: tgt,
     });
     setShareBusy(false);
-    if (r && r.error) { setShareMsg('Não consegui disponibilizar: ' + (r.error.message || 'erro')); return; }
-    const newId = (r && r.data && r.data.id) || (r && r.id) || null;
-    MG.updateChallenge(challenge.id, { sharedGroupId: g.id, sharedGroupName: g.name, sharedChallengeId: newId });
-    setShared({ groupName: g.name });
+    if (r && r.error) { setShareMsg('Círculo criado, mas o desafio não entrou: ' + (r.error.message || 'erro')); }
+    const chId = (r && r.data && r.data.id) || null;
+    // 3) marca a meta pessoal como disponibilizada (guarda o círculo p/ reabrir)
+    MG.updateChallenge(challenge.id, {
+      sharedGroupId: grupo.id, sharedGroupName: grupo.name,
+      sharedGroupCode: grupo.invite_code, sharedChallengeId: chId,
+    });
+    setShared({ id: grupo.id, name: grupo.name, invite_code: grupo.invite_code });
+  };
+
+  const abrirCirculo = () => {
+    if (shared && typeof window.__openGrupo === 'function') { onClose(); window.__openGrupo(shared); }
   };
 
   const handleSave = () => {
@@ -3101,44 +3090,35 @@ function ChallengeEditorSheet({ challenge = null, onClose = () => {} }) {
         {/* disponibilizar para o círculo — segue pessoal E entra no grupo */}
         {isEdit && (
           <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${T.hairline}` }}>
-            <FieldLabel>Compartilhar com o círculo</FieldLabel>
+            <FieldLabel>Disponibilizar para o círculo</FieldLabel>
             {shared ? (
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '11px 13px',
-                            background: '#E5E5D2', border: `1px solid ${T.hairline}`, borderRadius: 10,
-                            fontSize: 12.5, color: T.brown, fontFamily: T.serif, lineHeight: 1.45 }}>
-                <Icon name="sparkle" size={15} color={T.olive}/>
-                <span>Disponibilizado{shared.groupName ? ' em ' + shared.groupName : ''}. Os membros podem aderir e trazer os próprios livros rumo à meta — e ele continua sendo seu desafio pessoal.</span>
-              </div>
-            ) : groups && groups.length === 0 ? (
-              <div style={{ fontSize: 12, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.45 }}>
-                Você ainda não tem um círculo. Crie um na aba <strong>Círculos</strong> e volte aqui para disponibilizar este desafio.
-              </div>
+              <>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '11px 13px',
+                              background: '#E5E5D2', border: `1px solid ${T.hairline}`, borderRadius: 10,
+                              fontSize: 12.5, color: T.brown, fontFamily: T.serif, lineHeight: 1.45, marginBottom: 10 }}>
+                  <Icon name="sparkle" size={15} color={T.olive}/>
+                  <span>Disponibilizado: virou o círculo <strong>{shared.name}</strong>. Ele aparece na aba <strong>Grupos</strong> — convide amigos por lá. Continua sendo seu desafio pessoal.</span>
+                </div>
+                <button onClick={abrirCirculo} style={{
+                  width: '100%', padding: '11px', borderRadius: 10,
+                  background: 'transparent', color: T.ink, border: `1px solid ${T.hairline}`, cursor: 'pointer',
+                  fontFamily: T.sans, fontSize: 13, fontWeight: 600,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                }}>Abrir o círculo →</button>
+              </>
             ) : (
               <>
                 <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, lineHeight: 1.45, marginBottom: 10 }}>
-                  Ele continua seu <em>e</em> nasce no círculo como <strong>tema aberto</strong>:
-                  cada membro adere e traz os próprios livros rumo à meta.
+                  Cria um <strong>círculo novo</strong> com o nome desta meta. Ele aparece na aba <strong>Grupos</strong>,
+                  os amigos entram e cada um traz os próprios livros rumo à meta — e ela continua sendo seu desafio pessoal.
                 </div>
-                {groups && groups.length > 1 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-                    {groups.map(g => (
-                      <button key={g.id} onClick={() => setShareGroupId(g.id)} style={{
-                        padding: '7px 12px', borderRadius: 999,
-                        background: shareGroupId === g.id ? T.ink : 'transparent',
-                        color: shareGroupId === g.id ? T.cream : T.brown,
-                        border: `1px solid ${shareGroupId === g.id ? T.ink : T.hairline}`,
-                        fontFamily: T.sans, fontSize: 12, fontWeight: 500, cursor: 'pointer',
-                      }}>{g.name}</button>
-                    ))}
-                  </div>
-                )}
                 <button onClick={shareToCircle} disabled={shareBusy} style={{
                   width: '100%', padding: '12px', borderRadius: 10,
                   background: T.olive, color: T.cream, border: 0, cursor: shareBusy ? 'wait' : 'pointer',
                   fontFamily: T.sans, fontSize: 13, fontWeight: 600, letterSpacing: 0.3,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: shareBusy ? 0.6 : 1,
                 }}>
-                  <Icon name="sparkle" size={15} color={T.cream}/> {shareBusy ? 'Disponibilizando…' : 'Disponibilizar para o círculo'}
+                  <Icon name="sparkle" size={15} color={T.cream}/> {shareBusy ? 'Criando o círculo…' : 'Disponibilizar para o círculo'}
                 </button>
               </>
             )}
