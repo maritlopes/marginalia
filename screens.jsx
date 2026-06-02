@@ -1952,8 +1952,12 @@ function ScreenGruposCloud({ onNav = () => {} }) {
                 autoCapitalize="words" style={inputStyle}/>
               <button onClick={entrarConvidado} disabled={busy} style={btnDark}>{busy ? '…' : 'Entrar'}</button>
             </div>
-            <div style={{ fontSize: 11, color: T.muted, marginTop: 8, fontFamily: T.serif, fontStyle: 'italic' }}>
-              Sem e-mail, sem senha — só um nome.
+            <div style={{ marginTop: 10, padding: '9px 11px', background: '#F6EFE0',
+                          border: `1px solid ${T.hairline}`, borderRadius: 8, fontSize: 11,
+                          color: T.brown, fontFamily: T.serif, lineHeight: 1.45 }}>
+              ⚠️ Sem e-mail, sem senha — só um nome. É uma <strong>conta temporária</strong>,
+              que vive só neste aparelho: se você limpar o navegador ou trocar de celular,
+              os livros e anotações se perdem. Para guardar de verdade, prefira <strong>entrar com e-mail</strong> abaixo.
             </div>
           </div>
           <div style={{ textAlign: 'center', margin: '14px 0 0' }}>
