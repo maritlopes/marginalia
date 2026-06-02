@@ -1,5 +1,10 @@
-// lib/sources.jsx — fontes externas (Open Library + Wikipedia)
-// Tudo é client-side, sem API keys. Cache leve em memória + sessionStorage.
+// lib/sources.jsx — fontes externas (Google Books + Open Library + Wikipedia)
+// Cache leve em memória + sessionStorage.
+
+// Chave da API do Google Books (restrita por referrer ao domínio do app — pode
+// ficar no código, igual à chave pública do Supabase). Vazia = usa sem chave
+// (cota global compartilhada, sujeita a 429). Cole a chave entre as aspas:
+const GOOGLE_BOOKS_KEY = '';
 
 const CACHE = {};
 
@@ -67,7 +72,8 @@ const Sources = {
     if (cached) return cached;
     let results = [];
     try {
-      const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=${limit}&printType=books`;
+      let url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=${limit}&printType=books&country=BR`;
+      if (GOOGLE_BOOKS_KEY) url += '&key=' + GOOGLE_BOOKS_KEY;
       const res = await fetch(url);
       const data = await res.json();
       results = (data.items || []).map(it => {
