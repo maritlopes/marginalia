@@ -2763,7 +2763,7 @@ function ChallengeCard({ challenge: c, finished }) {
           padding: '4px 9px', borderRadius: 999, background: t.tag, color: T.cream,
         }}>{periodLabel}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {c.sharedGroupCode && (
+          {c.sharedGroupId && (
             <div title={'Disponibilizado' + (c.sharedGroupName ? ' · ' + c.sharedGroupName : '')} style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
               padding: '3px 8px', borderRadius: 999, background: T.cream,
@@ -2784,11 +2784,11 @@ function ChallengeCard({ challenge: c, finished }) {
         {c.title}
       </div>
       {c.description && (
-        <div style={{ fontFamily: T.serif, fontSize: 12.5, fontStyle: 'italic', color: T.brown, lineHeight: 1.4, marginBottom: c.sharedGroupCode ? 6 : 12 }}>
+        <div style={{ fontFamily: T.serif, fontSize: 12.5, fontStyle: 'italic', color: T.brown, lineHeight: 1.4, marginBottom: c.sharedGroupId ? 6 : 12 }}>
           {c.description}
         </div>
       )}
-      {c.sharedGroupCode && (
+      {c.sharedGroupId && (
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 9.5,
                       color: t.tag, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 12 }}>
           <Icon name="sparkle" size={12} color={t.tag}/> círculo · {c.sharedGroupName || 'criado'}
@@ -2865,7 +2865,7 @@ function ChallengeEditorSheet({ challenge = null, onClose = () => {} }) {
   const [shareBusy, setShareBusy] = React.useState(false);
   const [shareMsg, setShareMsg] = React.useState(null);
   const [shared, setShared] = React.useState(
-    challenge?.sharedGroupCode
+    challenge?.sharedGroupId
       ? { id: challenge.sharedGroupId, name: challenge.sharedGroupName, invite_code: challenge.sharedGroupCode }
       : null
   );
@@ -2895,19 +2895,29 @@ function ChallengeEditorSheet({ challenge = null, onClose = () => {} }) {
     const r = await cloud.groups.createChallenge(grupo.id, {
       title: nome, kind: 'theme', type: 'count', description: desc || null, target: tgt,
     });
-    setShareBusy(false);
     if (r && r.error) { setShareMsg('Círculo criado, mas o desafio não entrou: ' + (r.error.message || 'erro')); }
     const chId = (r && r.data && r.data.id) || null;
+    // busca o grupo COMPLETO (garante o código de convite, que o create pode não devolver)
+    let full = grupo;
+    try { const all = await cloud.groups.list(); const f = (all || []).find(g => g.id === grupo.id); if (f) full = f; } catch (e) { /* ok */ }
+    setShareBusy(false);
     // 3) marca a meta pessoal como disponibilizada (guarda o círculo p/ reabrir)
     MG.updateChallenge(challenge.id, {
-      sharedGroupId: grupo.id, sharedGroupName: grupo.name,
-      sharedGroupCode: grupo.invite_code, sharedChallengeId: chId,
+      sharedGroupId: full.id, sharedGroupName: full.name,
+      sharedGroupCode: full.invite_code || null, sharedChallengeId: chId,
     });
-    setShared({ id: grupo.id, name: grupo.name, invite_code: grupo.invite_code });
+    setShared({ id: full.id, name: full.name, invite_code: full.invite_code || null });
   };
 
-  const abrirCirculo = () => {
-    if (shared && typeof window.__openGrupo === 'function') { onClose(); window.__openGrupo(shared); }
+  const abrirCirculo = async () => {
+    if (!shared || typeof window.__openGrupo !== 'function') return;
+    let g = shared;
+    const cloud = (typeof window !== 'undefined') ? window.MGCloud : null;
+    if (cloud && cloud.available && shared.id) {
+      try { const all = await cloud.groups.list(); const f = (all || []).find(x => x.id === shared.id); if (f) g = f; } catch (e) { /* ok */ }
+    }
+    onClose();
+    window.__openGrupo(g);
   };
 
   const handleSave = () => {
