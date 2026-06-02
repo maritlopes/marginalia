@@ -2762,13 +2762,23 @@ function ChallengeCard({ challenge: c, finished }) {
           fontSize: 9, letterSpacing: 1.4, textTransform: 'uppercase', fontWeight: 700,
           padding: '4px 9px', borderRadius: 999, background: t.tag, color: T.cream,
         }}>{periodLabel}</div>
-        {finished && (
-          <div style={{
-            padding: '3px 8px', borderRadius: 999,
-            background: T.olive, color: T.cream,
-            fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: 700,
-          }}>✓ {progress.pct}%</div>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {c.sharedGroupCode && (
+            <div title={'Disponibilizado' + (c.sharedGroupName ? ' · ' + c.sharedGroupName : '')} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              padding: '3px 8px', borderRadius: 999, background: T.cream,
+              border: `1px solid ${t.border}`, color: t.tag,
+              fontSize: 9, letterSpacing: 0.6, textTransform: 'uppercase', fontWeight: 700,
+            }}>🤝 disponibilizado</div>
+          )}
+          {finished && (
+            <div style={{
+              padding: '3px 8px', borderRadius: 999,
+              background: T.olive, color: T.cream,
+              fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: 700,
+            }}>✓ {progress.pct}%</div>
+          )}
+        </div>
       </div>
       <div style={{ fontFamily: T.serif, fontSize: 20, fontWeight: 500, lineHeight: 1.12, letterSpacing: -0.3, marginBottom: c.description ? 4 : 10 }}>
         {c.title}
@@ -2781,7 +2791,7 @@ function ChallengeCard({ challenge: c, finished }) {
       {c.sharedGroupCode && (
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 9.5,
                       color: t.tag, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 12 }}>
-          <Icon name="sparkle" size={12} color={t.tag}/> disponibilizado{c.sharedGroupName ? ' · ' + c.sharedGroupName : ''}
+          <Icon name="sparkle" size={12} color={t.tag}/> círculo · {c.sharedGroupName || 'criado'}
         </div>
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
