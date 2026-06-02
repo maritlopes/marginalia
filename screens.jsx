@@ -2321,9 +2321,10 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
                 <input type="number" value={cTarget} onChange={(e) => setCTarget(e.target.value)} style={{ width: 64, padding: '8px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, fontFamily: T.sans, fontSize: 13, outline: 'none' }}/>
               </div>
             )}
-            <input value={cDesc} onChange={(e) => setCDesc(e.target.value)}
-              placeholder={cKind === 'theme' ? 'Critério — ex.: ser ganhador do Nobel' : 'Descrição (opcional) — ex.: os títulos premiados'}
-              style={{ width: '100%', padding: '9px 10px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, marginBottom: 10, outline: 'none' }}/>
+            <div style={{ fontSize: 11, color: T.muted, fontWeight: 600, marginBottom: 6 }}>Descrição e regras</div>
+            <textarea value={cDesc} onChange={(e) => setCDesc(e.target.value)} rows={3}
+              placeholder={cKind === 'theme' ? 'Critério e regras — ex.: ser ganhador do Nobel; vale qualquer edição; conta só o que terminar.' : 'Descrição e regras (opcional) — ex.: os títulos premiados; leiam na ordem que quiserem.'}
+              style={{ width: '100%', padding: '9px 10px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, marginBottom: 10, outline: 'none', resize: 'vertical', lineHeight: 1.45 }}/>
             <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginBottom: 10 }}>
               {cKind === 'list' ? 'Depois de criar, você lança os livros (título, autor, ano…) e cada um marca os que leu.' : 'Cada membro adiciona os próprios livros que leu (seguindo o critério) rumo à meta.'}
             </div>
@@ -2773,8 +2774,14 @@ function ChallengeCard({ challenge: c, finished }) {
         {c.title}
       </div>
       {c.description && (
-        <div style={{ fontFamily: T.serif, fontSize: 12.5, fontStyle: 'italic', color: T.brown, lineHeight: 1.4, marginBottom: 12 }}>
+        <div style={{ fontFamily: T.serif, fontSize: 12.5, fontStyle: 'italic', color: T.brown, lineHeight: 1.4, marginBottom: c.sharedChallengeId ? 6 : 12 }}>
           {c.description}
+        </div>
+      )}
+      {c.sharedChallengeId && (
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 9.5,
+                      color: t.tag, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 12 }}>
+          <Icon name="sparkle" size={12} color={t.tag}/> no círculo{c.sharedGroupName ? ' · ' + c.sharedGroupName : ''}
         </div>
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
@@ -2844,8 +2851,65 @@ function ChallengeEditorSheet({ challenge = null, onClose = () => {} }) {
   const [description, setDescription] = React.useState(challenge?.description || '');
   const [error, setError] = React.useState(null);
 
+  // compartilhar com o círculo (adesão): o desafio segue pessoal E nasce no grupo
+  const [shareBusy, setShareBusy] = React.useState(false);
+  const [shareMsg, setShareMsg] = React.useState(null);
+  const [groups, setGroups] = React.useState(null); // null = ainda não carregado / sem nuvem
+  const [shareGroupId, setShareGroupId] = React.useState(null);
+  const [shared, setShared] = React.useState(
+    challenge?.sharedChallengeId ? { groupName: challenge?.sharedGroupName } : null
+  );
+
   const types = window.CHALLENGE_TYPES || [];
   const periods = window.CHALLENGE_PERIODS || [];
+
+  // carrega os círculos da pessoa (para oferecer onde disponibilizar)
+  React.useEffect(() => {
+    if (!isEdit) return;
+    const cloud = (typeof window !== 'undefined') ? window.MGCloud : null;
+    if (!cloud || !cloud.available) return;
+    (async () => {
+      const u = await cloud.currentUser();
+      if (!u) return;
+      const gs = await cloud.groups.list();
+      setGroups(gs || []);
+      if (gs && gs.length) setShareGroupId(gs[0].id);
+    })();
+  }, []);
+
+  const shareToCircle = async () => {
+    setShareMsg(null);
+    const cloud = (typeof window !== 'undefined') ? window.MGCloud : null;
+    if (!cloud || !cloud.available) { setShareMsg('A sincronização na nuvem não está disponível agora.'); return; }
+    const user = await cloud.currentUser();
+    if (!user) { setShareMsg('Entre na sua conta em Biblioteca → Sincronização para disponibilizar o desafio.'); return; }
+    setShareBusy(true);
+    const gs = groups || await cloud.groups.list();
+    if (!gs || gs.length === 0) {
+      setShareBusy(false); setGroups([]);
+      setShareMsg('Você ainda não tem um círculo. Crie um na aba Círculos e volte aqui.');
+      return;
+    }
+    const g = gs.find(x => x.id === shareGroupId) || gs[0];
+    // monta a descrição do desafio de grupo: regras + critério do filtro pessoal
+    let desc = (description || '').trim();
+    const crit = filterTheme ? ('Tema: ' + filterTheme.trim())
+               : filterAuthor ? ('Autor: ' + filterAuthor.trim()) : '';
+    if (crit) desc = desc ? (desc + ' · ' + crit) : crit;
+    const tgt = (type === 'pages' || type === 'free') ? 6 : (parseInt(target) || 6);
+    const r = await cloud.groups.createChallenge(g.id, {
+      title: (title.trim() || challenge.title),
+      kind: 'theme',     // tema aberto: cada membro adere e traz os próprios livros
+      type: 'count',
+      description: desc || null,
+      target: tgt,
+    });
+    setShareBusy(false);
+    if (r && r.error) { setShareMsg('Não consegui disponibilizar: ' + (r.error.message || 'erro')); return; }
+    const newId = (r && r.data && r.data.id) || (r && r.id) || null;
+    MG.updateChallenge(challenge.id, { sharedGroupId: g.id, sharedGroupName: g.name, sharedChallengeId: newId });
+    setShared({ groupName: g.name });
+  };
 
   const handleSave = () => {
     if (!title.trim()) { setError('Dê um nome à sua meta.'); return; }
@@ -2939,15 +3003,15 @@ function ChallengeEditorSheet({ challenge = null, onClose = () => {} }) {
             fontFamily: T.serif, fontSize: 14, outline: 'none', marginBottom: 14,
           }}/>
 
-        {/* descrição (opcional) */}
-        <FieldLabel>Descrição (opcional)</FieldLabel>
+        {/* descrição e regras (opcional) */}
+        <FieldLabel>Descrição e regras (opcional)</FieldLabel>
         <textarea value={description} onChange={e => setDescription(e.target.value)}
-          placeholder="Para que serve esta meta? Ex.: Reler os Nobel de Literatura que me marcaram."
-          rows={2}
+          placeholder={"Para que serve esta meta e como ela vale?\nEx.: Reler os Nobel que me marcaram. Vale relê-los; conta só o que terminar no ano."}
+          rows={4}
           style={{
             width: '100%', padding: '10px 12px', border: `1px solid ${T.hairline}`,
             borderRadius: 8, background: T.cream, color: T.ink, resize: 'vertical',
-            fontFamily: T.serif, fontSize: 13, outline: 'none', marginBottom: 14, lineHeight: 1.4,
+            fontFamily: T.serif, fontSize: 13, outline: 'none', marginBottom: 14, lineHeight: 1.45,
           }}/>
 
         {/* target — esconde para 'free' */}
@@ -3031,6 +3095,60 @@ function ChallengeEditorSheet({ challenge = null, onClose = () => {} }) {
           <div style={{ marginBottom: 12, padding: '8px 10px', background: '#F4D9D0',
                         borderRadius: 6, fontSize: 11, color: '#8E3E2A' }}>
             {error}
+          </div>
+        )}
+
+        {/* disponibilizar para o círculo — segue pessoal E entra no grupo */}
+        {isEdit && (
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${T.hairline}` }}>
+            <FieldLabel>Compartilhar com o círculo</FieldLabel>
+            {shared ? (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '11px 13px',
+                            background: '#E5E5D2', border: `1px solid ${T.hairline}`, borderRadius: 10,
+                            fontSize: 12.5, color: T.brown, fontFamily: T.serif, lineHeight: 1.45 }}>
+                <Icon name="sparkle" size={15} color={T.olive}/>
+                <span>Disponibilizado{shared.groupName ? ' em ' + shared.groupName : ''}. Os membros podem aderir e trazer os próprios livros rumo à meta — e ele continua sendo seu desafio pessoal.</span>
+              </div>
+            ) : groups && groups.length === 0 ? (
+              <div style={{ fontSize: 12, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.45 }}>
+                Você ainda não tem um círculo. Crie um na aba <strong>Círculos</strong> e volte aqui para disponibilizar este desafio.
+              </div>
+            ) : (
+              <>
+                <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, lineHeight: 1.45, marginBottom: 10 }}>
+                  Ele continua seu <em>e</em> nasce no círculo como <strong>tema aberto</strong>:
+                  cada membro adere e traz os próprios livros rumo à meta.
+                </div>
+                {groups && groups.length > 1 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                    {groups.map(g => (
+                      <button key={g.id} onClick={() => setShareGroupId(g.id)} style={{
+                        padding: '7px 12px', borderRadius: 999,
+                        background: shareGroupId === g.id ? T.ink : 'transparent',
+                        color: shareGroupId === g.id ? T.cream : T.brown,
+                        border: `1px solid ${shareGroupId === g.id ? T.ink : T.hairline}`,
+                        fontFamily: T.sans, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                      }}>{g.name}</button>
+                    ))}
+                  </div>
+                )}
+                <button onClick={shareToCircle} disabled={shareBusy} style={{
+                  width: '100%', padding: '12px', borderRadius: 10,
+                  background: T.olive, color: T.cream, border: 0, cursor: shareBusy ? 'wait' : 'pointer',
+                  fontFamily: T.sans, fontSize: 13, fontWeight: 600, letterSpacing: 0.3,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: shareBusy ? 0.6 : 1,
+                }}>
+                  <Icon name="sparkle" size={15} color={T.cream}/> {shareBusy ? 'Disponibilizando…' : 'Disponibilizar para o círculo'}
+                </button>
+              </>
+            )}
+            {shareMsg && (
+              <div style={{ marginTop: 10, padding: '8px 10px', background: '#F6EFE0',
+                            border: `1px solid ${T.hairline}`, borderRadius: 8, fontSize: 12,
+                            color: T.brown, fontFamily: T.serif, lineHeight: 1.4 }}>
+                {shareMsg}
+              </div>
+            )}
           </div>
         )}
 
@@ -4093,6 +4211,31 @@ function BookEditorSheet({ book = null, onClose = () => {} }) {
   const [uploadError, setUploadError] = React.useState(null);
   const fileRef = React.useRef(null);
 
+  // busca na internet (Open Library) — preenche capa/autor/ano/páginas
+  const [bq, setBq] = React.useState('');
+  const [bBusy, setBBusy] = React.useState(false);
+  const [bResults, setBResults] = React.useState(null); // null | [] | array
+  const [bErr, setBErr] = React.useState(null);
+
+  const searchOnline = async () => {
+    if (!bq.trim() || typeof Sources === 'undefined') return;
+    setBBusy(true); setBErr(null); setBResults(null);
+    try {
+      const list = await Sources.searchByTitle(bq.trim());
+      setBResults(list);
+    } catch (e) { setBErr(e.message || 'falha na busca'); }
+    finally { setBBusy(false); }
+  };
+  const applyResult = (r) => {
+    if (r.title) setTitle(r.title);
+    if (r.author && r.author !== 'Desconhecido') setAuthor(r.author);
+    if (r.year) setYear(String(r.year));
+    if (r.pages) setPages(String(r.pages));
+    if (r.publisher) setPublisher(r.publisher);
+    if (r.cover) setCover(r.cover);
+    setBResults(null); setBq('');
+  };
+
   const tones = [
     { id: 'terra', label: 'terra', bg: '#B0533A' },
     { id: 'olive', label: 'azeitona', bg: '#5E6B3E' },
@@ -4184,6 +4327,54 @@ function BookEditorSheet({ book = null, onClose = () => {} }) {
             padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', letterSpacing: 0.3,
           }}>Salvar</button>
         </div>
+
+        {/* busca na internet — só ao adicionar livro novo */}
+        {!isEdit && (
+          <div style={{ marginBottom: 18 }}>
+            <FieldLabel>Buscar na internet</FieldLabel>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input value={bq} onChange={e => setBq(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && searchOnline()}
+                placeholder="título e autor — ex.: Mefisto Klaus Mann"
+                style={{ flex: 1, padding: '10px 12px', border: `1px solid ${T.hairline}`,
+                         borderRadius: 10, background: T.cream, color: T.ink,
+                         fontFamily: T.sans, fontSize: 13, outline: 'none' }}/>
+              <button onClick={searchOnline} disabled={bBusy || !bq.trim()} style={{
+                background: T.terra, color: T.cream, border: 0, borderRadius: 10,
+                padding: '0 16px', fontSize: 12, fontWeight: 600, cursor: bBusy ? 'wait' : 'pointer',
+                letterSpacing: 0.3, opacity: (bBusy || !bq.trim()) ? 0.6 : 1,
+              }}>{bBusy ? '…' : 'Buscar'}</button>
+            </div>
+            <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 6, lineHeight: 1.4 }}>
+              Acha capa, autor e dados sozinho. Toque num resultado para preencher — depois é só ajustar e salvar.
+            </div>
+            {bErr && <div style={{ marginTop: 8, padding: '8px 10px', background: '#F4D9D0', borderRadius: 8, fontSize: 11, color: '#8E3E2A' }}>Erro: {bErr}</div>}
+            {bResults && bResults.length === 0 && (
+              <div style={{ marginTop: 8, fontSize: 12, color: T.muted, fontStyle: 'italic', fontFamily: T.serif }}>
+                Nada encontrado. Tente outras palavras ou preencha à mão abaixo.
+              </div>
+            )}
+            {bResults && bResults.length > 0 && (
+              <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {bResults.slice(0, 5).map((r, i) => (
+                  <div key={i} onClick={() => applyResult(r)} style={{
+                    display: 'flex', gap: 10, padding: 10, background: T.cream,
+                    borderRadius: 10, border: `1px solid ${T.hairline}`, cursor: 'pointer', alignItems: 'flex-start',
+                  }}>
+                    {r.cover
+                      ? <img src={r.cover} alt={r.title} style={{ width: 40, height: 60, objectFit: 'cover', borderRadius: 3, flexShrink: 0, boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }} onError={e => e.target.style.display = 'none'}/>
+                      : <div style={{ width: 40, height: 60, borderRadius: 3, background: T.bone, border: `1px solid ${T.hairline}`, flexShrink: 0 }}/>}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: T.serif, fontSize: 14, fontWeight: 500, lineHeight: 1.2 }}>{r.title}</div>
+                      <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 12, color: T.brown, marginTop: 2 }}>{r.author}{r.year ? ' · ' + r.year : ''}</div>
+                    </div>
+                    <Icon name="plus" size={16} color={T.terra}/>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* preview da capa */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 18 }}>
