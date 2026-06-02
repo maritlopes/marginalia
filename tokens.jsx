@@ -5,12 +5,12 @@ const T = {
   cream: '#F7F1E4',      // card bg
   paper: '#FBF6EA',      // inset panels
   parchment: '#E8DFC9',  // edges / dividers
-  // ink
+  // ink — escurecidos um pouco para mais contraste/legibilidade (mantendo o tom quente)
   ink: '#2A2620',
-  brown: '#6A5D4E',
-  muted: '#8A7E6B',
-  hairline: 'rgba(42,38,32,0.12)',
-  hairlineSoft: 'rgba(42,38,32,0.07)',
+  brown: '#5C4F3E',   // texto secundário (era #6A5D4E)
+  muted: '#6E6352',   // rótulos/legendas (era #8A7E6B — o que mais "lavava")
+  hairline: 'rgba(42,38,32,0.16)',     // divisórias um pouco mais definidas (era 0.12)
+  hairlineSoft: 'rgba(42,38,32,0.09)',
   // accents
   terra: '#B0533A',       // terracotta — primary
   terraDeep: '#8E3E2A',
