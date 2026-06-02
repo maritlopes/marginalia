@@ -4226,14 +4226,26 @@ function BookEditorSheet({ book = null, onClose = () => {} }) {
     } catch (e) { setBErr(e.message || 'falha na busca'); }
     finally { setBBusy(false); }
   };
-  const applyResult = (r) => {
+  const applyResult = async (r) => {
     if (r.title) setTitle(r.title);
     if (r.author && r.author !== 'Desconhecido') setAuthor(r.author);
-    if (r.year) setYear(String(r.year));
+    if (r.year) setYear(String(r.year).slice(0, 4));
     if (r.pages) setPages(String(r.pages));
     if (r.publisher) setPublisher(r.publisher);
     if (r.cover) setCover(r.cover);
     setBResults(null); setBq('');
+    // enriquece pela edição (ISBN) o que faltou — páginas/ano/editora/capa
+    if (r.isbn && typeof Sources !== 'undefined' && (!r.pages || !r.year || !r.publisher || !r.cover)) {
+      try {
+        const d = await Sources.lookupISBN(String(r.isbn).replace(/[^0-9X]/gi, ''));
+        if (d) {
+          if (!r.pages && d.pages) setPages(String(d.pages));
+          if (!r.year && d.year) { const m = String(d.year).match(/\d{4}/); if (m) setYear(m[0]); }
+          if (!r.publisher && d.publisher) setPublisher(d.publisher);
+          if (!r.cover && d.cover) setCover(d.cover);
+        }
+      } catch (e) { /* segue com o que já tem */ }
+    }
   };
 
   const tones = [
@@ -4356,7 +4368,7 @@ function BookEditorSheet({ book = null, onClose = () => {} }) {
             )}
             {bResults && bResults.length > 0 && (
               <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {bResults.slice(0, 5).map((r, i) => (
+                {bResults.slice(0, 8).map((r, i) => (
                   <div key={i} onClick={() => applyResult(r)} style={{
                     display: 'flex', gap: 10, padding: 10, background: T.cream,
                     borderRadius: 10, border: `1px solid ${T.hairline}`, cursor: 'pointer', alignItems: 'flex-start',
@@ -4366,7 +4378,8 @@ function BookEditorSheet({ book = null, onClose = () => {} }) {
                       : <div style={{ width: 40, height: 60, borderRadius: 3, background: T.bone, border: `1px solid ${T.hairline}`, flexShrink: 0 }}/>}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontFamily: T.serif, fontSize: 14, fontWeight: 500, lineHeight: 1.2 }}>{r.title}</div>
-                      <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 12, color: T.brown, marginTop: 2 }}>{r.author}{r.year ? ' · ' + r.year : ''}</div>
+                      <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 12, color: T.brown, marginTop: 2 }}>{r.author}</div>
+                      <div style={{ fontSize: 10, color: T.muted, fontFamily: T.mono, letterSpacing: 0.3, marginTop: 2 }}>{[r.year, r.pages && (r.pages + ' pág'), r.publisher].filter(Boolean).join(' · ')}</div>
                     </div>
                     <Icon name="plus" size={16} color={T.terra}/>
                   </div>

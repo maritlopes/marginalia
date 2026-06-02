@@ -58,29 +58,63 @@ const Sources = {
     }
   },
 
-  // Busca por título — útil quando não há ISBN
-  async searchByTitle(query, limit = 5) {
+  // Busca por título — usa Google Books (melhor cobertura PT, traz páginas e ano da
+  // edição), com Open Library como reserva. Útil quando não há ISBN.
+  async searchByTitle(query, limit = 8) {
     if (!query) return [];
-    const k = 'q:' + query;
+    const k = 'gq:' + query;
     const cached = _cacheGet(k);
     if (cached) return cached;
+    let results = [];
     try {
-      const res = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=${limit}`);
+      const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=${limit}&printType=books`;
+      const res = await fetch(url);
       const data = await res.json();
-      const results = (data.docs || []).map(d => ({
-        title: d.title,
-        author: (d.author_name || ['Desconhecido'])[0],
-        year: d.first_publish_year,
-        isbn: (d.isbn || [])[0] || null,
-        cover: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg` : null,
-        olKey: d.key,
-      }));
-      _cacheSet(k, results);
-      return results;
+      results = (data.items || []).map(it => {
+        const v = it.volumeInfo || {};
+        let cover = (v.imageLinks && (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail)) || null;
+        if (cover) cover = cover.replace(/^http:/, 'https:').replace(/&edge=curl/, '').replace(/zoom=\d/, 'zoom=2');
+        const ids = v.industryIdentifiers || [];
+        const isbnObj = ids.find(x => x.type === 'ISBN_13') || ids.find(x => x.type === 'ISBN_10') || ids[0];
+        return {
+          title: v.title + (v.subtitle ? ': ' + v.subtitle : ''),
+          author: (v.authors && v.authors[0]) || 'Desconhecido',
+          year: v.publishedDate ? String(v.publishedDate).slice(0, 4) : null,
+          pages: v.pageCount || null,
+          publisher: v.publisher || null,
+          cover,
+          isbn: isbnObj ? isbnObj.identifier : null,
+          subjects: v.categories || [],
+          lang: v.language || null,
+        };
+      }).filter(r => r.title);
+      // edições em português primeiro (a usuária lê em PT) — ordenação estável
+      results.sort((a, b) => (b.lang === 'pt' ? 1 : 0) - (a.lang === 'pt' ? 1 : 0));
     } catch (e) {
-      console.warn('[Marginália] busca por título falhou', query, e);
-      return [];
+      console.warn('[Marginália] Google Books falhou', query, e);
     }
+    // reserva: Open Library, se o Google não trouxe nada
+    if (!results.length) {
+      try { results = await this._searchOpenLibrary(query, limit); } catch { results = []; }
+    }
+    _cacheSet(k, results);
+    return results;
+  },
+
+  // reserva: busca por título no Open Library
+  async _searchOpenLibrary(query, limit = 8) {
+    const res = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=${limit}&fields=title,author_name,first_publish_year,isbn,cover_i,number_of_pages_median,publisher,key`);
+    const data = await res.json();
+    return (data.docs || []).map(d => ({
+      title: d.title,
+      author: (d.author_name || ['Desconhecido'])[0],
+      year: d.first_publish_year || null,
+      pages: d.number_of_pages_median || null,
+      publisher: (d.publisher || [])[0] || null,
+      isbn: (d.isbn || [])[0] || null,
+      cover: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg` : null,
+      olKey: d.key,
+    }));
   },
 
   // ─── WIKIPEDIA (autor) ──────────────────────────────────────
