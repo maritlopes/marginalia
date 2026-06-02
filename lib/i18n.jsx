@@ -47,6 +47,13 @@ const DICT = {
   cat_reedicao: { pt: 'Reedição', en: 'Reissue' },
   cat_citacao: { pt: 'Citação', en: 'Quote' },
   cat_resenha: { pt: 'Resenha', en: 'Review' },
+  cat_curiosidade: { pt: 'Curiosidade', en: 'Did you know' },
+  cat_conexao: { pt: 'Conexão', en: 'If you read…' },
+  cat_contexto: { pt: 'Contexto', en: 'Context' },
+  cat_traducao: { pt: 'Tradução', en: 'Translation' },
+  cat_tematica: { pt: 'Tema do mês', en: 'Theme of the month' },
+  cat_adaptacao: { pt: 'Adaptação', en: 'Adaptation' },
+  cat_debate: { pt: 'Debate', en: 'Debate' },
 
   // ─── days (mosaic) ───────────────────────────────────────────
   dia_seg: { pt: 'S', en: 'M' },

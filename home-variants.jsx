@@ -470,17 +470,27 @@ function HomeVariantA({ onNav = () => {} }) {
                     border: `1px solid ${T.hairline}`, cursor: 'pointer',
                     display: 'flex', gap: 12, alignItems: 'flex-start',
                   }}>
-                    <div style={{
-                      width: 40, textAlign: 'center', flexShrink: 0,
-                      paddingRight: 10, borderRight: `1px solid ${T.hairline}`,
-                    }}>
-                      <div style={{ fontSize: 8, letterSpacing: 1.2, textTransform: 'uppercase', color: T.muted, fontWeight: 600 }}>
-                        {c.date.split(' ')[1] || tt('mes_mai')}
-                      </div>
-                      <div style={{ fontFamily: T.serif, fontSize: 16, fontWeight: 500, lineHeight: 1, marginTop: 2 }}>
-                        {c.date.split(' ')[0]}
-                      </div>
-                    </div>
+                    {(() => {
+                      const dp = (c.date || '').trim().split(/\s+/);
+                      const hasMonth = dp.length >= 2;       // formato 'DD mmm'
+                      const top = hasMonth ? dp[1] : '';      // mês (ou vazio p/ datas livres)
+                      const big = hasMonth ? dp[0] : (c.date || ''); // dia OU rótulo livre ('1947', 'junho')
+                      return (
+                        <div style={{
+                          width: 40, textAlign: 'center', flexShrink: 0,
+                          paddingRight: 10, borderRight: `1px solid ${T.hairline}`,
+                        }}>
+                          {top && (
+                            <div style={{ fontSize: 8, letterSpacing: 1.2, textTransform: 'uppercase', color: T.muted, fontWeight: 600 }}>
+                              {top}
+                            </div>
+                          )}
+                          <div style={{ fontFamily: T.serif, fontSize: big.length > 4 ? 11 : 16, fontWeight: 500, lineHeight: 1.05, marginTop: top ? 2 : 0 }}>
+                            {big}
+                          </div>
+                        </div>
+                      );
+                    })()}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{
                         fontSize: 9, letterSpacing: 1.4, textTransform: 'uppercase',
