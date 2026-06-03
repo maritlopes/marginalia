@@ -6415,7 +6415,7 @@ if(typeof lucide!=='undefined')lucide.createIcons();
    ───────────────────────────────────────────────────────────── */
 (function(){
   if(typeof supabase==='undefined') return;
-  const SB=supabase.createClient('https://rpsiewnsvqpeadwaqsib.supabase.co','sb_publishable_QyDwy0ZCCRYzSFfTXCXQYQ_h3vEAL3I');
+  const SB=supabase.createClient('https://rpsiewnsvqpeadwaqsib.supabase.co','sb_publishable_QyDwy0ZCCRYzSFfTXCXQYQ_h3vEAL3I',{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:'marginalia-auth'}});
   const ADMIN_EMAIL='maritei2010@gmail.com';
   const CL={hist:'História',phi:'Filosofia',lit:'Literatura',art:'Arte',music:'Música'};
   const FCSS='width:100%;padding:9px 11px;border:1px solid var(--color-border);border-radius:8px;background:var(--color-surface-2);color:var(--color-text);font-family:var(--font-body);font-size:.9rem;margin-bottom:8px;box-sizing:border-box';
