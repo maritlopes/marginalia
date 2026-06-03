@@ -2768,7 +2768,7 @@ function ScreenMetas({ onNav = () => {} }) {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {(window.CHALLENGE_SUGESTOES || []).map((s, i) => (
-                <ChallengeSuggestion key={i} suggestion={s}/>
+                <ChallengeSuggestion key={i} suggestion={s} onAdopt={() => setShowSug(true)}/>
               ))}
             </div>
           </div>
@@ -2870,9 +2870,10 @@ function ChallengeCard({ challenge: c, finished }) {
   );
 }
 
-function ChallengeSuggestion({ suggestion: s }) {
+function ChallengeSuggestion({ suggestion: s, onAdopt = () => {} }) {
+  const [done, setDone] = React.useState(false);
   const adopt = () => {
-    if (typeof MG === 'undefined') return;
+    if (done || typeof MG === 'undefined') return;
     const win = window.periodWindow(s.period);
     MG.addChallenge({
       title: s.title_pt,
@@ -2884,16 +2885,19 @@ function ChallengeSuggestion({ suggestion: s }) {
       filter: s.filter || null,
       color: T.terra,
     });
+    setDone(true);
+    onAdopt();               // mantém as sugestões abertas para mostrar o feedback
   };
   return (
     <div onClick={adopt} style={{
-      padding: '12px 14px', background: 'transparent',
-      border: `1px dashed ${T.hairline}`, borderRadius: 10,
-      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '12px 14px', background: done ? '#E5E5D2' : 'transparent',
+      border: `1px ${done ? 'solid' : 'dashed'} ${done ? 'rgba(94,107,62,0.4)' : T.hairline}`, borderRadius: 10,
+      cursor: done ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      transition: 'background 200ms ease',
     }}>
       <div style={{ fontFamily: T.serif, fontSize: 13 }}>{s.title_pt}</div>
-      <div style={{ fontSize: 10, color: T.terra, fontWeight: 600, letterSpacing: 0.4, textTransform: 'uppercase' }}>
-        adotar →
+      <div style={{ fontSize: 10, color: done ? T.olive : T.terra, fontWeight: 700, letterSpacing: 0.4, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4 }}>
+        {done ? <><Icon name="target" size={12} color={T.olive}/> adotada</> : 'adotar →'}
       </div>
     </div>
   );
@@ -3575,16 +3579,21 @@ function ScreenFoco({ onNav = () => {} }) {
           </button>
           <BrandMark size={22}/>
         </div>
-        <div style={{ fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, marginBottom: 6, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Icon name="hourglass" size={13} color={T.terra}/> Sessão de leitura
+        <div style={{ fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, marginBottom: 6, fontWeight: 600 }}>
+          Sessão de leitura
         </div>
         <div style={{ fontFamily: T.serif, fontSize: 30, fontWeight: 400, letterSpacing: -0.6, lineHeight: 1.05 }}>
           Foco <span style={{ fontStyle: 'italic', color: T.terra }}>na página</span>
         </div>
       </div>
 
+      {/* ampulheta acima do cronômetro */}
+      <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8 }}>
+        <Icon name="hourglass" size={30} color={T.terra} strokeWidth={1.4}/>
+      </div>
+
       {/* livro como relógio — o "preenchimento" sobe conforme o tempo passa */}
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 20px' }}>
         <div style={{ position: 'relative', width: 180, height: 260 }}>
           {/* contorno do livro */}
           <div style={{
