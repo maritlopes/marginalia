@@ -3587,13 +3587,8 @@ function ScreenFoco({ onNav = () => {} }) {
         </div>
       </div>
 
-      {/* ampulheta acima do cronômetro */}
-      <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8 }}>
-        <Icon name="hourglass" size={30} color={T.terra} strokeWidth={1.4}/>
-      </div>
-
       {/* livro como relógio — o "preenchimento" sobe conforme o tempo passa */}
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
         <div style={{ position: 'relative', width: 180, height: 260 }}>
           {/* contorno do livro */}
           <div style={{
@@ -3626,6 +3621,9 @@ function ScreenFoco({ onNav = () => {} }) {
             position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center', pointerEvents: 'none',
           }}>
+            <div style={{ marginBottom: 8, opacity: 0.9, transition: 'color 1s' }}>
+              <Icon name="hourglass" size={22} color={pct > 50 ? T.cream : T.terra} strokeWidth={1.5}/>
+            </div>
             <div style={{
               fontFamily: T.serif, fontSize: 48, fontWeight: 500,
               color: pct > 50 ? T.cream : T.ink,
