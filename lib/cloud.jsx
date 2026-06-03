@@ -91,15 +91,19 @@
   }
 
   // registra/checa a aprovação no nível do app e guarda o status (porta única)
+  // FALHA-FECHADO: convidado/leitor só vira 'approved' quando o servidor confirma;
+  // na dúvida (erro/sem resposta) fica 'pending'. A admin (e-mail dela) é sempre
+  // 'approved' — nunca se tranca fora.
   async function checkAppApproval(user) {
+    const isAdmin = (user.email === ADMIN_EMAIL);
+    window.__isAppAdmin = isAdmin;
     try {
       const nm = (user.user_metadata && user.user_metadata.name) || (user.email || '').split('@')[0] || '';
       const { data, error } = await sb.rpc('register_app_member', { p_name: nm });
-      window.__isAppAdmin = (user.email === ADMIN_EMAIL);
-      window.__appStatus = error ? 'approved' : (data || 'pending'); // falha-aberto: erro nunca tranca
+      window.__appStatus = isAdmin ? 'approved'
+        : (!error && data === 'approved' ? 'approved' : 'pending');
     } catch (e) {
-      window.__isAppAdmin = (user.email === ADMIN_EMAIL);
-      window.__appStatus = 'approved';
+      window.__appStatus = isAdmin ? 'approved' : 'pending';
     }
     if (typeof window.__rerender === 'function') window.__rerender();
   }
