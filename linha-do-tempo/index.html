@@ -6326,9 +6326,76 @@ function applyFilters(){
     if(catMatch&&qm){item.classList.remove('hidden');vis++;}
     else{item.classList.add('hidden');}
   });
-  document.getElementById('counter').textContent=vis+' de 331 eventos';
+  document.getElementById('counter').textContent=vis+' de '+TOTAL+' eventos';
 }
 function jumpTo(id){const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth'});}
+
+/* ─────────────────────────────────────────────────────────────
+   CAMADA DE EVENTOS ADICIONAIS — expande a linha sem tocar nos 331 cards.
+   Adicionar um evento = um registro aqui. A página monta o card (mesmo
+   estilo) e o encaixa na era e na posição cronológica certas.
+   y = ano inteiro (negativo p/ a.C.); cat = hist|phi|lit|art|music
+   ───────────────────────────────────────────────────────────── */
+const EXTRA_EVENTS = [
+  { y:1572, ano:'1572', cat:'lit', titulo:'Os Lusíadas', local:'Luís de Camões · Portugal',
+    desc:`A epopeia da língua portuguesa. Camões funde a viagem de Vasco da Gama à mitologia clássica e canta a expansão marítima — fundando, em dez cantos, a alta literatura em português.` },
+  { y:1881, ano:'1881', cat:'lit', titulo:'Memórias Póstumas de Brás Cubas', local:'Machado de Assis · Brasil',
+    desc:`Machado inventa o narrador-defunto e a ironia moderna brasileira: um morto que escreve suas memórias "com a pena da galhofa e a tinta da melancolia". Antecipa o romance psicológico do século XX.` },
+  { y:1922, ano:'1922', cat:'art', titulo:'Semana de Arte Moderna', local:'São Paulo, Brasil',
+    desc:`Mário e Oswald de Andrade, Anita Malfatti e Villa-Lobos rompem com o academicismo e fundam o Modernismo brasileiro — a busca de uma arte com sotaque próprio.` },
+  { y:1928, ano:'1928', cat:'lit', titulo:'Macunaíma', local:'Mário de Andrade · Brasil',
+    desc:`O "herói sem nenhum caráter" tecido a partir de mitos indígenas, folclore e sátira — uma rapsódia que procura a alma plural do Brasil.` },
+  { y:1956, ano:'1956', cat:'lit', titulo:'Grande Sertão: Veredas', local:'João Guimarães Rosa · Brasil',
+    desc:`Guimarães Rosa reinventa a língua: o sertão de Riobaldo é metafísica e travessia ("viver é muito perigoso"). Um dos cumes da prosa em português, par de Joyce e Mann na ousadia.` },
+  { y:1977, ano:'1977', cat:'lit', titulo:'A Hora da Estrela', local:'Clarice Lispector · Brasil',
+    desc:`No último livro, Clarice dá voz a Macabéa, a nordestina invisível — e à pergunta sobre quem tem direito à narrativa. Ternura e vertigem existencial.` },
+];
+const CAT_LABEL = { hist:'História', phi:'Filosofia', lit:'Literatura', art:'Arte', music:'Música' };
+const ERAS = [
+  { id:'era-antigo', max:-500 }, { id:'era-grecia-roma', max:500 },
+  { id:'era-medieval', max:1400 }, { id:'era-renascimento', max:1600 },
+  { id:'era-barroco', max:1750 }, { id:'era-iluminismo', max:1815 },
+  { id:'era-seculo19', max:1900 }, { id:'era-modernismo', max:1945 },
+  { id:'era-contemporaneo', max:Infinity },
+];
+function eraForYear(y){ for(const e of ERAS){ if(y < e.max) return e.id; } return 'era-contemporaneo'; }
+function parseYear(str){
+  if(!str) return 0;
+  const s=String(str).toLowerCase();
+  const ac=/a\.?\s*c/.test(s);
+  const m=s.match(/\d+/);
+  const n=m?parseInt(m[0],10):0;
+  return ac?-n:n;
+}
+function makeEventCard(ev){
+  const item=document.createElement('div');
+  item.className='tl-item visible';
+  item.dataset.cat=ev.cat;
+  item.dataset.search=((ev.titulo||'')+' '+(ev.local||'')+' '+(ev.desc||'')).toLowerCase();
+  item.dataset.ynum=ev.y;
+  item.innerHTML='<div class="tl-dot"></div>'+
+    '<div class="tl-card" onclick="toggleCard(this)"><div class="tl-card-header"><div>'+
+    '<div class="tl-meta"><span class="tl-year">'+ev.ano+'</span><span class="tl-badge">'+(CAT_LABEL[ev.cat]||'')+'</span></div>'+
+    '<div class="tl-title">'+ev.titulo+'</div><div class="tl-author">'+(ev.local||'')+'</div></div>'+
+    '<i data-lucide="chevron-down" class="tl-expand-icon" width="18" height="18"></i></div>'+
+    '<div class="tl-detail"><div class="tl-detail-inner"><p class="tl-description">'+ev.desc+'</p></div></div></div>';
+  return item;
+}
+function injectExtraEvents(){
+  document.querySelectorAll('.tl-item').forEach(it=>{
+    if(it.dataset.ynum===undefined){ const yt=it.querySelector('.tl-year'); it.dataset.ynum=parseYear(yt?yt.textContent:''); }
+  });
+  EXTRA_EVENTS.forEach(ev=>{
+    const track=document.querySelector('#'+eraForYear(ev.y)+' .timeline-track');
+    if(!track) return;
+    const card=makeEventCard(ev);
+    const after=[...track.querySelectorAll(':scope > .tl-item')].find(it=>Number(it.dataset.ynum)>ev.y);
+    if(after) track.insertBefore(card,after); else track.appendChild(card);
+  });
+}
+injectExtraEvents();
+const TOTAL=document.querySelectorAll('.tl-item').length;
+
 const observer=new IntersectionObserver((entries)=>{
   entries.forEach(entry=>{if(entry.isIntersecting)entry.target.classList.add('visible');});
 },{threshold:0.08,rootMargin:'0px 0px -40px 0px'});
@@ -6337,7 +6404,7 @@ document.querySelectorAll('.tl-item').forEach((item,i)=>{
 });
 const backTop=document.getElementById('backTop');
 window.addEventListener('scroll',()=>{backTop.classList.toggle('visible',window.scrollY>400);},{passive:true});
-document.getElementById('counter').textContent='331 eventos';
+document.getElementById('counter').textContent=TOTAL+' eventos';
 if(typeof lucide!=='undefined')lucide.createIcons();
 </script>
 </body>
