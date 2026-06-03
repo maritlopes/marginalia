@@ -6327,7 +6327,7 @@ function applyFilters(){
     if(catMatch&&qm){item.classList.remove('hidden');vis++;}
     else{item.classList.add('hidden');}
   });
-  document.getElementById('counter').textContent=vis+' de '+TOTAL+' eventos';
+  document.getElementById('counter').textContent=vis+' de '+items.length+' eventos';
 }
 function jumpTo(id){const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth'});}
 
