@@ -26,9 +26,12 @@
   --radius-sm: 0.375rem; --radius-md: 0.5rem; --radius-lg: 0.75rem;
   --radius-xl: 1rem; --radius-full: 9999px;
   --transition-interactive: 180ms cubic-bezier(0.16, 1, 0.3, 1);
-  /* categorias mapeadas à paleta do Marginália (claro) */
-  --cat-lit: #B0533A; --cat-art: #2E3E55; --cat-music: #5E6B3E;
-  --cat-phi: #6E3F4E; --cat-hist: #8E6418;
+  /* categorias — paleta do Marginália, distintas e com mais destaque (claro) */
+  --cat-lit: #B0533A;   /* literatura — terracota */
+  --cat-art: #3A5A78;   /* arte — azul-petróleo */
+  --cat-music: #4F7A4A; /* música — verde-folha */
+  --cat-phi: #74456A;   /* filosofia — ameixa-violeta */
+  --cat-hist: #C2871F;  /* história — âmbar-ouro */
 }
 [data-theme="dark"] {
   --color-bg: #1A1612; --color-surface: #221E18; --color-surface-2: #2A2620;
@@ -37,8 +40,8 @@
   --color-primary: #C9836E; --color-primary-glow: rgba(201,131,110,0.16);
   --shadow-md: 0 4px 24px rgba(0,0,0,0.45); --shadow-lg: 0 12px 48px rgba(0,0,0,0.6);
   /* categorias um tom mais claras p/ contraste no escuro */
-  --cat-lit: #C9836E; --cat-art: #7E94B8; --cat-music: #8A9670;
-  --cat-phi: #A87C92; --cat-hist: #C9A24E;
+  --cat-lit: #D08C73; --cat-art: #6E97C2; --cat-music: #82B07B;
+  --cat-phi: #B384A6; --cat-hist: #DBA943;
 }
 [data-theme="light"] {
   --color-bg: #EFE8DA; --color-surface: #F7F1E4; --color-surface-2: #FBF6EA;
@@ -56,7 +59,10 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .header-inner{max-width:1400px;margin:0 auto;padding:var(--space-4) var(--space-6);display:flex;align-items:center;justify-content:space-between;gap:var(--space-4)}
 .logo{display:flex;align-items:center;gap:var(--space-3);text-decoration:none;color:var(--color-text)}
 .logo-mark{width:36px;height:36px}
-.logo-mark{width:30px;height:30px;object-fit:contain}
+.logo-mark{width:32px;height:32px;flex-shrink:0}
+.chip{display:inline-flex;align-items:center;gap:.45em}
+.chip svg,.chip i{width:14px;height:14px}
+.legend-item svg{width:15px;height:15px}
 .logo-text{font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;letter-spacing:.01em;color:var(--color-primary)}
 .logo-divider{color:var(--color-text-faint);font-size:var(--text-base)}
 .logo-sub{font-family:var(--font-display);font-style:italic;font-size:var(--text-sm);color:var(--color-text-muted);font-weight:400}
@@ -112,7 +118,7 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .tl-item[data-cat="phi"] .tl-dot{background:var(--cat-phi)}
 .tl-item[data-cat="hist"] .tl-dot{background:var(--cat-hist)}
 .tl-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-5);cursor:pointer;transition:all var(--transition-interactive);position:relative;overflow:hidden}
-.tl-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:var(--radius-sm) 0 0 var(--radius-sm);transition:opacity var(--transition-interactive);opacity:.7}
+.tl-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:var(--radius-sm) 0 0 var(--radius-sm);transition:opacity var(--transition-interactive);opacity:1}
 .tl-item[data-cat="lit"] .tl-card::before{background:var(--cat-lit)}
 .tl-item[data-cat="art"] .tl-card::before{background:var(--cat-art)}
 .tl-item[data-cat="music"] .tl-card::before{background:var(--cat-music)}
@@ -162,7 +168,7 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 <body>
 <header class="site-header">
   <div class="header-inner">
-    <a href="/" class="logo" title="Voltar ao Marginália"><img class="logo-mark" src="/symbol.png" alt="Marginália"/><span class="logo-text">Marginália</span><span class="logo-divider">·</span><span class="logo-sub">linha do tempo</span></a>
+    <a href="/" class="logo" title="Voltar ao Marginália"><svg class="logo-mark" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="16.5" stroke="currentColor" stroke-width="1" opacity="0.28"/><path d="M18 4 L18 32" stroke="var(--color-primary)" stroke-width="1.6" stroke-linecap="round" opacity="0.7"/><path d="M4 18 L32 18" stroke="var(--color-primary)" stroke-width="1.6" stroke-linecap="round" opacity="0.7"/><path d="M9 9 L27 27" stroke="var(--color-text-faint)" stroke-width="1" stroke-linecap="round"/><path d="M27 9 L9 27" stroke="var(--color-text-faint)" stroke-width="1" stroke-linecap="round"/><circle cx="18" cy="18" r="3.3" fill="var(--color-primary)"/></svg><span class="logo-text">Marginália</span><span class="logo-divider">·</span><span class="logo-sub">linha do tempo</span></a>
     <div class="header-controls">
       <div class="search-wrap"><svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input class="search-input" type="search" placeholder="Buscar..." id="searchInput"></div>
       <button class="theme-toggle" data-theme-toggle><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
@@ -174,11 +180,11 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
     <span class="filter-label">Filtrar:</span>
     <div class="filter-chips">
       <button class="chip active" data-cat="all">Tudo</button>
-      <button class="chip" data-cat="hist">&#x1F3DB;&#xFE0F; História</button>
-      <button class="chip" data-cat="phi">&#x1F9E0; Filosofia</button>
-      <button class="chip" data-cat="lit">&#x1F4D6; Literatura</button>
-      <button class="chip" data-cat="art">&#x1F3A8; Arte</button>
-      <button class="chip" data-cat="music">&#x1F3B5; Música</button>
+      <button class="chip" data-cat="hist"><i data-lucide="landmark"></i> História</button>
+      <button class="chip" data-cat="phi"><i data-lucide="brain"></i> Filosofia</button>
+      <button class="chip" data-cat="lit"><i data-lucide="book-open"></i> Literatura</button>
+      <button class="chip" data-cat="art"><i data-lucide="palette"></i> Arte</button>
+      <button class="chip" data-cat="music"><i data-lucide="music"></i> Música</button>
     </div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:var(--space-2);">
       <span class="filter-label">Ir para:</span>
@@ -201,11 +207,11 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
   <h1 class="hero-title">Linha do Tempo da<br><em>Civilização</em></h1>
   <p class="hero-sub">Da invenção da escrita cuneiforme à inteligência artificial — história, filosofia, literatura, arte e música em diálogo contínuo.</p>
   <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:var(--cat-hist)"></div> História</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--cat-phi)"></div> Filosofia</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--cat-lit)"></div> Literatura</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--cat-art)"></div> Arte</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--cat-music)"></div> Música</div>
+    <div class="legend-item"><span style="color:var(--cat-hist);display:inline-flex"><i data-lucide="landmark"></i></span> História</div>
+    <div class="legend-item"><span style="color:var(--cat-phi);display:inline-flex"><i data-lucide="brain"></i></span> Filosofia</div>
+    <div class="legend-item"><span style="color:var(--cat-lit);display:inline-flex"><i data-lucide="book-open"></i></span> Literatura</div>
+    <div class="legend-item"><span style="color:var(--cat-art);display:inline-flex"><i data-lucide="palette"></i></span> Arte</div>
+    <div class="legend-item"><span style="color:var(--cat-music);display:inline-flex"><i data-lucide="music"></i></span> Música</div>
   </div>
   <p class="counter" id="counter"></p>
 </section>
