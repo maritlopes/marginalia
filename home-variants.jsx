@@ -585,6 +585,34 @@ function HomeVariantA({ onNav = () => {} }) {
           );
         })()}
 
+        {/* PORTAL — convite para a linha do tempo (linha amiga) */}
+        <a href="/linha-do-tempo/" style={{ textDecoration: 'none', display: 'block', marginBottom: 22 }}>
+          <div style={{
+            background: T.ink, color: T.cream, borderRadius: 14, padding: '18px 18px 16px',
+            position: 'relative', overflow: 'hidden',
+          }}>
+            <div style={{ position: 'absolute', right: -22, top: -22, opacity: 0.1, pointerEvents: 'none' }}>
+              <svg viewBox="0 0 36 36" width="110" height="110" fill="none">
+                <circle cx="18" cy="18" r="16.5" stroke={T.cream} strokeWidth="1"/>
+                <path d="M18 3 L18 33 M3 18 L33 18 M8 8 L28 28 M28 8 L8 28" stroke={T.cream} strokeWidth="1" strokeLinecap="round"/>
+                <circle cx="18" cy="18" r="3" fill={T.cream}/>
+              </svg>
+            </div>
+            <div style={{ fontSize: 9, letterSpacing: 1.8, textTransform: 'uppercase', color: T.ochre, fontWeight: 700, marginBottom: 8 }}>
+              ✦ Portal · linha amiga
+            </div>
+            <div style={{ fontFamily: T.serif, fontSize: 20, fontWeight: 500, lineHeight: 1.15, marginBottom: 8 }}>
+              Atravesse o tempo
+            </div>
+            <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, lineHeight: 1.5, color: 'rgba(247,241,228,0.82)', marginBottom: 12, maxWidth: '92%' }}>
+              Cada livro é uma porta — esta abre para 5.500 anos. Da escrita cuneiforme à IA: história, filosofia, literatura, arte e música em diálogo contínuo.
+            </div>
+            <div style={{ fontSize: 11, letterSpacing: 0.6, fontWeight: 700, color: T.ochre, textTransform: 'uppercase' }}>
+              Entrar na linha do tempo →
+            </div>
+          </div>
+        </a>
+
         {/* EM TESTE — chamada leve de feedback */}
         {typeof FeedbackButton !== 'undefined' && (
           <>
