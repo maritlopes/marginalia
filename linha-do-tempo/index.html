@@ -6475,7 +6475,8 @@ if(typeof lucide!=='undefined')lucide.createIcons();
   }
   function renderForm(body){
     body.innerHTML='<div style="display:flex;gap:8px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--color-divider)"><button id="cf-md" style="flex:1;padding:9px;border:1px solid var(--color-border);border-radius:8px;background:var(--color-surface-2);color:var(--color-text);cursor:pointer;font-size:.85rem">⤓ Exportar .md (Obsidian)</button><button id="cf-mdcopy" style="padding:9px 12px;border:1px solid var(--color-border);border-radius:8px;background:var(--color-surface-2);color:var(--color-text);cursor:pointer;font-size:.85rem">⧉ Copiar</button></div>'+
-      '<div style="font-size:.85rem;color:var(--color-text-muted);font-style:italic;margin-bottom:10px">Sugira uma entrada — fica em <b>pendentes</b> até você validar.</div>'+
+      '<div style="background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:10px;padding:12px;margin-bottom:14px"><div style="font-size:.85rem;color:var(--color-text-muted);font-style:italic;margin-bottom:8px">Não sabe os detalhes? Descreva o evento (ou \"tema em ano\") e a IA preenche pra você conferir.</div><input id="cf-seed" placeholder="ex.: pandemia de Covid · História em 1969" style="'+FCSS+'"><button id="cf-ai" style="width:100%;padding:10px;border:0;border-radius:8px;background:var(--cat-phi);color:#fff;font-weight:600;cursor:pointer">✦ Pedir à IA</button><div id="cf-aimsg" style="font-size:.8rem;color:var(--color-text-muted);margin-top:8px"></div></div>'+
+      '<div style="font-size:.85rem;color:var(--color-text-muted);font-style:italic;margin-bottom:10px">…ou preencha à mão. A entrada fica em <b>pendentes</b> até você validar.</div>'+
       '<input id="cf-ano" placeholder="Ano (ex.: 1922 ou 300 a.C.)" style="'+FCSS+'">'+
       '<select id="cf-cat" style="'+FCSS+'"><option value="hist">História</option><option value="phi">Filosofia</option><option value="lit" selected>Literatura</option><option value="art">Arte</option><option value="music">Música</option></select>'+
       '<input id="cf-tit" placeholder="Título" style="'+FCSS+'">'+
@@ -6488,6 +6489,7 @@ if(typeof lucide!=='undefined')lucide.createIcons();
     body.querySelector('#cf-add').addEventListener('click',addSug);
     body.querySelector('#cf-md').addEventListener('click',exportMarkdown);
     body.querySelector('#cf-mdcopy').addEventListener('click',e=>copyMarkdown(e.target));
+    body.querySelector('#cf-ai').addEventListener('click',e=>aiSuggest(e.currentTarget));
     loadPending();
   }
   async function addSug(){
@@ -6499,6 +6501,21 @@ if(typeof lucide!=='undefined')lucide.createIcons();
     msg.textContent='Sugerida! Veja em pendentes abaixo.';
     ['cf-ano','cf-tit','cf-loc','cf-desc'].forEach(i=>g(i).value='');
     loadPending();
+  }
+  async function aiSuggest(btn){
+    const g=id=>document.getElementById(id);
+    const seed=g('cf-seed').value.trim(), msg=g('cf-aimsg');
+    if(!seed){ msg.textContent='Descreva um evento ou "tema em ano".'; return; }
+    msg.textContent='✦ Pensando…'; btn.disabled=true;
+    try{
+      const {data,error}=await SB.functions.invoke('timeline-suggest',{body:{seed}});
+      if(error||!data||!data.sug){ msg.textContent='Não consegui agora — tente outra descrição.'; btn.disabled=false; return; }
+      const s=data.sug;
+      g('cf-ano').value=s.ano||''; g('cf-tit').value=s.titulo||''; g('cf-loc').value=s.local||''; g('cf-desc').value=s.descricao||'';
+      const cat=g('cf-cat'); if(cat&&s.cat) cat.value=s.cat;
+      msg.innerHTML='✦ Rascunho preenchido — <b>confira a data</b> e ajuste o que quiser; depois toque em <b>Sugerir entrada</b>.';
+    }catch(e){ msg.textContent='Erro: '+e; }
+    btn.disabled=false;
   }
   async function loadPending(){
     const box=document.getElementById('cur-pend'); if(!box) return;
