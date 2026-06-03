@@ -528,6 +528,39 @@ function buildNotesMailto(notes, book) {
   return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
+// Monta as notas em Markdown (pronto para colar/importar no Obsidian),
+// agrupadas por livro, cada nota como blockquote com sua margem (cor/cap./pág./data).
+function buildNotesMarkdown(notes, books) {
+  const list = (Array.isArray(notes) ? notes : [notes]).filter(Boolean);
+  const byId = {};
+  (books || []).forEach(b => { if (b && b.id) byId[b.id] = b; });
+  const grupos = {};
+  list.forEach(n => {
+    const key = n.bookId || n.book || '__sem-livro';
+    (grupos[key] = grupos[key] || []).push(n);
+  });
+  const data = new Date().toISOString().slice(0, 10);
+  let out = `# Notas de leitura — Marginália\n\n*Exportado em ${data}*\n`;
+  Object.keys(grupos).forEach(key => {
+    const arr = grupos[key];
+    const bk = byId[key];
+    const title = (bk && bk.title) || arr[0].book || 'Sem título';
+    const author = (bk && bk.author) || '';
+    out += `\n## ${title}${author ? ' — ' + author : ''}\n`;
+    arr.forEach(n => {
+      const meta = [];
+      if (n.kind) meta.push(n.kind);
+      if (n.chapter) meta.push(n.chapter);
+      if (n.page) meta.push('pág. ' + n.page);
+      if (n.date) meta.push(n.date);
+      const body = (n.text || '').trim().replace(/\n/g, '\n> ');
+      out += `\n> ${body}\n`;
+      if (meta.length) out += `>\n> — *${meta.join(' · ')}*\n`;
+    });
+  });
+  return out;
+}
+
 function NoteCard({ n, onClick }) {
   const kindColor = { 'reflexão': T.terra, 'citação': T.olive, 'pergunta': T.ochre, 'resumo': T.brown }[n.kind];
   const handleShare = (e) => {
@@ -2990,6 +3023,35 @@ function BackupPanel() {
     flash('Pronto — estante limpa. Toque no + para acrescentar seus livros.');
   };
 
+  const baixarMd = () => {
+    const notes = window.NOTES || [];
+    if (!notes.length) { flash('Você ainda não tem notas para exportar.'); return; }
+    const md = buildNotesMarkdown(notes, window.BOOKS || []);
+    const blob = new Blob([md], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const d = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `marginalia-notas-${d}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    flash('Notas exportadas em Markdown — abra o arquivo no Obsidian.');
+  };
+
+  const copiarMd = async () => {
+    const notes = window.NOTES || [];
+    if (!notes.length) { flash('Você ainda não tem notas para exportar.'); return; }
+    const md = buildNotesMarkdown(notes, window.BOOKS || []);
+    try {
+      await navigator.clipboard.writeText(md);
+      flash('Markdown copiado — cole numa nota nova do Obsidian.');
+    } catch (e) {
+      flash('Não consegui copiar sozinho. Use "Baixar .md".');
+    }
+  };
+
   const btn = (extra = {}) => ({
     flex: 1, padding: '11px 12px', borderRadius: 10, cursor: 'pointer',
     fontFamily: T.sans, fontSize: 12, fontWeight: 600, letterSpacing: 0.2,
@@ -3024,6 +3086,29 @@ function BackupPanel() {
             {msg}
           </div>
         )}
+      </div>
+
+      {/* Levar para o Obsidian — exportar notas em Markdown */}
+      <div style={{ borderTop: `1px solid ${T.hairline}`, paddingTop: 20, marginTop: 22 }}>
+        <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 6 }}>
+          Levar para o Obsidian
+        </div>
+        <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.45, marginBottom: 12 }}>
+          Exporte suas notas em Markdown, agrupadas por livro — prontas para colar no seu
+          caderno digital. O Marginália alimenta o seu sistema, sem virar mais um silo.
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={baixarMd} style={btn()}>↓ Baixar .md</button>
+          <button onClick={copiarMd} style={btn()}>⧉ Copiar</button>
+        </div>
+      </div>
+
+      {/* Feedback de teste */}
+      <div style={{ borderTop: `1px solid ${T.hairline}`, paddingTop: 20, marginTop: 22 }}>
+        <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 10 }}>
+          Em teste
+        </div>
+        {typeof FeedbackButton !== 'undefined' && <FeedbackButton variant="block"/>}
       </div>
     </div>
   );
@@ -3462,10 +3547,137 @@ function FieldRow({ label, value, onChange, placeholder, small, type = 'text' })
   );
 }
 
+// ─────────────────────────────────────────────────────────────
+// FeedbackButton — recado leve de quem está testando (vai por e-mail)
+// variant 'inline' = chamada discreta na home; 'block' = botão no painel
+// ─────────────────────────────────────────────────────────────
+function FeedbackButton({ variant = 'block' }) {
+  const [open, setOpen] = React.useState(false);
+  const [text, setText] = React.useState('');
+  const [nome, setNome] = React.useState('');
+  const [sent, setSent] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!open) return;
+    (async () => {
+      try {
+        const u = window.MGCloud ? await window.MGCloud.currentUser() : null;
+        if (u) setNome((u.user_metadata && u.user_metadata.name) || u.email || '');
+      } catch (e) { /* sem conta tudo bem */ }
+    })();
+  }, [open]);
+
+  const enviar = () => {
+    const t = text.trim();
+    if (!t) return;
+    const ver = window.APP_VERSION || '';
+    const subject = 'Marginália — feedback de teste';
+    const body = t + '\n\n———\n' +
+      (nome ? `De: ${nome}\n` : '') +
+      `Enviado de clubemarginalia.com.br${ver ? ' · v' + ver : ''}`;
+    window.location.href = 'mailto:maritei2010@gmail.com?subject=' +
+      encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+    setSent(true);
+    setTimeout(() => { setOpen(false); setSent(false); setText(''); }, 1400);
+  };
+
+  const trigger = variant === 'inline' ? (
+    <div onClick={() => setOpen(true)} style={{
+      padding: '13px 16px', background: 'transparent',
+      border: `1px dashed ${T.hairline}`, borderRadius: 12, cursor: 'pointer',
+      display: 'flex', alignItems: 'center', gap: 11, marginBottom: 8,
+    }}>
+      <Icon name="note" size={16} color={T.terra}/>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontFamily: T.serif, fontSize: 14, fontWeight: 500, color: T.ink }}>
+          Conte o que você achou
+        </div>
+        <div style={{ fontSize: 11, color: T.muted, marginTop: 1, lineHeight: 1.3 }}>
+          O app está em teste — sua impressão ajuda a moldar o clube.
+        </div>
+      </div>
+    </div>
+  ) : (
+    <button onClick={() => setOpen(true)} style={{
+      width: '100%', padding: '11px 12px', borderRadius: 10, cursor: 'pointer',
+      fontFamily: T.sans, fontSize: 12, fontWeight: 600, letterSpacing: 0.2,
+      border: `1px solid ${T.hairline}`, background: T.cream, color: T.ink,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+    }}>
+      <Icon name="note" size={14} color={T.terra}/> Enviar feedback
+    </button>
+  );
+
+  return (
+    <>
+      {trigger}
+      {open && (
+        <div onClick={() => setOpen(false)} style={{
+          position: 'absolute', inset: 0, background: 'rgba(42,38,32,0.55)',
+          display: 'flex', alignItems: 'flex-end', zIndex: 90,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            width: '100%', background: T.paper, borderRadius: '24px 24px 0 0',
+            padding: '14px 20px 28px', maxHeight: '92%', overflow: 'auto',
+            fontFamily: T.sans, color: T.ink,
+          }}>
+            <div style={{ width: 36, height: 4, background: T.hairline, borderRadius: 4, margin: '0 auto 14px' }}/>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <button onClick={() => setOpen(false)} style={{
+                background: 'transparent', border: 0, cursor: 'pointer', fontSize: 13, color: T.brown,
+              }}>Fechar</button>
+              <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 500 }}>Feedback</div>
+              <div style={{ width: 50 }}/>
+            </div>
+
+            {sent ? (
+              <div style={{
+                padding: '24px 8px', textAlign: 'center',
+                fontFamily: T.serif, fontSize: 15, color: T.ink, lineHeight: 1.5,
+              }}>
+                Obrigada 💛<br/>
+                <span style={{ fontSize: 13, color: T.brown, fontStyle: 'italic' }}>
+                  Abrindo seu e-mail para enviar…
+                </span>
+              </div>
+            ) : (
+              <>
+                <div style={{
+                  fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic',
+                  marginBottom: 12, lineHeight: 1.5,
+                }}>
+                  O que está funcionando? O que travou ou incomodou? Toda impressão ajuda.
+                </div>
+                <textarea
+                  value={text}
+                  onChange={e => setText(e.target.value)}
+                  placeholder="Escreva aqui…"
+                  rows={5}
+                  style={{
+                    width: '100%', padding: '12px 14px', border: `1px solid ${T.hairline}`,
+                    borderRadius: 12, background: T.cream, color: T.ink,
+                    fontFamily: T.serif, fontSize: 14, lineHeight: 1.5, outline: 'none',
+                    resize: 'vertical', boxSizing: 'border-box', marginBottom: 12,
+                  }}/>
+                <button onClick={enviar} disabled={!text.trim()} style={{
+                  width: '100%', padding: '14px', borderRadius: 12,
+                  background: text.trim() ? T.ink : T.hairline,
+                  color: T.cream, border: 0, cursor: text.trim() ? 'pointer' : 'default',
+                  fontFamily: T.sans, fontSize: 14, fontWeight: 600, letterSpacing: 0.4,
+                }}>Enviar</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 Object.assign(window, {
   ScreenBookDetail, ScreenNoteEditor,
   ScreenAddBook, ScreenLibrary, ScreenFoco,
   ScreenMetas, ChallengeCard, ChallengeSuggestion, ChallengeEditorSheet, FieldLabel,
   BookEditorSheet, LibrarySection, Stat, BrandMark, ShareNoteSheet,
-  PonteCard, SectionLabel,
+  PonteCard, SectionLabel, FeedbackButton, buildNotesMarkdown,
 });

@@ -584,6 +584,14 @@ function HomeVariantA({ onNav = () => {} }) {
             </div>
           );
         })()}
+
+        {/* EM TESTE — chamada leve de feedback */}
+        {typeof FeedbackButton !== 'undefined' && (
+          <>
+            <SectionRule label="Em teste"/>
+            <FeedbackButton variant="inline"/>
+          </>
+        )}
       </div>
 
       {/* barra de navegação agora é a global (fixa no rodapé), renderizada pelo app */}
