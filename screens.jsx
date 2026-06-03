@@ -3563,7 +3563,7 @@ function ScreenFoco({ onNav = () => {} }) {
   const paginasNaSessao = Math.round(((duration - remaining) / 60) * 0.5);
   const totalPaginas = Math.round((duration / 60) * 0.5);
 
-  const b = BOOK_CURRENT;
+  const b = (typeof window.currentBook === 'function' ? window.currentBook() : null) || BOOK_CURRENT;
 
   return (
     <div style={{ width: '100%', height: '100%', background: T.bone, overflow: 'auto', paddingBottom: 80, position: 'relative' }}>
@@ -3601,7 +3601,7 @@ function ScreenFoco({ onNav = () => {} }) {
             <div style={{
               position: 'absolute', left: 0, right: 0, bottom: 0,
               height: `${pct}%`,
-              background: `linear-gradient(180deg, ${T.terra} 0%, ${T.terraDeep || '#8E3E2A'} 100%)`,
+              background: 'linear-gradient(180deg, rgba(176,83,58,0.30) 0%, rgba(176,83,58,0.50) 100%)',
               transition: 'height 0.9s ease-out',
             }}/>
             {/* sublinhado horizontal a cada quarto — "linhas do livro" */}
@@ -3610,7 +3610,7 @@ function ScreenFoco({ onNav = () => {} }) {
                 position: 'absolute', left: '12%', right: '12%',
                 top: `${10 + i * 11}%`,
                 height: 1,
-                background: pct > ((i+1) * 11) ? T.cream : T.hairline,
+                background: T.hairline,
                 opacity: 0.5,
               }}/>
             ))}
@@ -3621,19 +3621,17 @@ function ScreenFoco({ onNav = () => {} }) {
             position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center', pointerEvents: 'none',
           }}>
-            <div style={{ marginBottom: 8, opacity: 0.9, transition: 'color 1s' }}>
-              <Icon name="hourglass" size={22} color={pct > 50 ? T.cream : T.terra} strokeWidth={1.5}/>
+            <div style={{ marginBottom: 8, opacity: 0.9 }}>
+              <Icon name="hourglass" size={22} color={T.terra} strokeWidth={1.5}/>
             </div>
             <div style={{
               fontFamily: T.serif, fontSize: 48, fontWeight: 500,
-              color: pct > 50 ? T.cream : T.ink,
+              color: T.ink,
               fontVariantNumeric: 'tabular-nums', letterSpacing: -1,
-              textShadow: pct > 50 ? '0 1px 2px rgba(0,0,0,0.2)' : 'none',
-              transition: 'color 1s',
             }}>{mm}:{ss}</div>
             <div style={{
               fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase',
-              color: pct > 50 ? 'rgba(247,241,228,0.8)' : T.muted,
+              color: T.muted,
               fontWeight: 600, marginTop: 4,
             }}>
               {done ? 'sessão concluída' : (running ? 'em curso' : 'pronto')}
