@@ -176,8 +176,14 @@
   // ─── Fase 2: círculos de leitura (grupos) ───────────────────
   window.MGCloud.groups = {
     async list() {
-      const { data, error } = await sb.from('groups').select('*').order('created_at', { ascending: true });
-      return error ? [] : (data || []);
+      // SÓ os círculos onde sou MEMBRO (via group_members) — não os abertos.
+      // (a política RLS "groups select open" faria um select('*') vazar os abertos)
+      const u = await currentUser(); if (!u) return [];
+      const { data, error } = await sb.from('group_members')
+        .select('group:groups(*)').eq('user_id', u.id);
+      if (error) { console.warn('[nuvem] list:', error.message); return []; }
+      return (data || []).map((r) => r.group).filter(Boolean)
+        .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
     },
     async create(name) {
       return sb.rpc('create_group', { p_name: String(name || '').trim() });
