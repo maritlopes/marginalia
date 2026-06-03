@@ -191,7 +191,8 @@ function HomeVariantA({ onNav = () => {} }) {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {/* seletor de idioma — duas opções visíveis, a atual destacada */}
-            {typeof I18n !== 'undefined' && (
+            {/* toggle EN escondido até a tradução das telas internas estar completa */}
+            {false && typeof I18n !== 'undefined' && (
               <div title={tt('idioma')} style={{
                 display: 'flex', border: `1px solid ${T.hairline}`,
                 borderRadius: 999, overflow: 'hidden',

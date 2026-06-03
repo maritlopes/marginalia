@@ -221,7 +221,9 @@ function _refreshLive() {
       // Estante ainda vazia: mostramos os livros de exemplo como vitrine,
       // para a leitora ver como o app funciona antes de cadastrar os seus.
       window.BOOKS = BOOKS_SEED;
+      window.__demoShelf = true;   // vitrine: não contar nas estatísticas
     } else {
+      window.__demoShelf = false;
       // A leitora já tem livros próprios: a estante passa a mostrar SÓ os dela
       // (os exemplos desaparecem). Um seed que ela tenha editado/adotado
       // continua aparecendo, com as edições aplicadas.
@@ -237,6 +239,7 @@ function _refreshLive() {
   } else {
     window.NOTES = NOTES_SEED;
     window.BOOKS = BOOKS_SEED;
+    window.__demoShelf = true;
   }
 }
 
@@ -450,6 +453,8 @@ const CHALLENGE_SUGESTOES = [
 // "Esta semana faz 1 ano de Z" — convite poético, não notificação.
 // ─────────────────────────────────────────────────────────────
 function computeMemorias({ books, notes, today = new Date() } = {}) {
+  // na vitrine (estante de exemplos) não há memórias reais
+  if (typeof window !== 'undefined' && window.__demoShelf) return [];
   const out = [];
   const dayMs = 1000 * 60 * 60 * 24;
 

@@ -2614,16 +2614,17 @@ function ScreenLibrary({ onNav = () => {} }) {
 
   const all = window.BOOKS || [];
 
-  // estatísticas
+  // estatísticas — na vitrine (estante vazia, exemplos) os números de leitura ficam zerados
   const stats = React.useMemo(() => {
+    const counted = (typeof window !== 'undefined' && window.__demoShelf) ? [] : all;
     const thisYear = new Date().getFullYear();
-    const lidosNoAno = all.filter(b => {
+    const lidosNoAno = counted.filter(b => {
       if (b.status !== 'read') return false;
       if (b.finishedAt) return new Date(b.finishedAt).getFullYear() === thisYear;
       return true; // sem data = conta no ano corrente
     }).length;
-    const totalLidos = all.filter(b => b.status === 'read').length;
-    const paginasAtravessadas = all.reduce((sum, b) => {
+    const totalLidos = counted.filter(b => b.status === 'read').length;
+    const paginasAtravessadas = counted.reduce((sum, b) => {
       if (b.status === 'read') return sum + (b.pages || 0);
       if (b.status === 'reading') return sum + (b.currentPage || Math.round((b.pct || 0) * (b.pages || 0) / 100));
       return sum;
