@@ -557,8 +557,28 @@ function HomeVariantA({ onNav = () => {} }) {
               <div style={{ fontFamily: T.serif, fontSize: 16, lineHeight: 1.45, color: T.ink, fontStyle: 'italic' }}>
                 “{lang === 'pt' ? f.pt : (f.en || f.pt)}”
               </div>
-              <div style={{ marginTop: 8, fontFamily: T.serif, fontSize: 12, color: T.brown }}>
-                — {f.autor}{f.obra ? `, ${f.obra}` : ''}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, gap: 12 }}>
+                <div style={{ fontFamily: T.serif, fontSize: 12, color: T.brown }}>
+                  — {f.autor}{f.obra ? `, ${f.obra}` : ''}
+                </div>
+                <button
+                  onClick={() => {
+                    if (typeof window.__shareNote === 'function') {
+                      window.__shareNote(
+                        { text: (lang === 'pt' ? f.pt : (f.en || f.pt)), kind: 'citação' },
+                        { title: f.obra || '', author: f.autor || '' }
+                      );
+                    }
+                  }}
+                  aria-label="Compartilhar citação"
+                  style={{
+                    flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5,
+                    background: 'transparent', border: 0, cursor: 'pointer', padding: '2px 0',
+                    color: T.terra, fontFamily: T.sans, fontSize: 10, fontWeight: 700,
+                    letterSpacing: 0.6, textTransform: 'uppercase',
+                  }}>
+                  <Icon name="share" size={13} color={T.terra}/> compartilhar
+                </button>
               </div>
             </div>
           );
