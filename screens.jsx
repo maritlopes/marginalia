@@ -698,10 +698,6 @@ function ScreenNoteEditor({ onNav = () => {} }) {
   const [kind, setKind] = React.useState('reflexão');
   const [text, setText] = React.useState('');
   const [saved, setSaved] = React.useState(false);
-  const [shareWith, setShareWith] = React.useState([]); // ids dos grupos
-  const joinedGrupos = (typeof MG !== 'undefined' && MG.getJoinedGrupos)
-    ? (window.GRUPOS || []).filter(g => MG.isJoinedGrupo(g.id))
-    : [];
   // o livro REAL ao qual a nota pertence (não o exemplo)
   const cur = window.__viewBook || (typeof currentBook === 'function' ? currentBook() : BOOK_CURRENT) || {};
   const kinds = [
@@ -725,8 +721,6 @@ function ScreenNoteEditor({ onNav = () => {} }) {
         chapter: cur.chapter || '',
         kind,
         text: trimmed,
-        sharedWith: shareWith,
-        privacidade: shareWith.length === 0 ? 'privada' : `compartilhada (${shareWith.length})`,
       });
     }
     setSaved(true);
@@ -795,55 +789,13 @@ function ScreenNoteEditor({ onNav = () => {} }) {
           }}/>
       </div>
 
-      {/* compartilhar com grupos */}
-      {joinedGrupos.length > 0 && (
-        <div style={{
-          padding: '12px 20px', borderTop: `1px solid ${T.hairline}`,
-          background: T.bone,
-        }}>
-          <div style={{
-            fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase',
-            color: T.muted, fontWeight: 600, marginBottom: 8,
-          }}>
-            Compartilhar com
-          </div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {joinedGrupos.map(g => {
-              const on = shareWith.includes(g.id);
-              return (
-                <button key={g.id} onClick={() => setShareWith(prev =>
-                  on ? prev.filter(x => x !== g.id) : [...prev, g.id]
-                )} style={{
-                  padding: '7px 12px', borderRadius: 999,
-                  background: on ? T.olive : 'transparent',
-                  color: on ? T.cream : T.brown,
-                  border: `1px solid ${on ? T.olive : T.hairline}`,
-                  fontFamily: T.sans, fontSize: 11, fontWeight: 500, cursor: 'pointer',
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                }}>
-                  {on && '✓'} {g.nome}
-                </button>
-              );
-            })}
-          </div>
-          <div style={{ fontSize: 10, color: T.muted, marginTop: 6, fontStyle: 'italic', fontFamily: T.serif }}>
-            {shareWith.length === 0
-              ? 'Sem seleção = nota privada (só você vê)'
-              : `Visível aos membros de ${shareWith.length} ${shareWith.length === 1 ? 'grupo' : 'grupos'}`}
-          </div>
-        </div>
-      )}
-
       <div style={{
-        padding: '10px 20px 14px', borderTop: `1px solid ${T.hairline}`,
-        background: T.cream, display: 'flex', gap: 12, alignItems: 'center',
-        fontSize: 12, color: T.muted,
+        padding: '12px 20px 16px', borderTop: `1px solid ${T.hairline}`,
+        background: T.cream, fontSize: 11, color: T.muted,
+        fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.45,
       }}>
-        <Icon name="tag" size={16} color={T.muted}/>
-        <div>Adicionar tema</div>
-        <div style={{ flex: 1 }}/>
-        <Icon name="sparkle" size={16} color={T.terra}/>
-        <span style={{ color: T.terra, fontWeight: 600 }}>Sugerir temas</span>
+        Esta nota fica na sua margem, privada. Para dividir com um círculo, use
+        “Compartilhar uma nota de leitura” no mural do círculo.
       </div>
     </div>
   );
@@ -1790,7 +1742,7 @@ function ScreenAguardandoApp() {
 
   return (
     <div style={{ width: '100%', height: '100%', background: T.bone, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 28px', textAlign: 'center', fontFamily: T.sans, color: T.ink }}>
-      <div style={{ fontSize: 40, marginBottom: 18 }}>🕊️</div>
+      <div style={{ marginBottom: 18 }}>{typeof BrandMark !== 'undefined' ? <BrandMark size={52} opacity={0.85}/> : null}</div>
       <div style={{ fontFamily: T.serif, fontSize: 25, fontWeight: 500, letterSpacing: -0.4, marginBottom: 12 }}>Quase lá!</div>
       <div style={{ fontFamily: T.serif, fontSize: 15, lineHeight: 1.5, color: T.brown, maxWidth: 300, marginBottom: 8 }}>
         Seu acesso à Marginália está <strong>aguardando aprovação</strong> da curadora. Assim que ela liberar, o app abre sozinho.
