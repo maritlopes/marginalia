@@ -217,7 +217,7 @@
     },
     async members(groupId) {
       const { data, error } = await sb.from('group_members')
-        .select('user_id, email, display_name, role, joined_at').eq('group_id', groupId)
+        .select('user_id, display_name, role, joined_at').eq('group_id', groupId)
         .order('joined_at', { ascending: true });
       return error ? [] : (data || []);
     },
@@ -230,10 +230,15 @@
       return sb.rpc('set_group_open', { p_group: groupId, p_open: open !== false });
     },
     async openGroups() {
+      // não traz invite_code (segurança): entra-se pelo id via join_open_group
       const { data, error } = await sb.from('groups')
-        .select('id, name, invite_code, owner_id, created_at')
+        .select('id, name, owner_id, created_at')
         .eq('is_open', true).order('created_at', { ascending: false });
       return error ? [] : (data || []);
+    },
+    // entrar num círculo aberto por id (exige aprovação no app + grupo aberto)
+    async joinOpenGroup(groupId) {
+      return sb.rpc('join_open_group', { p_group: groupId });
     },
     async challenges(groupId) {
       const { data, error } = await sb.from('group_challenges')
@@ -286,7 +291,7 @@
     },
     async progress(challengeId) {
       const { data, error } = await sb.from('group_challenge_progress')
-        .select('user_id, email, value, updated_at').eq('challenge_id', challengeId);
+        .select('user_id, value, updated_at').eq('challenge_id', challengeId);
       return error ? [] : (data || []);
     },
     async pushProgress(challengeId, value) {

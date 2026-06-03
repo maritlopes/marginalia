@@ -829,7 +829,7 @@ function ScreenGruposCloud({ onNav = () => {} }) {
 
   const entrarAberto = async (g) => {
     setBusy(true); setMsg(null);
-    const { data, error } = await cloud.groups.join(g.invite_code);
+    const { data, error } = await cloud.groups.joinOpenGroup(g.id);
     setBusy(false);
     if (error) { setMsg('Não consegui entrar agora. Tente de novo.'); return; }
     await refresh();
