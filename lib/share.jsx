@@ -83,7 +83,7 @@ const Share = {
     // 8. Rodapé: marca + URL
     ctx.fillStyle = 'rgba(106,93,78,0.55)';
     ctx.font = '500 18px "Inter", sans-serif';
-    ctx.fillText('maritlopes.github.io/marginalia', W / 2, H - 80);
+    ctx.fillText('clubemarginalia.com.br', W / 2, H - 80);
 
     return canvas;
   },
