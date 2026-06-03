@@ -6437,6 +6437,38 @@ if(typeof lucide!=='undefined')lucide.createIcons();
       refreshCounter();
     }catch(e){}
   }
+  function buildTimelineMarkdown(){
+    const total=document.querySelectorAll('.tl-item').length;
+    const hoje=new Date().toISOString().slice(0,10);
+    let md='# Linha do Tempo da Civilização — Marginália\n\n*Chronos Civilizationis · '+total+' eventos · exportado em '+hoje+'*\n';
+    document.querySelectorAll('.era-section').forEach(sec=>{
+      const name=(sec.querySelector('.era-name')||{}).textContent||'';
+      const period=(sec.querySelector('.era-period')||{}).textContent||'';
+      md+='\n## '+name.trim()+'\n'+(period?('*'+period.trim()+'*\n'):'');
+      sec.querySelectorAll('.tl-item').forEach(it=>{
+        const g=s=>{const e=it.querySelector(s); return e?e.textContent.trim():'';};
+        const year=g('.tl-year'), cat=g('.tl-badge'), title=g('.tl-title'), author=g('.tl-author'), desc=g('.tl-description');
+        md+='\n### '+year+' · '+title+'\n';
+        const meta=[cat,author].filter(Boolean).join(' · ');
+        if(meta) md+='*'+meta+'*\n';
+        if(desc) md+='\n'+desc+'\n';
+      });
+    });
+    return md;
+  }
+  function exportMarkdown(){
+    const md=buildTimelineMarkdown();
+    const blob=new Blob([md],{type:'text/markdown'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download='linha-do-tempo-marginalia-'+new Date().toISOString().slice(0,10)+'.md';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  async function copyMarkdown(btn){
+    try{ await navigator.clipboard.writeText(buildTimelineMarkdown()); if(btn){const t=btn.textContent;btn.textContent='✓ Copiado';setTimeout(()=>btn.textContent=t,1800);} }
+    catch(e){ exportMarkdown(); }
+  }
   function panel(){
     let w=document.getElementById('cur-panel'); if(w) return w;
     w=document.createElement('div'); w.id='cur-panel';
@@ -6448,7 +6480,8 @@ if(typeof lucide!=='undefined')lucide.createIcons();
     return w;
   }
   function renderForm(body){
-    body.innerHTML='<div style="font-size:.85rem;color:var(--color-text-muted);font-style:italic;margin-bottom:10px">Sugira uma entrada — fica em <b>pendentes</b> até você validar.</div>'+
+    body.innerHTML='<div style="display:flex;gap:8px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--color-divider)"><button id="cf-md" style="flex:1;padding:9px;border:1px solid var(--color-border);border-radius:8px;background:var(--color-surface-2);color:var(--color-text);cursor:pointer;font-size:.85rem">⤓ Exportar .md (Obsidian)</button><button id="cf-mdcopy" style="padding:9px 12px;border:1px solid var(--color-border);border-radius:8px;background:var(--color-surface-2);color:var(--color-text);cursor:pointer;font-size:.85rem">⧉ Copiar</button></div>'+
+      '<div style="font-size:.85rem;color:var(--color-text-muted);font-style:italic;margin-bottom:10px">Sugira uma entrada — fica em <b>pendentes</b> até você validar.</div>'+
       '<input id="cf-ano" placeholder="Ano (ex.: 1922 ou 300 a.C.)" style="'+FCSS+'">'+
       '<select id="cf-cat" style="'+FCSS+'"><option value="hist">História</option><option value="phi">Filosofia</option><option value="lit" selected>Literatura</option><option value="art">Arte</option><option value="music">Música</option></select>'+
       '<input id="cf-tit" placeholder="Título" style="'+FCSS+'">'+
@@ -6459,6 +6492,8 @@ if(typeof lucide!=='undefined')lucide.createIcons();
       '<div style="border-top:1px solid var(--color-divider);margin:18px 0 12px"></div>'+
       '<strong style="font-family:var(--font-display);font-size:1.05rem">Pendentes</strong><div id="cur-pend" style="margin-top:10px"></div>';
     body.querySelector('#cf-add').addEventListener('click',addSug);
+    body.querySelector('#cf-md').addEventListener('click',exportMarkdown);
+    body.querySelector('#cf-mdcopy').addEventListener('click',e=>copyMarkdown(e.target));
     loadPending();
   }
   async function addSug(){
