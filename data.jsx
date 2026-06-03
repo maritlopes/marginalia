@@ -338,23 +338,26 @@ const HOJE_BANNER = [
 // ─────────────────────────────────────────────────────────────
 // Atualizada semanalmente (rotina de segunda) — semana de 2 a 8 de junho de 2026.
 // CURADORIA = voz editorial do clube: curiosidades, conexões, contexto, tema do mês.
+// ÂNCORA EDITORIAL: cada card diz POR QUE aparece hoje (anchor_pt/anchor_en).
+// A data só vai na tarja quando ela própria é o argumento (campo `date`, sem anchor) —
+// como o card de 1947. Itens com `anchor` mostram o rótulo no lugar da data.
 const CURADORIA = [
-  { id: 'c1', kind: 'curiosidade', date: '06 jun',
+  { id: 'c1', kind: 'curiosidade', anchor_pt: 'você sabia?', anchor_en: 'did you know?',
     title_pt: '"Doutor Fausto" nasceu no exílio',
     title_en: '"Doctor Faustus" was born in exile',
     desc_pt: 'Mann o escreveu na Califórnia (1943–47), inspirado em Nietzsche e na música de Schoenberg.',
     desc_en: 'Mann wrote it in California (1943–47), drawing on Nietzsche and Schoenberg’s music.' },
-  { id: 'c2', kind: 'tematica', date: 'junho',
+  { id: 'c2', kind: 'tematica', anchor_pt: 'tema do mês', anchor_en: 'theme of the month',
     title_pt: 'Junho reúne Mann, Kafka e Lorca',
     title_en: 'June gathers Mann, Kafka and Lorca',
     desc_pt: 'Três efemérides numa só semana — um mês para os mestres.',
     desc_en: 'Three anniversaries in one week — a month for the masters.' },
-  { id: 'c3', kind: 'curiosidade', date: '03 jun',
+  { id: 'c3', kind: 'curiosidade', anchor_pt: 'efeméride da semana', anchor_en: 'this week’s anniversary',
     title_pt: 'Kafka pediu que queimassem seus manuscritos',
     title_en: 'Kafka asked for his manuscripts to be burned',
     desc_pt: 'Max Brod desobedeceu — e salvou "O Processo" e "O Castelo".',
     desc_en: 'Max Brod disobeyed — and saved "The Trial" and "The Castle".' },
-  { id: 'c4', kind: 'conexao', date: 'jun',
+  { id: 'c4', kind: 'conexao', anchor_pt: 'conexão literária', anchor_en: 'literary connection',
     title_pt: 'Leu "Doutor Fausto"? Leia o "Fausto" de Goethe',
     title_en: 'Read "Doctor Faustus"? Try Goethe’s "Faust"',
     desc_pt: 'O mito do pacto com o diabo, na fonte que Mann revisita.',
