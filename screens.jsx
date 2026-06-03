@@ -509,6 +509,34 @@ function QuickCard({ icon, title, sub, primary, onClick }) {
 }
 
 // monta um link mailto: com uma ou várias notas — para enviar/arquivar por e-mail
+// ─────────────────────────────────────────────────────────────
+// Taxonomia da margem — vocabulário ÚNICO de tipo+cor de nota.
+// Tudo (editor, cartão, exportação) lê daqui. id estável.
+// ─────────────────────────────────────────────────────────────
+const NOTE_KINDS = [
+  { id: 'citação',     label: 'Citação',     color: '#5E6B3E', hint: 'Uma passagem transcrita', italic: true },
+  { id: 'ressonância', label: 'Ressonância', color: '#B0533A', hint: 'O que ecoou em você' },
+  { id: 'dúvida',      label: 'Dúvida',      color: '#C48A2C', hint: 'Uma pergunta em aberto' },
+  { id: 'conexão',     label: 'Conexão',     color: '#2E3E55', hint: 'Uma ponte com outra obra ou ideia' },
+];
+// notas antigas → novo vocabulário (não reescreve os dados; só traduz na exibição)
+const NOTE_KIND_ALIAS = {
+  'reflexão': 'ressonância', 'marginal': 'ressonância', 'resumo': 'citação',
+  'pergunta': 'dúvida', 'mapa': 'conexão',
+};
+function noteKind(id) {
+  const key = NOTE_KIND_ALIAS[id] || id;
+  return NOTE_KINDS.find(k => k.id === key) || null;
+}
+function noteKindColor(id) {
+  const k = noteKind(id);
+  return k ? k.color : '#9A8E7B'; // neutro p/ tipo desconhecido (nunca fica sem cor)
+}
+function noteKindLabel(id) {
+  const k = noteKind(id);
+  return k ? k.label : (id || 'Nota');
+}
+
 function buildNotesMailto(notes, book) {
   const list = Array.isArray(notes) ? notes : [notes];
   const title = (book && book.title) || 'leitura';
@@ -518,7 +546,7 @@ function buildNotesMailto(notes, book) {
     : `Marginália — nota sobre ${title}`;
   const blocks = list.map(n => {
     const meta = [];
-    if (n.kind) meta.push(n.kind);
+    if (n.kind) meta.push(noteKindLabel(n.kind));
     if (n.page) meta.push('pág ' + n.page);
     return `"${(n.text || '').trim()}"` + (meta.length ? `\n  ${meta.join(' · ')}` : '');
   });
@@ -549,7 +577,7 @@ function buildNotesMarkdown(notes, books) {
     out += `\n## ${title}${author ? ' — ' + author : ''}\n`;
     arr.forEach(n => {
       const meta = [];
-      if (n.kind) meta.push(n.kind);
+      if (n.kind) meta.push(noteKindLabel(n.kind));
       if (n.chapter) meta.push(n.chapter);
       if (n.page) meta.push('pág. ' + n.page);
       if (n.date) meta.push(n.date);
@@ -562,7 +590,8 @@ function buildNotesMarkdown(notes, books) {
 }
 
 function NoteCard({ n, onClick }) {
-  const kindColor = { 'reflexão': T.terra, 'citação': T.olive, 'pergunta': T.ochre, 'resumo': T.brown }[n.kind];
+  const kindColor = noteKindColor(n.kind);
+  const kindLabel = noteKindLabel(n.kind);
   const handleShare = (e) => {
     e.stopPropagation();
     if (typeof window.__shareNote === 'function') {
@@ -580,7 +609,7 @@ function NoteCard({ n, onClick }) {
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: kindColor }}/>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
         <div style={{ fontSize: 9, letterSpacing: 1.4, textTransform: 'uppercase', color: kindColor, fontWeight: 600 }}>
-          {n.kind} · {n.chapter}
+          {kindLabel}{n.chapter ? ' · ' + n.chapter : ''}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ fontSize: 10, color: T.muted }}>{n.date}</div>
@@ -609,20 +638,13 @@ function NoteCard({ n, onClick }) {
 // Reader — focused reading view, page of the book
 // ─────────────────────────────────────────────────────────────
 function ScreenNoteEditor({ onNav = () => {} }) {
-  const [kind, setKind] = React.useState('reflexão');
+  const [kind, setKind] = React.useState('ressonância');
   const [text, setText] = React.useState('');
   const [saved, setSaved] = React.useState(false);
   // o livro REAL ao qual a nota pertence (não o exemplo)
   const cur = window.__viewBook || (typeof currentBook === 'function' ? currentBook() : BOOK_CURRENT) || {};
-  const kinds = [
-    { id: 'marginal', label: 'Marginal', color: '#6E3F4E' },
-    { id: 'reflexão', label: 'Reflexão', color: T.terra },
-    { id: 'citação', label: 'Citação', color: T.olive },
-    { id: 'conexão', label: 'Conexão', color: '#2E3E55' },
-    { id: 'pergunta', label: 'Pergunta', color: T.ochre },
-    { id: 'mapa', label: 'Mapa', color: '#8A9670' },
-    { id: 'resumo', label: 'Resumo', color: T.brown },
-  ];
+  const kinds = NOTE_KINDS;
+  const kindInfo = noteKind(kind);
 
   const handleSave = () => {
     const trimmed = text.trim();
@@ -670,16 +692,31 @@ function ScreenNoteEditor({ onNav = () => {} }) {
           Tipo de nota
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {kinds.map(k => (
-            <button key={k.id} onClick={() => setKind(k.id)} style={{
-              padding: '7px 12px', borderRadius: 999,
-              background: kind === k.id ? k.color : 'transparent',
-              color: kind === k.id ? T.cream : T.ink,
-              border: `1px solid ${kind === k.id ? k.color : T.hairline}`,
-              fontFamily: T.sans, fontSize: 12, fontWeight: 500, cursor: 'pointer',
-            }}>{k.label}</button>
-          ))}
+          {kinds.map(k => {
+            const on = kind === k.id;
+            return (
+              <button key={k.id} onClick={() => setKind(k.id)} style={{
+                padding: '7px 12px', borderRadius: 999,
+                background: on ? k.color : 'transparent',
+                color: on ? T.cream : T.ink,
+                border: `1px solid ${on ? k.color : T.hairline}`,
+                fontFamily: T.sans, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+                <span style={{
+                  width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                  background: on ? T.cream : k.color,
+                }}/>
+                {k.label}
+              </button>
+            );
+          })}
         </div>
+        {kindInfo && (
+          <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 8 }}>
+            {kindInfo.hint}
+          </div>
+        )}
       </div>
 
       <div style={{ padding: '12px 20px', borderBottom: `1px solid ${T.hairline}`, display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -693,13 +730,13 @@ function ScreenNoteEditor({ onNav = () => {} }) {
 
       <div style={{ flex: 1, padding: '20px', position: 'relative' }}>
         <textarea value={text} onChange={e => setText(e.target.value)}
-          placeholder={kind === 'citação' ? 'Transcrever a passagem…' : 'Escreva sua reflexão…'}
+          placeholder={kind === 'citação' ? 'Transcrever a passagem…' : 'Escreva na margem…'}
           style={{
             width: '100%', height: '100%', border: 0, outline: 0,
             background: 'transparent', resize: 'none',
             fontFamily: T.serif,
             fontSize: 17, lineHeight: 1.5, color: T.ink,
-            fontStyle: kind === 'citação' ? 'italic' : 'normal',
+            fontStyle: (kindInfo && kindInfo.italic) ? 'italic' : 'normal',
           }}/>
       </div>
 
@@ -3680,4 +3717,5 @@ Object.assign(window, {
   ScreenMetas, ChallengeCard, ChallengeSuggestion, ChallengeEditorSheet, FieldLabel,
   BookEditorSheet, LibrarySection, Stat, BrandMark, ShareNoteSheet,
   PonteCard, SectionLabel, FeedbackButton, buildNotesMarkdown,
+  NOTE_KINDS, noteKind, noteKindColor, noteKindLabel,
 });
