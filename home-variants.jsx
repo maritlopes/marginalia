@@ -550,19 +550,15 @@ function HomeVariantA({ onNav = () => {} }) {
           const f = frases.length ? frases[Math.floor(Date.now() / 86400000) % frases.length] : null;
           if (!f) return null;
           return (
-            <div onClick={() => onNav('note')} style={{
+            <div style={{
               padding: '16px 18px', background: T.cream,
-              border: `1px solid ${T.hairline}`, borderRadius: 12,
-              cursor: 'pointer', marginBottom: 22,
+              border: `1px solid ${T.hairline}`, borderRadius: 12, marginBottom: 22,
             }}>
               <div style={{ fontFamily: T.serif, fontSize: 16, lineHeight: 1.45, color: T.ink, fontStyle: 'italic' }}>
                 “{lang === 'pt' ? f.pt : (f.en || f.pt)}”
               </div>
               <div style={{ marginTop: 8, fontFamily: T.serif, fontSize: 12, color: T.brown }}>
                 — {f.autor}{f.obra ? `, ${f.obra}` : ''}
-              </div>
-              <div style={{ marginTop: 10, fontFamily: T.sans, fontSize: 10, color: T.terra, fontWeight: 600, letterSpacing: 0.6, textTransform: 'uppercase' }}>
-                {tt('escrever_nota')} →
               </div>
             </div>
           );
