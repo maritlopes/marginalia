@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --font-display: 'Fraunces', 'Georgia', serif;
@@ -6406,6 +6407,118 @@ const backTop=document.getElementById('backTop');
 window.addEventListener('scroll',()=>{backTop.classList.toggle('visible',window.scrollY>400);},{passive:true});
 document.getElementById('counter').textContent=TOTAL+' eventos';
 if(typeof lucide!=='undefined')lucide.createIcons();
+
+/* ─────────────────────────────────────────────────────────────
+   CURADORIA VIVA (Supabase) — entradas sugeridas/validadas.
+   Só a administradora (e-mail) sugere e valida; todos veem as validadas.
+   Reusa o login do app (mesma origem → mesma sessão).
+   ───────────────────────────────────────────────────────────── */
+(function(){
+  if(typeof supabase==='undefined') return;
+  const SB=supabase.createClient('https://rpsiewnsvqpeadwaqsib.supabase.co','sb_publishable_QyDwy0ZCCRYzSFfTXCXQYQ_h3vEAL3I');
+  const ADMIN_EMAIL='maritei2010@gmail.com';
+  const CL={hist:'História',phi:'Filosofia',lit:'Literatura',art:'Arte',music:'Música'};
+  const FCSS='width:100%;padding:9px 11px;border:1px solid var(--color-border);border-radius:8px;background:var(--color-surface-2);color:var(--color-text);font-family:var(--font-body);font-size:.9rem;margin-bottom:8px;box-sizing:border-box';
+  function refreshCounter(){ const el=document.getElementById('counter'); if(el) el.textContent=document.querySelectorAll('.tl-item').length+' eventos'; }
+  function injectDb(r){
+    const ev={y:r.y,ano:r.ano,cat:r.cat,titulo:r.titulo,local:r.local,desc:r.descricao};
+    const track=document.querySelector('#'+eraForYear(ev.y)+' .timeline-track'); if(!track) return;
+    const card=makeEventCard(ev); card.dataset.dbid=r.id;
+    const after=[...track.querySelectorAll(':scope > .tl-item')].find(it=>Number(it.dataset.ynum)>ev.y);
+    if(after) track.insertBefore(card,after); else track.appendChild(card);
+  }
+  async function loadApproved(){
+    try{
+      const {data,error}=await SB.from('timeline_entries').select('*').eq('status','validada');
+      if(error||!data) return;
+      document.querySelectorAll('.tl-item[data-dbid]').forEach(n=>n.remove());
+      data.sort((a,b)=>a.y-b.y).forEach(injectDb);
+      if(typeof lucide!=='undefined') lucide.createIcons();
+      refreshCounter();
+    }catch(e){}
+  }
+  function panel(){
+    let w=document.getElementById('cur-panel'); if(w) return w;
+    w=document.createElement('div'); w.id='cur-panel';
+    w.style.cssText='position:fixed;inset:0;background:rgba(42,38,32,.5);z-index:200;display:none;align-items:flex-end;justify-content:center';
+    w.innerHTML='<div style="background:var(--color-surface);width:100%;max-width:640px;max-height:90vh;overflow:auto;border-radius:18px 18px 0 0;padding:20px 22px 28px;font-family:var(--font-body);color:var(--color-text)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><strong style="font-family:var(--font-display);font-size:1.25rem">Curadoria da linha</strong><button id="cur-close" style="background:none;border:0;color:var(--color-text-muted);cursor:pointer">Fechar</button></div><div id="cur-body"></div></div>';
+    document.body.appendChild(w);
+    w.addEventListener('click',e=>{ if(e.target===w) w.style.display='none'; });
+    w.querySelector('#cur-close').addEventListener('click',()=>w.style.display='none');
+    return w;
+  }
+  function renderForm(body){
+    body.innerHTML='<div style="font-size:.85rem;color:var(--color-text-muted);font-style:italic;margin-bottom:10px">Sugira uma entrada — fica em <b>pendentes</b> até você validar.</div>'+
+      '<input id="cf-ano" placeholder="Ano (ex.: 1922 ou 300 a.C.)" style="'+FCSS+'">'+
+      '<select id="cf-cat" style="'+FCSS+'"><option value="hist">História</option><option value="phi">Filosofia</option><option value="lit" selected>Literatura</option><option value="art">Arte</option><option value="music">Música</option></select>'+
+      '<input id="cf-tit" placeholder="Título" style="'+FCSS+'">'+
+      '<input id="cf-loc" placeholder="Autor / lugar" style="'+FCSS+'">'+
+      '<textarea id="cf-desc" rows="4" placeholder="Descrição" style="'+FCSS+';resize:vertical"></textarea>'+
+      '<button id="cf-add" style="width:100%;padding:12px;border:0;border-radius:10px;background:var(--color-primary);color:#fff;font-weight:600;cursor:pointer">Sugerir entrada</button>'+
+      '<div id="cf-msg" style="font-size:.8rem;color:var(--color-text-muted);margin-top:8px"></div>'+
+      '<div style="border-top:1px solid var(--color-divider);margin:18px 0 12px"></div>'+
+      '<strong style="font-family:var(--font-display);font-size:1.05rem">Pendentes</strong><div id="cur-pend" style="margin-top:10px"></div>';
+    body.querySelector('#cf-add').addEventListener('click',addSug);
+    loadPending();
+  }
+  async function addSug(){
+    const g=id=>document.getElementById(id);
+    const ano=g('cf-ano').value.trim(),cat=g('cf-cat').value,tit=g('cf-tit').value.trim(),loc=g('cf-loc').value.trim(),desc=g('cf-desc').value.trim(),msg=g('cf-msg');
+    if(!ano||!tit){ msg.textContent='Preencha ao menos ano e título.'; return; }
+    const {error}=await SB.from('timeline_entries').insert({y:parseYear(ano),ano,cat,titulo:tit,local:loc,descricao:desc,status:'pendente'});
+    if(error){ msg.textContent='Erro: '+error.message; return; }
+    msg.textContent='Sugerida! Veja em pendentes abaixo.';
+    ['cf-ano','cf-tit','cf-loc','cf-desc'].forEach(i=>g(i).value='');
+    loadPending();
+  }
+  async function loadPending(){
+    const box=document.getElementById('cur-pend'); if(!box) return;
+    const {data,error}=await SB.from('timeline_entries').select('*').eq('status','pendente').order('y');
+    if(error){ box.textContent='Erro ao carregar.'; return; }
+    if(!data.length){ box.innerHTML='<div style="font-size:.85rem;color:var(--color-text-muted);font-style:italic">Nenhuma pendente.</div>'; return; }
+    box.innerHTML='';
+    data.forEach(r=>{
+      const row=document.createElement('div'); row.style.cssText='border:1px solid var(--color-border);border-radius:10px;padding:10px 12px;margin-bottom:8px';
+      row.innerHTML='<div style="font-size:.8rem;color:var(--color-text-muted)">'+r.ano+' · '+(CL[r.cat]||'')+'</div><div style="font-family:var(--font-display);font-size:1rem;font-weight:600">'+r.titulo+'</div><div style="font-size:.8rem;color:var(--color-text-muted);font-style:italic">'+(r.local||'')+'</div><div style="display:flex;gap:8px;margin-top:8px"><button data-val="'+r.id+'" style="flex:1;padding:8px;border:0;border-radius:8px;background:var(--cat-music);color:#fff;font-weight:600;cursor:pointer">Validar</button><button data-del="'+r.id+'" style="padding:8px 12px;border:1px solid var(--color-border);border-radius:8px;background:transparent;color:var(--color-text-muted);cursor:pointer">Descartar</button></div>';
+      box.appendChild(row);
+    });
+    box.querySelectorAll('[data-val]').forEach(b=>b.addEventListener('click',async()=>{ await SB.from('timeline_entries').update({status:'validada'}).eq('id',b.dataset.val); await loadPending(); await loadApproved(); }));
+    box.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',async()=>{ if(!confirm('Descartar esta sugestão?'))return; await SB.from('timeline_entries').delete().eq('id',b.dataset.del); await loadPending(); }));
+  }
+  function renderLogin(body){
+    body.innerHTML='<div style="font-size:.85rem;color:var(--color-text-muted);font-style:italic;margin-bottom:10px">Entre com seu e-mail de administradora para curar a linha.</div><input id="cl-email" placeholder="seu e-mail" style="'+FCSS+'"><button id="cl-send" style="width:100%;padding:11px;border:0;border-radius:10px;background:var(--color-primary);color:#fff;font-weight:600;cursor:pointer">Enviar código</button><div id="cl-cw" style="display:none;margin-top:10px"><input id="cl-code" placeholder="código de 6 dígitos" style="'+FCSS+'"><button id="cl-verify" style="width:100%;padding:11px;border:0;border-radius:10px;background:var(--color-text);color:var(--color-surface);font-weight:600;cursor:pointer">Entrar</button></div><div id="cl-msg" style="font-size:.8rem;color:var(--color-text-muted);margin-top:8px"></div>';
+    let email='';
+    body.querySelector('#cl-send').addEventListener('click',async()=>{
+      email=document.getElementById('cl-email').value.trim(); if(!email) return;
+      const {error}=await SB.auth.signInWithOtp({email,options:{shouldCreateUser:true}});
+      document.getElementById('cl-msg').textContent=error?('Erro: '+error.message):'Código enviado ao seu e-mail.';
+      if(!error) document.getElementById('cl-cw').style.display='block';
+    });
+    body.querySelector('#cl-verify').addEventListener('click',async()=>{
+      const token=document.getElementById('cl-code').value.trim();
+      const {error}=await SB.auth.verifyOtp({email,token,type:'email'});
+      if(error){ document.getElementById('cl-msg').textContent='Código inválido.'; return; }
+      const {data}=await SB.auth.getUser();
+      if(data.user&&data.user.email===ADMIN_EMAIL) renderForm(body);
+      else document.getElementById('cl-msg').textContent='Sem permissão de curadoria.';
+    });
+  }
+  async function openPanel(){
+    const w=panel(); w.style.display='flex';
+    const body=document.getElementById('cur-body'); body.innerHTML='<div style="color:var(--color-text-muted)">…</div>';
+    let user=null; try{ const {data}=await SB.auth.getUser(); user=data&&data.user; }catch(e){}
+    if(user&&user.email===ADMIN_EMAIL) renderForm(body); else renderLogin(body);
+  }
+  function addFab(){
+    if(document.getElementById('cur-fab')) return;
+    const b=document.createElement('button'); b.id='cur-fab'; b.title='Curadoria'; b.textContent='✦';
+    b.style.cssText='position:fixed;left:1.5rem;bottom:1.5rem;width:40px;height:40px;border-radius:50%;background:var(--color-surface-3);border:1px solid var(--color-border);color:var(--color-primary);font-size:1rem;cursor:pointer;box-shadow:var(--shadow-md);z-index:50;opacity:.7;transition:opacity .2s';
+    b.addEventListener('mouseenter',()=>b.style.opacity='1'); b.addEventListener('mouseleave',()=>b.style.opacity='.7');
+    b.addEventListener('click',openPanel);
+    document.body.appendChild(b);
+  }
+  loadApproved().then(addFab);
+})();
 </script>
 </body>
 </html>
