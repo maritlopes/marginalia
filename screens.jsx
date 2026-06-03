@@ -1844,6 +1844,16 @@ function ScreenGruposCloud({ onNav = () => {} }) {
   const [busy, setBusy] = React.useState(false);
   const [msg, setMsg] = React.useState(null);
   const [memberCounts, setMemberCounts] = React.useState({});
+  const [openList, setOpenList] = React.useState([]); // círculos abertos p/ entrar
+
+  const entrarAberto = async (g) => {
+    setBusy(true); setMsg(null);
+    const { data, error } = await cloud.groups.join(g.invite_code);
+    setBusy(false);
+    if (error) { setMsg('Não consegui entrar agora. Tente de novo.'); return; }
+    await refresh();
+    if (data && window.__openGrupo) window.__openGrupo(data);
+  };
 
   const refresh = async () => {
     if (!cloud || !cloud.available) { setLoading(false); return; }
@@ -1857,6 +1867,12 @@ function ScreenGruposCloud({ onNav = () => {} }) {
         try { counts[g.id] = (await cloud.groups.members(g.id)).length; } catch { counts[g.id] = null; }
       }
       setMemberCounts(counts);
+      // círculos abertos que ainda não sou membro
+      try {
+        const og = await cloud.groups.openGroups();
+        const meus = new Set(gs.map((g) => g.id));
+        setOpenList((og || []).filter((g) => !meus.has(g.id)));
+      } catch (e) { setOpenList([]); }
     }
     setLoading(false);
   };
@@ -1994,6 +2010,36 @@ function ScreenGruposCloud({ onNav = () => {} }) {
               </div>
             ))}
           </div>
+
+          {/* círculos abertos para entrar (desafios disponibilizados por outras pessoas) */}
+          {openList.length > 0 && (
+            <div style={{ padding: '22px 24px 0' }}>
+              <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 4 }}>
+                Abertos para entrar · {openList.length}
+              </div>
+              <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', marginBottom: 12, lineHeight: 1.45 }}>
+                Desafios disponibilizados pelo clube. Entre e leiam juntos.
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {openList.map((g) => (
+                  <div key={g.id} style={{
+                    background: T.cream, borderRadius: 14, padding: '14px 16px',
+                    border: `1px solid ${T.hairline}`, display: 'flex', alignItems: 'center', gap: 10,
+                  }}>
+                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#E5E5D2', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🤝</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: T.serif, fontSize: 16, fontWeight: 500, lineHeight: 1.15, overflowWrap: 'anywhere' }}>{g.name}</div>
+                      <div style={{ fontSize: 10, color: T.muted, fontFamily: T.sans, letterSpacing: 0.3, marginTop: 2 }}>círculo aberto</div>
+                    </div>
+                    <button onClick={() => entrarAberto(g)} disabled={busy} style={{
+                      padding: '8px 16px', borderRadius: 999, border: 0, background: T.olive, color: T.cream,
+                      fontFamily: T.sans, fontSize: 13, fontWeight: 600, cursor: busy ? 'wait' : 'pointer', flexShrink: 0, opacity: busy ? 0.6 : 1,
+                    }}>Entrar</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div style={{ padding: '20px 24px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {pane === 'criar' ? (
@@ -2901,6 +2947,8 @@ function ChallengeEditorSheet({ challenge = null, onClose = () => {} }) {
     });
     if (r && r.error) { setShareMsg('Círculo criado, mas o desafio não entrou: ' + (r.error.message || 'erro')); }
     const chId = (r && r.data && r.data.id) || null;
+    // abre o círculo para todos os usuários poderem descobrir e entrar
+    try { await cloud.groups.setOpen(grupo.id, true); } catch (e) { /* ok */ }
     // busca o grupo COMPLETO (garante o código de convite, que o create pode não devolver)
     let full = grupo;
     try { const all = await cloud.groups.list(); const f = (all || []).find(g => g.id === grupo.id); if (f) full = f; } catch (e) { /* ok */ }

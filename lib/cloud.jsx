@@ -219,6 +219,16 @@
       const u = await currentUser(); if (!u) return;
       return sb.from('group_members').delete().eq('group_id', groupId).eq('user_id', u.id);
     },
+    // ─── círculos abertos (descobríveis por todos) ───
+    async setOpen(groupId, open) {
+      return sb.rpc('set_group_open', { p_group: groupId, p_open: open !== false });
+    },
+    async openGroups() {
+      const { data, error } = await sb.from('groups')
+        .select('id, name, invite_code, owner_id, created_at')
+        .eq('is_open', true).order('created_at', { ascending: false });
+      return error ? [] : (data || []);
+    },
     async challenges(groupId) {
       const { data, error } = await sb.from('group_challenges')
         .select('*').eq('group_id', groupId).order('created_at', { ascending: true });
