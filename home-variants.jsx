@@ -152,8 +152,10 @@ function HomeVariantA({ onNav = () => {} }) {
     setHojePag('');
   };
 
-  // curadoria
-  const curadoria = (window.CURADORIA || []).slice(0, 3);
+  // curadoria — mostra 3 na home; "ver mais" abre o banco completo (todas)
+  const [showAllCuradoria, setShowAllCuradoria] = React.useState(false);
+  const curadoriaAll = (window.CURADORIA || []);
+  const curadoria = showAllCuradoria ? curadoriaAll : curadoriaAll.slice(0, 3);
 
   // sugestões para o livro atual
   const sugestoes = (window.SUGESTOES_POR_LIVRO || {})[b.id] || [];
@@ -459,7 +461,9 @@ function HomeVariantA({ onNav = () => {} }) {
         {/* CURADORIA */}
         {curadoria.length > 0 && (
           <>
-            <SectionRule label={tt('curadoria')} action={tt('ver_mais') + ' →'}/>
+            <SectionRule label={tt('curadoria')}
+              action={curadoriaAll.length > 3 ? (showAllCuradoria ? 'ver menos' : tt('ver_mais') + ' →') : null}
+              onAction={() => setShowAllCuradoria(v => !v)}/>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 22 }}>
               {curadoria.map(c => {
                 const title = c[`title_${lang}`] || c.title_pt;
@@ -571,7 +575,7 @@ function HomeVariantA({ onNav = () => {} }) {
 }
 
 // auxiliares de seção (compartilhados pelas variantes)
-function SectionRule({ label, action }) {
+function SectionRule({ label, action, onAction }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
       <div style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: T.muted, fontWeight: 600 }}>
@@ -579,7 +583,7 @@ function SectionRule({ label, action }) {
       </div>
       <div style={{ flex: 1, height: 1, background: T.hairline }}/>
       {action && (
-        <div style={{ fontSize: 10, color: T.terra, letterSpacing: 0.6, fontWeight: 600, cursor: 'pointer' }}>
+        <div onClick={onAction} style={{ fontSize: 10, color: T.terra, letterSpacing: 0.6, fontWeight: 600, cursor: onAction ? 'pointer' : 'default' }}>
           {action}
         </div>
       )}
