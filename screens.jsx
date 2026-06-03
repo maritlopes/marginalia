@@ -237,6 +237,14 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
         {tab === 'notas' && (
           bookNotes.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <button onClick={() => { window.location.href = buildNotesMailto(bookNotes, b); }} style={{
+                alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 7,
+                background: 'transparent', border: `1px solid ${T.hairline}`, borderRadius: 999,
+                padding: '8px 14px', cursor: 'pointer', color: T.brown,
+                fontFamily: T.sans, fontSize: 12, fontWeight: 600, letterSpacing: 0.3,
+              }}>
+                <Icon name="note" size={14} color={T.terra}/> Enviar todas por e-mail
+              </button>
               {bookNotes.map(n => <NoteCard key={n.id} n={n} onClick={() => onNav('note')}/>)}
             </div>
           ) : (
@@ -511,6 +519,26 @@ function QuickCard({ icon, title, sub, primary, onClick }) {
       <div style={{ fontSize: 11, color: primary ? 'rgba(247,241,228,0.6)' : T.muted, marginTop: 2 }}>{sub}</div>
     </div>
   );
+}
+
+// monta um link mailto: com uma ou várias notas — para enviar/arquivar por e-mail
+function buildNotesMailto(notes, book) {
+  const list = Array.isArray(notes) ? notes : [notes];
+  const title = (book && book.title) || 'leitura';
+  const author = (book && book.author) || '';
+  const subject = list.length > 1
+    ? `Marginália — minhas notas de ${title} (${list.length})`
+    : `Marginália — nota sobre ${title}`;
+  const blocks = list.map(n => {
+    const meta = [];
+    if (n.kind) meta.push(n.kind);
+    if (n.page) meta.push('pág ' + n.page);
+    return `"${(n.text || '').trim()}"` + (meta.length ? `\n  ${meta.join(' · ')}` : '');
+  });
+  const header = list.length > 1 ? `Minhas notas de "${title}"${author ? ' — ' + author : ''}\n\n` : '';
+  const footer = `\n\n— ${title}${author ? ', ' + author : ''}\nAnotado no Marginália · Clube de Leitura`;
+  const body = header + blocks.join('\n\n———\n\n') + footer;
+  return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 function NoteCard({ n, onClick }) {
@@ -3365,6 +3393,15 @@ function ShareNoteSheet({ note, book, onClose = () => {} }) {
               fontFamily: T.sans, fontSize: 13, fontWeight: 500,
             }}>{copied ? '✓ Copiado' : 'Copiar imagem'}</button>
           </div>
+          <button onClick={() => { window.location.href = buildNotesMailto(note, book); }} style={{
+            padding: '12px', borderRadius: 12,
+            background: 'transparent', color: T.brown,
+            border: `1px solid ${T.hairline}`, cursor: 'pointer',
+            fontFamily: T.sans, fontSize: 13, fontWeight: 500,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}>
+            <Icon name="note" size={15} color={T.terra}/> Enviar por e-mail (texto)
+          </button>
         </div>
       </div>
     </div>
