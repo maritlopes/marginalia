@@ -95,12 +95,6 @@ const THEMES_STUDY = [
   { id: 'brev', title: 'Brevidade da vida', count: 4, color: 'rose', summary: 'Tema recorrente em Sêneca, Marco Aurélio, Montaigne.' },
 ];
 
-const SCHEDULE = [
-  { date: '22', dow: 'qui', month: 'abr', label: 'Sessão de estudo', detail: 'Meditações — Livro IV', time: '20h00', kind: 'sessao' },
-  { date: '25', dow: 'dom', month: 'abr', label: 'Resumo semanal', detail: 'Consolidar notas da semana', time: 'manhã', kind: 'resumo' },
-  { date: '29', dow: 'qui', month: 'abr', label: 'Sessão de estudo', detail: 'Meditações — Livros V–VI', time: '20h00', kind: 'sessao' },
-  { date: '06', dow: 'qui', month: 'mai', label: 'Fim do livro', detail: 'Ensaio final + marcos', time: '20h00', kind: 'marco' },
-];
 
 const ACTIVITY = [
   { t: 'há 2h', text: '12 páginas lidas de Meditações', kind: 'read' },
@@ -203,115 +197,6 @@ const PONTE_CATS = [
 ];
 
 // ─────────────────────────────────────────────────────────────
-// NÍVEIS de leitura — herança do Marginália
-// ─────────────────────────────────────────────────────────────
-const NIVEIS = [
-  {
-    id: 'iniciante',
-    roman: 'I',
-    label: 'Iniciante',
-    sub: 'Descobrindo o prazer da leitura profunda',
-    features: [
-      'Linguagem coloquial e didática',
-      '1–2 conexões por sessão',
-      'Glossário ativo para palavras difíceis',
-      'Prompts de compreensão básica',
-    ],
-  },
-  {
-    id: 'intermediario',
-    roman: 'II',
-    label: 'Intermediário',
-    sub: 'Expandindo o repertório com naturalidade',
-    features: [
-      'Linguagem equilibrada',
-      '3–5 conexões inesperadas por sessão',
-      'Glossário sob demanda',
-      'Prompts de análise estrutural',
-      'Mapas conceituais sugeridos',
-    ],
-  },
-  {
-    id: 'profundo',
-    roman: 'III',
-    label: 'Profundo',
-    sub: 'Crítica, teoria e bibliografia',
-    features: [
-      'Linguagem técnica, sem simplificação',
-      '5–10 pontes eruditas com bibliografia',
-      'Comparativos entre obras e autores',
-      'Prompts críticos e teóricos',
-      'Comunidade acadêmica',
-    ],
-  },
-];
-
-const NIVEL_ATUAL = 'profundo'; // Mari = leitora avançada
-
-// ─────────────────────────────────────────────────────────────
-// DESAFIOS temáticos — leituras com começo, meio e fim
-// ─────────────────────────────────────────────────────────────
-const DESAFIOS = [
-  {
-    id: 'd1',
-    tag: 'Em destaque',
-    title: 'Volta ao mundo em 5 contos',
-    desc: 'Cinco continentes, cinco vozes contemporâneas, cinco semanas. Pontes para a música e o cinema de cada país.',
-    duracao: '5 semanas',
-    lendo: 1247,
-    featured: true,
-    tone: 'ink',
-  },
-  {
-    id: 'd2',
-    tag: 'Vozes femininas',
-    title: 'Doze autoras, doze meses',
-    desc: 'Lispector, Woolf, Adichie, Ferrante, Han Kang, Carson e outras — uma por mês.',
-    duracao: '12 meses',
-    lendo: 489,
-    tone: 'rose',
-  },
-  {
-    id: 'd3',
-    tag: 'Filosofia ↔ Literatura',
-    title: 'Mann lê Schopenhauer',
-    desc: 'A Montanha Mágica em diálogo com O Mundo como Vontade. Para nível Profundo.',
-    duracao: '8 semanas',
-    lendo: 132,
-    nivel: 'profundo',
-    tone: 'olive',
-  },
-  {
-    id: 'd4',
-    tag: 'Sertão',
-    title: 'Brasil profundo em 4 romances',
-    desc: 'Rosa, Acioli, Ana Paula Maia, Itamar Vieira Jr. — cartografia literária do sertão.',
-    duracao: '16 semanas',
-    lendo: 298,
-    tone: 'ochre',
-  },
-  {
-    id: 'd5',
-    tag: 'Relâmpago',
-    title: 'Um conto num fim de semana',
-    desc: 'Tchekhov, Borges, Lispector ou Munro. Comece sexta, termine domingo, encontro de 1h.',
-    duracao: '3 dias',
-    lendo: 61,
-    tone: 'terra',
-  },
-  {
-    id: 'd6',
-    tag: 'Estudo pessoal',
-    title: 'Meu projeto: Estoicismo',
-    desc: 'Marco Aurélio → Sêneca → Epicteto. Cronograma próprio, sem grupo. Em curso.',
-    duracao: '6 semanas · vc',
-    lendo: null,
-    proprio: true,
-    tone: 'sage',
-  },
-];
-
-// ─────────────────────────────────────────────────────────────
 // GLOSSÁRIO contextual — termos da obra atual
 // ─────────────────────────────────────────────────────────────
 const GLOSSARIO = [
@@ -321,23 +206,6 @@ const GLOSSARIO = [
   { term: 'hegemonikon', def: 'A faculdade dirigente da alma — onde reside o juízo, a vontade e a assentimento aos impulsos.' },
 ];
 
-// ─────────────────────────────────────────────────────────────
-// GRUPOS — camada social mínima
-// ─────────────────────────────────────────────────────────────
-const GRUPOS = [
-  // grupo temático sobre o julgamento como tema literário (Kafka, Dostoiévski, Camus)
-  // — sem qualquer referência a profissões.
-  { id: 'g1', nome: 'O processo & afins', membros: 47, ativ: 'Kafka em curso · 2 notas hoje', tipo: 'aberto',
-    tema: 'O julgamento na literatura', livro: 'O Processo', livroAutor: 'Franz Kafka' },
-  { id: 'g2', nome: 'Estoicos contemporâneos', membros: 142, ativ: 'Sessão sex 19h', tipo: 'aberto',
-    tema: 'Estoicismo', livro: 'Meditações', livroAutor: 'Marco Aurélio' },
-  { id: 'g3', nome: 'Sertão e seus avatares', membros: 27, ativ: 'Acioli em curso', tipo: 'fechado',
-    tema: 'Brasil profundo', livro: 'Com armas sonolentas', livroAutor: 'Carola Saavedra' },
-  { id: 'g4', nome: 'Marco Aurélio · leitura lenta', membros: 34, ativ: 'Livro IV em curso', tipo: 'aberto',
-    tema: 'Estoicismo', livro: 'Meditações', livroAutor: 'Marco Aurélio' },
-  { id: 'g5', nome: 'Filosofia oriental ao vivo', membros: 89, ativ: 'Tao quintas 20h', tipo: 'aberto',
-    tema: 'Filosofia oriental', livro: 'Tao Te Ching', livroAutor: 'Lao Tsé' },
-];
 
 // SEEDS — listas iniciais (usadas como fallback quando não há nada em Storage)
 const NOTES_SEED = NOTES;
@@ -656,8 +524,8 @@ function computeMemorias({ books, notes, today = new Date() } = {}) {
 }
 
 Object.assign(window, {
-  BOOK_CURRENT, NOTES_SEED, BOOKS_SEED, THEMES_STUDY, SCHEDULE, ACTIVITY,
-  PONTES, PONTE_CATS, NIVEIS, NIVEL_ATUAL, DESAFIOS, GLOSSARIO, GRUPOS,
+  BOOK_CURRENT, NOTES_SEED, BOOKS_SEED, THEMES_STUDY, ACTIVITY,
+  PONTES, PONTE_CATS, GLOSSARIO,
   BOOK_STATUS, HOJE_BANNER, FRASES_MARCANTES, CURADORIA, SUGESTOES_POR_LIVRO,
   CHALLENGE_TYPES, CHALLENGE_PERIODS, CHALLENGE_SUGESTOES, periodWindow,
   computeMemorias,

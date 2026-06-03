@@ -92,7 +92,7 @@
 <!-- scripts injetados com cache-bust por URL versionada -->
 <script>
 (function () {
-  const APP_VERSION = '0.68.0'; // bump quando alterar JSX
+  const APP_VERSION = '0.69.0'; // bump quando alterar JSX
   const files = [
     'lib/sources.jsx',
     'lib/storage.jsx',
@@ -180,7 +180,6 @@ function MarginaliaApp() {
 
   const [prefs, setPrefs] = React.useState(() => MG.getPrefs());
   const [route, setRoute] = React.useState('home');
-  const [summaryOpen, setSummaryOpen] = React.useState(false);
   const [showSplash, setShowSplash] = React.useState(true);
 
   // splash de boas-vindas: 1.5s, depois fade out
@@ -246,23 +245,18 @@ function MarginaliaApp() {
       case 'home':      return <HomeComp onNav={setRoute}/>;
       case 'metas':     return <ScreenMetas onNav={setRoute}/>;
       case 'library':   return <ScreenLibrary onNav={setRoute}/>;
-      case 'book':      return <ScreenBookDetail book={detailBook} onNav={setRoute} onOpenSummary={() => setSummaryOpen(true)}/>;
-      case 'reader':    return <ScreenReader onNav={setRoute}/>;
+      case 'book':      return <ScreenBookDetail book={detailBook} onNav={setRoute}/>;
       case 'note':      return <ScreenNoteEditor onNav={setRoute}/>;
-      case 'pontes':    return <ScreenPontes onNav={setRoute}/>;
       case 'desafios':  return <ScreenMetas onNav={setRoute}/>;
       case 'grupos':    return <ScreenGruposCloud onNav={setRoute}/>;
-      case 'conversas': return <ScreenConversas onNav={setRoute}/>;
       case 'foco':      return <ScreenFoco onNav={setRoute}/>;
-      case 'themes':    return <ScreenThemes onNav={setRoute}/>;
-      case 'schedule':  return <ScreenSchedule onNav={setRoute}/>;
       case 'addBook':   return <ScreenAddBook onNav={setRoute}/>;
       default:          return <HomeComp onNav={setRoute}/>;
     }
   })();
 
-  // tab bar ativa para qualquer rota que não seja a Home (que tem sua própria) nem reader/note/addBook (full-screen)
-  const showTabs = !['reader', 'note', 'addBook'].includes(route);
+  // tab bar ativa em qualquer rota exceto Home (que tem sua própria) e note/addBook (full-screen)
+  const showTabs = !['note', 'addBook'].includes(route);
   const showFab = ['home', 'book', 'library'].includes(route);
 
   // mapa rota → tab ativa no tab bar
@@ -270,8 +264,6 @@ function MarginaliaApp() {
     library: 'library', book: 'library',
     desafios: 'desafios', metas: 'desafios',
     grupos: 'grupos',
-    themes: 'library', schedule: 'home', pontes: 'library',
-    conversas: 'grupos',
   };
 
   // PORTA ÚNICA DO APP: quem entrou mas ainda não foi aprovada vê a tela de espera
@@ -307,7 +299,6 @@ function MarginaliaApp() {
           }}
         >+</button>
       )}
-      {summaryOpen && <ScreenSummary onClose={() => setSummaryOpen(false)}/>}
       {editingBook !== null && (
         <BookEditorSheet
           book={editingBook.id ? editingBook : null}

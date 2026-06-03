@@ -3,7 +3,7 @@
 // para que novas versões publicadas cheguem sempre que houver internet; o cache
 // serve apenas como reserva offline. Network-first também para as APIs externas.
 
-const CACHE = 'marginalia-v3';
+const CACHE = 'marginalia-v4';
 const ASSETS = [
   './',
   './Marginalia.html',
@@ -19,6 +19,7 @@ const ASSETS = [
   './frames/ios-frame.jsx',
   './home-variants.jsx',
   './screens.jsx',
+  './lib/cloud.jsx',
 ];
 
 self.addEventListener('install', (event) => {
