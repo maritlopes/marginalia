@@ -2026,7 +2026,7 @@ function ScreenGruposCloud({ onNav = () => {} }) {
                     background: T.cream, borderRadius: 14, padding: '14px 16px',
                     border: `1px solid ${T.hairline}`, display: 'flex', alignItems: 'center', gap: 10,
                   }}>
-                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#E5E5D2', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🤝</div>
+                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#E5E5D2', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="share" size={16} color={T.olive}/></div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontFamily: T.serif, fontSize: 16, fontWeight: 500, lineHeight: 1.15, overflowWrap: 'anywhere' }}>{g.name}</div>
                       <div style={{ fontSize: 10, color: T.muted, fontFamily: T.sans, letterSpacing: 0.3, marginTop: 2 }}>círculo aberto</div>
@@ -2352,15 +2352,17 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
             <div style={{ fontSize: 11, color: T.muted, fontWeight: 600, marginBottom: 6 }}>Formato</div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
               {[
-                { id: 'list', label: '📋 Lista curada', sub: 'você define os livros' },
-                { id: 'theme', label: '🌍 Tema aberto', sub: 'cada um lança os seus' },
+                { id: 'list', icon: 'list', label: 'Lista curada', sub: 'você define os livros' },
+                { id: 'theme', icon: 'globe', label: 'Tema aberto', sub: 'cada um lança os seus' },
               ].map((o) => (
                 <button key={o.id} onClick={() => setCKind(o.id)} style={{
                   flex: 1, textAlign: 'left', padding: '9px 11px', borderRadius: 10, cursor: 'pointer',
                   border: `1px solid ${cKind === o.id ? T.ink : T.hairline}`,
                   background: cKind === o.id ? T.ink : 'transparent', color: cKind === o.id ? T.cream : T.brown,
                 }}>
-                  <div style={{ fontFamily: T.sans, fontSize: 12, fontWeight: 600 }}>{o.label}</div>
+                  <div style={{ fontFamily: T.sans, fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <Icon name={o.icon} size={13} color={cKind === o.id ? T.cream : T.brown}/> {o.label}
+                  </div>
                   <div style={{ fontSize: 10, opacity: 0.8, marginTop: 1 }}>{o.sub}</div>
                 </button>
               ))}
@@ -2451,7 +2453,9 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
             <button onClick={publicar} disabled={busy} style={{ padding: '11px 16px', borderRadius: 10, border: 0, background: T.ink, color: T.cream, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Publicar</button>
           </div>
           <button onClick={() => setNotePicker((v) => !v)} style={{ marginTop: 8, width: '100%', padding: '11px', borderRadius: 10, border: `1px dashed ${notePicker ? T.terra : T.hairline}`, background: notePicker ? T.cream : 'transparent', color: T.terra, fontFamily: T.sans, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            {notePicker ? '✕  fechar' : '📖  Compartilhar uma nota de leitura'}
+            {notePicker
+              ? <><Icon name="x" size={14} color={T.terra}/> fechar</>
+              : <><Icon name="note" size={14} color={T.terra}/> Compartilhar uma nota de leitura</>}
           </button>
           {notePicker && (
             <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -2819,7 +2823,7 @@ function ChallengeCard({ challenge: c, finished }) {
               padding: '3px 8px', borderRadius: 999, background: T.cream,
               border: `1px solid ${t.border}`, color: t.tag,
               fontSize: 9, letterSpacing: 0.6, textTransform: 'uppercase', fontWeight: 700,
-            }}>🤝 disponibilizado</div>
+            }}><Icon name="share" size={11} color={t.tag}/> disponibilizado</div>
           )}
           {finished && (
             <div style={{
@@ -3571,8 +3575,8 @@ function ScreenFoco({ onNav = () => {} }) {
           </button>
           <BrandMark size={22}/>
         </div>
-        <div style={{ fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, marginBottom: 6, fontWeight: 600 }}>
-          Sessão de leitura
+        <div style={{ fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, marginBottom: 6, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Icon name="hourglass" size={13} color={T.terra}/> Sessão de leitura
         </div>
         <div style={{ fontFamily: T.serif, fontSize: 30, fontWeight: 400, letterSpacing: -0.6, lineHeight: 1.05 }}>
           Foco <span style={{ fontStyle: 'italic', color: T.terra }}>na página</span>

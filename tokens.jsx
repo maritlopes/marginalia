@@ -190,6 +190,8 @@ function Icon({ name, size = 20, color = 'currentColor', strokeWidth = 1.6 }) {
     arrowLeft: <><path d="M19 12H5M11 6l-6 6 6 6"/></>,
     grid: <><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></>,
     list: <><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1" fill={color}/><circle cx="4" cy="12" r="1" fill={color}/><circle cx="4" cy="18" r="1" fill={color}/></>,
+    hourglass: <><path d="M7 3h10M7 21h10M7 3l5 9 5-9M7 21l5-9 5 9"/></>,
+    globe: <><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></>,
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
