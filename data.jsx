@@ -338,25 +338,27 @@ const HOJE_BANNER = [
 // ─────────────────────────────────────────────────────────────
 // Atualizada semanalmente (rotina de segunda) — semana de 2 a 8 de junho de 2026.
 // CURADORIA = voz editorial do clube: curiosidades, conexões, contexto, tema do mês.
-// ÂNCORA EDITORIAL: cada card diz POR QUE aparece hoje (anchor_pt/anchor_en).
-// A data só vai na tarja quando ela própria é o argumento (campo `date`, sem anchor) —
-// como o card de 1947. Itens com `anchor` mostram o rótulo no lugar da data.
+// ÂNCORA EDITORIAL: cada card diz POR QUE existe — por um RÓTULO ou por uma DATA.
+//  • `anchor_pt`/`anchor_en` → rótulo contextual (você sabia?, conexão literária, contexto…).
+//  • `date` → quando a DATA é o argumento: toda EFEMÉRIDE (a tarja mostra o dia do fato,
+//    ex.: '03 jun') e anos que enquadram a obra (ex.: '1947'). ATEMPORAL: a efeméride traz
+//    a data do próprio fato, nunca "hoje"/"esta semana" (o conteúdo não é atualizado todo dia).
 const CURADORIA = [
   { id: 'c1', kind: 'curiosidade', anchor_pt: 'você sabia?', anchor_en: 'did you know?',
     title_pt: '"Doutor Fausto" nasceu no exílio',
     title_en: '"Doctor Faustus" was born in exile',
     desc_pt: 'Mann o escreveu na Califórnia (1943–47), inspirado em Nietzsche e na música de Schoenberg.',
     desc_en: 'Mann wrote it in California (1943–47), drawing on Nietzsche and Schoenberg’s music.' },
-  { id: 'c2', kind: 'tematica', anchor_pt: 'tema do mês', anchor_en: 'theme of the month',
-    title_pt: 'Junho reúne Mann, Kafka e Lorca',
-    title_en: 'June gathers Mann, Kafka and Lorca',
-    desc_pt: 'Três efemérides numa só semana — um mês para os mestres.',
-    desc_en: 'Three anniversaries in one week — a month for the masters.' },
-  { id: 'c3', kind: 'curiosidade', anchor_pt: 'efeméride da semana', anchor_en: 'this week’s anniversary',
-    title_pt: 'Kafka pediu que queimassem seus manuscritos',
-    title_en: 'Kafka asked for his manuscripts to be burned',
-    desc_pt: 'Max Brod desobedeceu — e salvou "O Processo" e "O Castelo".',
-    desc_en: 'Max Brod disobeyed — and saved "The Trial" and "The Castle".' },
+  { id: 'c2', kind: 'efemeride', date: '05 jun',
+    title_pt: '5 de junho: nasce Federico García Lorca (1898)',
+    title_en: 'June 5: Federico García Lorca is born (1898)',
+    desc_pt: 'Poeta e dramaturgo de Granada — "Romancero Gitano" e "A Casa de Bernarda Alba".',
+    desc_en: 'Poet and playwright from Granada — "Gypsy Ballads" and "The House of Bernarda Alba".' },
+  { id: 'c3', kind: 'efemeride', date: '03 jun',
+    title_pt: 'Kafka morreu num 3 de junho — e quase levou seus livros',
+    title_en: 'Kafka died on a June 3 — nearly taking his books with him',
+    desc_pt: 'Pediu a Max Brod que queimasse tudo; o amigo desobedeceu e salvou "O Processo".',
+    desc_en: 'He asked Max Brod to burn it all; the friend disobeyed and saved "The Trial".' },
   { id: 'c4', kind: 'conexao', anchor_pt: 'conexão literária', anchor_en: 'literary connection',
     title_pt: 'Leu "Doutor Fausto"? Leia o "Fausto" de Goethe',
     title_en: 'Read "Doctor Faustus"? Try Goethe’s "Faust"',
