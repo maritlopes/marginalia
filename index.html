@@ -36,7 +36,8 @@
 <style>
   html, body {
     margin: 0; padding: 0;
-    background: #1A1612;
+    background: radial-gradient(ellipse 90% 70% at 50% 0%, #F4EEE0 0%, #E7DCC6 55%, #DCD0B6 100%);
+    background-attachment: fixed;
     font-family: 'Inter', system-ui, sans-serif;
     color: #2A2620;
     overscroll-behavior: none;
@@ -51,25 +52,31 @@
   #root {
     width: 100vw; min-height: 100vh; min-height: 100dvh;
     display: flex; align-items: center; justify-content: center;
+    padding: 24px 16px;
   }
 
+  /* desktop: painel-web limpo (sem moldura de celular) */
   .device-shell {
     position: relative;
-    width: 402px; height: 874px;
-    border-radius: 48px; overflow: hidden;
+    width: 440px; max-width: 100%;
+    height: min(920px, calc(100dvh - 48px));
+    border-radius: 20px; overflow: hidden;
     background: #F2F2F7;
-    box-shadow: 0 40px 80px rgba(0,0,0,0.4), 0 0 0 6px #1a1a1a, 0 0 0 7px #2a2a2a;
+    box-shadow: 0 20px 60px rgba(42,38,32,0.18), 0 0 0 1px rgba(42,38,32,0.08);
   }
 
-  /* mobile fullscreen */
+  /* notch/barra do iPhone não aparecem na versão web */
+  .dynamic-island, .home-indicator { display: none !important; }
+
+  /* mobile: tela cheia */
   @media (max-width: 480px), (display-mode: standalone) {
-    body { background: #EFE8DA; }
+    html, body { background: #EFE8DA; }
+    #root { padding: 0; }
     .device-shell {
       width: 100vw; height: 100vh; height: 100dvh;
+      max-width: none;
       border-radius: 0; box-shadow: none;
     }
-    .device-shell .dynamic-island,
-    .device-shell .home-indicator { display: none; }
   }
 
   ::-webkit-scrollbar { width: 4px; height: 4px; }
