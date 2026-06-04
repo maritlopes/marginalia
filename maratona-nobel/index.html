@@ -175,6 +175,8 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .toolbar button.primary{background:var(--color-primary);color:#fff;border-color:var(--color-primary)}
 .toolbar button.primary:hover{opacity:.92;color:#fff}
 .toolbar button svg{width:16px;height:16px}
+.save-hint{max-width:680px;margin:calc(-1 * var(--space-2)) auto var(--space-2);text-align:center;font-size:var(--text-xs);color:var(--color-text-faint);line-height:1.65}
+.save-hint strong{color:var(--color-text-muted);font-weight:600}
 
 /* MODAL */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,22,18,.55);z-index:200;align-items:center;justify-content:center;padding:var(--space-4)}
@@ -375,6 +377,8 @@ footer .brand a:hover{text-decoration:underline}
     <input type="file" id="import-file" accept=".json" style="display:none">
   </div>
 
+  <p class="save-hint">💾 Seus livros ficam salvos <strong>neste navegador</strong>. Para não perdê-los ao trocar de aparelho ou limpar o navegador, use <strong>Exportar resultado</strong> ou <strong>Backup</strong> — ou entre com seu e-mail na <strong>Sincronização</strong> abaixo (não precisa de convite).</p>
+
   <!-- SINCRONIZAÇÃO -->
   <section class="sync" id="sync-panel" style="display:none">
     <div class="sync-head">
@@ -398,7 +402,7 @@ footer .brand a:hover{text-decoration:underline}
   <div class="modal">
     <h3 id="books-title">Laureado</h3>
     <div class="modal-sub" id="books-sub"></div>
-    <label>Livros lidos deste laureado</label>
+    <label id="books-list-label">Livros lidos deste laureado</label>
     <ul class="books-read" id="books-read"></ul>
     <div class="add-book-form">
       <label for="bk-title">Registrar um livro lido</label>
@@ -797,6 +801,7 @@ function openBooks(id) {
   document.getElementById('books-title').textContent = l.author;
   var metaParts = [l.nobel, l.country].filter(Boolean).join(' · ');
   document.getElementById('books-sub').textContent = metaParts || ({a:'Categoria A · 3 pts',b:'Categoria B · 2 pts',c:'Cotado · 1 pt'}[l.cat]);
+  document.getElementById('books-list-label').textContent = 'Livros lidos deste ' + (l.cat === 'c' ? 'cotado' : 'laureado');
   renderBooksList();
   document.getElementById('bk-title').value = '';
   document.getElementById('bk-over500').checked = false;
@@ -1191,7 +1196,7 @@ function render(){
     var ci=document.getElementById('sync-code'); if(ci){ ci.focus(); ci.onkeydown=function(e){ if(e.key==='Enter') verifyCode(); }; }
   } else {
     body.innerHTML =
-      '<div class="sync-status">Sincronize sua maratona entre o <strong>celular</strong> e o <strong>computador</strong>. Entre com seu e-mail (o mesmo do app, se você usa) — chega um código.</div>' +
+      '<div class="sync-status">Sincronize sua maratona entre o <strong>celular</strong> e o <strong>computador</strong>. Entre com seu e-mail — chega um código. <strong>Não precisa de convite.</strong></div>' +
       '<div class="sync-row"><input id="sync-email" type="email" inputmode="email" placeholder="seu@email.com" autocomplete="email">' +
       '<button class="sync-btn" id="sync-send">Enviar código</button></div>' +
       '<div class="sync-note" id="sync-msg"></div>';
