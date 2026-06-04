@@ -99,6 +99,8 @@ section.block{padding:var(--sp-16) 0;border-top:1px solid var(--divider)}
 @media(max-width:680px){.companions{grid-template-columns:1fr}}
 .comp{display:block;text-decoration:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:var(--sp-6);box-shadow:var(--shadow);transition:all var(--tr)}
 .comp:hover{border-color:var(--primary);transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.comp-ic{width:42px;height:42px;margin-bottom:var(--sp-3);display:block}
+.comp-ic.compass{color:var(--primary)}
 .comp .tag{font-size:var(--text-xs);letter-spacing:.12em;text-transform:uppercase;color:var(--primary);font-weight:600}
 .comp h3{font-family:var(--font-display);font-weight:600;font-size:var(--text-xl);margin:var(--sp-2) 0}
 .comp p{font-size:var(--text-sm);color:var(--muted);line-height:1.6;margin-bottom:var(--sp-4)}
@@ -196,16 +198,32 @@ footer .brand{font-family:var(--font-display);font-size:var(--text-sm);color:var
 
   <section class="block">
     <p class="kicker">Para explorar</p>
-    <h2>Páginas-companheiras</h2>
+    <h2>Portais</h2>
     <div class="companions">
       <a class="comp" href="/linha-do-tempo/">
-        <span class="tag">✦ Linha amiga</span>
+        <svg class="comp-ic compass" viewBox="0 0 36 36" fill="none" stroke="currentColor" aria-hidden="true">
+          <circle cx="18" cy="18" r="16" stroke-width="1.2" opacity=".3"/>
+          <path d="M18 5V31" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
+          <path d="M5 18H31" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
+          <path d="M9.5 9.5 26.5 26.5" stroke-width="1" stroke-linecap="round"/>
+          <path d="M26.5 9.5 9.5 26.5" stroke-width="1" stroke-linecap="round"/>
+          <circle cx="18" cy="18" r="3" fill="currentColor" stroke="none"/>
+        </svg>
+        <span class="tag">Linha amiga</span>
         <h3>Linha do Tempo da Civilização</h3>
         <p>Da escrita cuneiforme à inteligência artificial — história, filosofia, literatura, arte e música em diálogo contínuo.</p>
         <span class="go">Atravessar o tempo →</span>
       </a>
       <a class="comp" href="/maratona-nobel/">
-        <span class="tag">🏅 Desafio de leitura</span>
+        <svg class="comp-ic" viewBox="0 0 120 120" aria-hidden="true">
+          <defs><radialGradient id="ggC" cx="42%" cy="36%" r="68%"><stop offset="0%" stop-color="#EFDDAB"/><stop offset="52%" stop-color="#CDA950"/><stop offset="100%" stop-color="#9A772B"/></radialGradient></defs>
+          <circle cx="60" cy="60" r="50" fill="url(#ggC)" stroke="#7E6320" stroke-width="2.5"/>
+          <circle cx="60" cy="60" r="42" fill="none" stroke="#7E6320" stroke-width="1" opacity=".5"/>
+          <g fill="none" stroke="#7E6320" stroke-width="2" stroke-linecap="round" opacity=".85"><path d="M60 98 C 41 94, 30 78, 28 54"/><path d="M60 98 C 79 94, 90 78, 92 54"/></g>
+          <g fill="#7E6320" opacity=".8"><ellipse cx="46" cy="92" rx="5" ry="2.3" transform="rotate(-58 46 92)"/><ellipse cx="37" cy="84" rx="5" ry="2.3" transform="rotate(-44 37 84)"/><ellipse cx="31" cy="74" rx="5" ry="2.3" transform="rotate(-26 31 74)"/><ellipse cx="28" cy="64" rx="5" ry="2.3" transform="rotate(-10 28 64)"/><ellipse cx="74" cy="92" rx="5" ry="2.3" transform="rotate(58 74 92)"/><ellipse cx="83" cy="84" rx="5" ry="2.3" transform="rotate(44 83 84)"/><ellipse cx="89" cy="74" rx="5" ry="2.3" transform="rotate(26 89 74)"/><ellipse cx="92" cy="64" rx="5" ry="2.3" transform="rotate(10 92 64)"/></g>
+          <path d="M60 44 l3.4 8 8.6 .7 -6.6 5.6 2 8.4 -7.4-4.6 -7.4 4.6 2-8.4 -6.6-5.6 8.6-.7z" fill="#7E6320"/>
+        </svg>
+        <span class="tag">Desafio de leitura</span>
         <h3>Maratona Nobel</h3>
         <p>O jogo de leitura do Nobel, de junho a outubro — idealização e curadoria de Jamile e João. Acompanhe pelo Marginália.</p>
         <span class="go">Ver a maratona →</span>
