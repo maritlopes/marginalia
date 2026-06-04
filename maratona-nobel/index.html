@@ -151,7 +151,7 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .book-row .info .title-line{font-family:var(--font-display);font-weight:600;font-size:var(--text-base);line-height:1.25;color:var(--color-text)}
 .book-row .info .meta{font-size:var(--text-xs);color:var(--color-text-muted);margin-top:1px}
 .book-row .info .read-books{margin-top:var(--space-2);display:flex;flex-direction:column;gap:3px}
-.read-line{font-size:var(--text-sm);color:var(--color-text);line-height:1.4;display:flex;align-items:baseline;gap:.4em}
+.read-line{font-size:var(--text-sm);color:var(--color-text);line-height:1.4;display:flex;align-items:center;gap:.4em;flex-wrap:wrap}
 .read-line .bk-icon{color:var(--color-primary);flex-shrink:0;font-size:.85em}
 .read-line .bk-title{font-style:italic}
 .over500-tag{font-family:var(--font-body);font-size:.62rem;font-weight:600;letter-spacing:.03em;background:var(--color-surface-3);color:var(--color-text-muted);padding:.05rem .35rem;border-radius:var(--radius-sm);white-space:nowrap}
@@ -207,7 +207,8 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .books-read .bk-name{flex:1;min-width:0;font-style:italic;font-family:var(--font-display);font-size:var(--text-base)}
 .books-read .bk-empty{color:var(--color-text-faint);font-size:var(--text-sm);padding:var(--space-3) 0}
 .status-seg{display:flex;gap:4px}
-.status-seg button{flex:1;font-size:var(--text-xs);padding:.32rem .2rem;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-bg);color:var(--color-text-muted);cursor:pointer;transition:all var(--transition)}
+.status-seg button{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;font-size:.72rem;padding:.36rem .2rem;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-bg);color:var(--color-text-muted);cursor:pointer;transition:all var(--transition)}
+.status-seg .st-ico{width:13px;height:13px}
 .status-seg button:hover{border-color:var(--color-text-muted)}
 .status-seg button.active[data-s="tbr"]{background:var(--color-text-muted);border-color:var(--color-text-muted);color:#fff}
 .status-seg button.active[data-s="lendo"]{background:var(--cat-b);border-color:var(--cat-b);color:#fff}
@@ -217,6 +218,18 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .st-tag.lendo{background:color-mix(in srgb, var(--cat-b) 18%, transparent);color:var(--cat-b)}
 .read-line.pending .bk-title{opacity:.75}
 .read-line.pending .bk-icon{opacity:.5}
+.st-ico{width:15px;height:15px;flex-shrink:0}
+.medal-ico{width:16px;height:16px}
+.read-line .bk-icon{display:inline-flex;align-items:center}
+.bk-stars{color:var(--cat-b);font-size:.82em;letter-spacing:.04em;flex-shrink:0}
+.st-tag.fora{background:var(--color-surface-3);color:var(--color-text-faint)}
+.mar-toggle{display:flex;align-items:center;gap:.5rem;font-size:var(--text-xs);color:var(--color-text);margin-top:var(--space-1);cursor:pointer;line-height:1.4}
+.mar-toggle input{accent-color:var(--cat-c);flex-shrink:0}
+.star-rate{display:flex;align-items:center;gap:1px;margin-top:var(--space-2)}
+.star-rate .sr-label{font-size:var(--text-xs);color:var(--color-text-muted);margin-right:.5rem}
+.star-rate .star{background:none;border:none;cursor:pointer;font-size:1.15rem;line-height:1;color:var(--color-border);padding:0 1px}
+.star-rate .star.on{color:var(--cat-b)}
+.star-rate .star:hover{color:var(--cat-b)}
 .add-book-form{margin-top:var(--space-4);padding-top:var(--space-4);border-top:1px solid var(--color-divider)}
 .bk-search-row{display:flex;gap:var(--space-2);margin-bottom:var(--space-2)}
 .bk-search-row input{flex:1;min-width:0}
@@ -370,7 +383,7 @@ footer .brand a:hover{text-decoration:underline}
       <li>Cada livro lido de autor premiado <strong>há mais de 50 anos</strong> (em 2026, os que ganharam até 1976): <strong>3 pontos</strong></li>
       <li>Premiado <strong>há menos de 50 anos</strong>: <strong>2 pontos</strong></li>
       <li>Livro de autor <strong>cotado</strong>: <strong>1 ponto</strong> — valide antes com os moderadores se o autor pode ser considerado cotado</li>
-      <li>Só vale a <strong>leitura do ano corrente</strong>; as anteriores não contam para a maratona</li>
+      <li>Só pontuam livros <strong>lidos durante a Maratona</strong> — começados e terminados entre <strong>junho e outubro de 2026</strong>; leituras de antes ou fora podem ser registradas (e ganhar estrelas), mas <strong>não pontuam</strong></li>
       <li>Livro com <strong>mais de 500 páginas</strong>: pontuação dele <strong>dobrada</strong></li>
       <li>Lendo <strong>ao menos 1 de cada categoria</strong>: pontos finais <strong>dobram</strong></li>
       <li>A <strong>maior pontuação</strong> ganha um livro do laureado do ano; sem publicação no Brasil, outro Nobel à sua escolha. Havendo empate, sorteio ❦</li>
@@ -762,6 +775,7 @@ function normalize() {
     l.books.forEach(function(b) {
       // compat: livro sem status era leitura concluída → 'lido'
       if (b.status !== 'tbr' && b.status !== 'lendo' && b.status !== 'lido') b.status = 'lido';
+      if (typeof b.rating !== 'number') b.rating = 0;
     });
   });
 }
@@ -796,12 +810,20 @@ function bookPts(cat, over500) {
   return over500 ? p * 2 : p;
 }
 
+// ponto só para livro LIDO durante a Maratona (jun–out/2026). naMaratona ausente = conta (compat).
+function countsPoint(bk) { return bk.status === 'lido' && bk.naMaratona !== false; }
 function laureatePts(l) {
-  return l.books.reduce(function(s, bk){ return s + (bk.status === 'lido' ? bookPts(l.cat, bk.over500) : 0); }, 0);
+  return l.books.reduce(function(s, bk){ return s + (countsPoint(bk) ? bookPts(l.cat, bk.over500) : 0); }, 0);
 }
 function lidoCount(l) {
-  return l.books.filter(function(bk){ return bk.status === 'lido'; }).length;
+  return l.books.filter(countsPoint).length;
 }
+function statusIcon(s) {
+  if (s === 'lido') return '<svg class="st-ico medal-ico" aria-hidden="true"><use href="#medal"/></svg>';
+  if (s === 'lendo') return '<svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5c3-1 6-1 9 1 3-2 6-2 9-1v13c-3-1-6-1-9 1-3-2-6-2-9-1z"/><path d="M12 6v13"/></svg>';
+  return '<svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-6-4-6 4V3z"/></svg>';
+}
+function starString(r) { r = r || 0; var s = ''; for (var i = 1; i <= 5; i++) s += (i <= r ? '★' : '☆'); return s; }
 
 /* ---------- RENDER ---------- */
 function render() {
@@ -821,12 +843,15 @@ function render() {
       var booksHtml = '';
       if (hasBooks) {
         booksHtml = '<div class="read-books">' + l.books.map(function(bk) {
-          var o5 = bk.over500 ? ' <span class="over500-tag">500+</span>' : '';
+          var o5 = (bk.status === 'lido' && bk.over500) ? ' <span class="over500-tag">500+</span>' : '';
           var t = bk.title ? escHtml(bk.title) : '<span style="opacity:.6">(sem título)</span>';
-          var icon = bk.status === 'lido' ? '❦' : (bk.status === 'lendo' ? '◐' : '○');
-          var stag = bk.status === 'lido' ? '' : ' <span class="st-tag ' + bk.status + '">' + STATUS_LABEL[bk.status] + '</span>';
-          var pcls = bk.status === 'lido' ? 'read-line' : 'read-line pending';
-          return '<div class="' + pcls + '"><span class="bk-icon">' + icon + '</span><span class="bk-title">' + t + '</span>' + o5 + stag + '</div>';
+          var counts = countsPoint(bk);
+          var stars = (bk.status === 'lido' && bk.rating) ? ' <span class="bk-stars">' + starString(bk.rating) + '</span>' : '';
+          var stag;
+          if (bk.status === 'lido') stag = counts ? '' : ' <span class="st-tag fora">fora da maratona</span>';
+          else stag = ' <span class="st-tag ' + bk.status + '">' + STATUS_LABEL[bk.status] + '</span>';
+          var pcls = counts ? 'read-line' : 'read-line pending';
+          return '<div class="' + pcls + '"><span class="bk-icon">' + statusIcon(bk.status) + '</span><span class="bk-title">' + t + '</span>' + o5 + stars + stag + '</div>';
         }).join('') + '</div>';
       }
       return '<li class="' + cls + '" data-id="' + l.id + '">' +
@@ -853,7 +878,7 @@ function updateScore() {
   var hasCat = { a: false, b: false, c: false };
   laureates.forEach(function(l) {
     l.books.forEach(function(bk) {
-      if (bk.status !== 'lido') return;
+      if (!countsPoint(bk)) return;
       hasCat[l.cat] = true;
       booksRead++;
       basePoints += bookPts(l.cat, bk.over500);
@@ -899,15 +924,25 @@ function renderBooksList() {
     return;
   }
   ul.innerHTML = l.books.map(function(bk, i) {
-    var tag = bk.over500 ? ' <span class="over500-tag">500+</span>' : '';
+    var tag = (bk.status === 'lido' && bk.over500) ? ' <span class="over500-tag">500+</span>' : '';
     var t = bk.title ? escHtml(bk.title) : '(sem título)';
     var seg = ['tbr','lendo','lido'].map(function(s) {
-      return '<button data-idx="' + i + '" data-s="' + s + '"' + (bk.status === s ? ' class="active"' : '') + '>' + STATUS_LABEL[s] + '</button>';
+      return '<button data-idx="' + i + '" data-s="' + s + '"' + (bk.status === s ? ' class="active"' : '') + '>' + statusIcon(s) + '<span>' + STATUS_LABEL[s] + '</span></button>';
     }).join('');
+    var extra = '';
+    if (bk.status === 'lido') {
+      var checked = bk.naMaratona !== false;
+      var rating = bk.rating || 0;
+      var stars = [1,2,3,4,5].map(function(n) { return '<button class="star' + (n <= rating ? ' on' : '') + '" data-idx="' + i + '" data-r="' + n + '">★</button>'; }).join('');
+      extra =
+        '<label class="mar-toggle"><input type="checkbox" class="mar-check" data-idx="' + i + '"' + (checked ? ' checked' : '') + '> Lido na Maratona 2026 (jun–out) — conta ponto</label>' +
+        '<div class="star-rate"><span class="sr-label">Sua nota</span>' + stars + '</div>';
+    }
     return '<li>' +
       '<div class="bk-top"><span class="bk-name">' + t + '</span>' + tag +
         '<button class="btn-icon del bk-remove" data-idx="' + i + '" title="Remover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
       '<div class="status-seg">' + seg + '</div>' +
+      extra +
     '</li>';
   }).join('');
 }
@@ -920,7 +955,9 @@ function addBook() {
   if (!title) { input.focus(); return; }
   var over500 = document.getElementById('bk-over500').checked;
   var status = document.getElementById('bk-status').value || 'lido';
-  l.books.push({ title: title, over500: over500, obs: '', status: status });
+  var book = { title: title, over500: over500, obs: '', status: status, rating: 0 };
+  if (status === 'lido') book.naMaratona = true;
+  l.books.push(book);
   input.value = '';
   document.getElementById('bk-over500').checked = false;
   input.focus();
@@ -1123,7 +1160,7 @@ function buildReport() {
   var hasCat = { a: false, b: false, c: false };
   laureates.forEach(function(l) {
     l.books.forEach(function(bk) {
-      if (bk.status !== 'lido') return;
+      if (!countsPoint(bk)) return;
       lidoBooks++; basePoints += bookPts(l.cat, bk.over500); hasCat[l.cat] = true;
     });
   });
@@ -1141,29 +1178,32 @@ function buildReport() {
   L.push('TOTAL: ' + total + ' pontos');
   L.push('----------------------------------------');
   ['a','b','c'].forEach(function(cat) {
-    var read = laureates.filter(function(l) { return l.cat === cat && l.books.some(function(b){ return b.status === 'lido'; }); });
+    var read = laureates.filter(function(l) { return l.cat === cat && l.books.some(countsPoint); });
     if (!read.length) return;
     L.push('');
     L.push(CAT_LABEL[cat].toUpperCase());
     read.forEach(function(l) {
-      l.books.filter(function(b){ return b.status === 'lido'; }).forEach(function(bk) {
+      l.books.filter(countsPoint).forEach(function(bk) {
         var p = bookPts(cat, bk.over500);
-        L.push('  • ' + l.author + ' — ' + (bk.title || '(sem título)') + (bk.over500 ? ' [500+]' : '') + ' — ' + p + ' pt' + (p !== 1 ? 's' : ''));
+        var st = bk.rating ? ' · ' + bk.rating + '★' : '';
+        L.push('  • ' + l.author + ' — ' + (bk.title || '(sem título)') + (bk.over500 ? ' [500+]' : '') + ' — ' + p + ' pt' + (p !== 1 ? 's' : '') + st);
       });
     });
   });
-  function shelf(status, label) {
+  function shelf(pred, label) {
     var rows = [];
     laureates.forEach(function(l) {
-      l.books.filter(function(b){ return b.status === status; }).forEach(function(bk) {
-        rows.push('  • ' + l.author + ' — ' + (bk.title || '(sem título)'));
+      l.books.filter(pred).forEach(function(bk) {
+        var st = (bk.status === 'lido' && bk.rating) ? ' · ' + bk.rating + '★' : '';
+        rows.push('  • ' + l.author + ' — ' + (bk.title || '(sem título)') + st);
       });
     });
     if (rows.length) { L.push(''); L.push(label.toUpperCase() + ' (não pontua)'); rows.forEach(function(r){ L.push(r); }); }
   }
-  shelf('lendo', 'Lendo');
-  shelf('tbr', 'Quero ler');
-  if (lidoBooks === 0) { L.push(''); L.push('(nenhum livro marcado como lido ainda)'); }
+  shelf(function(b){ return b.status === 'lendo'; }, 'Lendo');
+  shelf(function(b){ return b.status === 'tbr'; }, 'Quero ler');
+  shelf(function(b){ return b.status === 'lido' && b.naMaratona === false; }, 'Lido (fora da maratona)');
+  if (lidoBooks === 0) { L.push(''); L.push('(nenhum livro lido na maratona ainda)'); }
   L.push('');
   return L.join('\n');
 }
@@ -1270,8 +1310,27 @@ function wire() {
     if (sb) {
       var idx = parseInt(sb.getAttribute('data-idx'), 10);
       var s = sb.getAttribute('data-s');
-      if (l.books[idx]) { l.books[idx].status = s; renderBooksList(); render(); }
+      if (l.books[idx]) {
+        l.books[idx].status = s;
+        if (s === 'lido' && l.books[idx].naMaratona === undefined) l.books[idx].naMaratona = true;
+        renderBooksList(); render();
+      }
+      return;
     }
+    var star = e.target.closest('.star-rate .star');
+    if (star) {
+      var si = parseInt(star.getAttribute('data-idx'), 10);
+      var r = parseInt(star.getAttribute('data-r'), 10);
+      if (l.books[si]) { l.books[si].rating = (l.books[si].rating === r ? 0 : r); renderBooksList(); render(); }
+    }
+  });
+  document.getElementById('books-read').addEventListener('change', function(e) {
+    var mc = e.target.closest('.mar-check');
+    if (!mc) return;
+    var l = findLaureate(booksModalId);
+    if (!l) return;
+    var i = parseInt(mc.getAttribute('data-idx'), 10);
+    if (l.books[i]) { l.books[i].naMaratona = mc.checked; render(); }
   });
   document.getElementById('bk-edit-laureate').addEventListener('click', function() {
     var id = booksModalId; closeBooks(); openEdit(id);
@@ -1364,6 +1423,8 @@ function mergeData(localArr, cloudArr){
       else {
         if (statusRank(b.status) > statusRank(byKey[k].status)) byKey[k].status = b.status;
         if (b.over500) byKey[k].over500 = true;
+        if ((b.rating || 0) > (byKey[k].rating || 0)) byKey[k].rating = b.rating;
+        if (byKey[k].naMaratona === false && b.naMaratona !== false) byKey[k].naMaratona = true;
       }
     });
   });
