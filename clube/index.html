@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#EFE8DA">
-<meta name="description" content="Marginália — Clube de Leitura: um caderno de leitura profunda com ecos interdisciplinares e uma camada de comunidade discreta.">
+<meta name="description" content="Marginália — um clube pessoal de leitura profunda. Notas à margem, pontes entre obras e círculos de leitura com amigos.">
 <title>Marginália — Clube de Leitura</title>
 <link rel="icon" type="image/png" sizes="180x180" href="/icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,7 +24,6 @@
   --sp-2:.5rem;--sp-3:.75rem;--sp-4:1rem;--sp-5:1.25rem;--sp-6:1.5rem;--sp-8:2rem;--sp-10:2.5rem;--sp-12:3rem;--sp-16:4rem;--sp-20:5rem;--sp-24:6rem;
   --r-md:.5rem;--r-lg:.75rem;--r-xl:1rem;--r-full:9999px;
   --tr:180ms cubic-bezier(.16,1,.3,1);
-  --cat-lit:#B0533A;--cat-hist:#C2871F;--cat-phi:#74456A;
 }
 [data-theme="light"]{
   --bg:#EFE8DA;--surface:#F7F1E4;--surface2:#FBF6EA;--surface3:#E8DFC9;
@@ -43,11 +42,12 @@ html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
 body{font-family:var(--font-body);font-size:var(--text-base);background:var(--bg);color:var(--text);line-height:1.6;min-height:100dvh;transition:background .3s,color .3s}
 img{display:block;max-width:100%}
 a{color:inherit}
-.wrap{max-width:1080px;margin:0 auto;padding:0 var(--sp-6)}
+.wrap{max-width:1000px;margin:0 auto;padding:0 var(--sp-6)}
+em{font-style:italic}
 
 /* HEADER */
 .site-header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--surface) 88%,transparent);border-bottom:1px solid var(--border);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
-.header-in{max-width:1080px;margin:0 auto;padding:var(--sp-4) var(--sp-6);display:flex;align-items:center;justify-content:space-between;gap:var(--sp-4)}
+.header-in{max-width:1000px;margin:0 auto;padding:var(--sp-4) var(--sp-6);display:flex;align-items:center;justify-content:space-between;gap:var(--sp-4)}
 .logo{display:flex;align-items:center;gap:.5rem;text-decoration:none}
 .logo img{width:26px;height:26px;border-radius:6px;object-fit:contain}
 .logo b{font-family:var(--font-display);font-weight:600;font-size:var(--text-lg);color:var(--primary)}
@@ -63,37 +63,41 @@ a{color:inherit}
 /* HERO */
 .hero{text-align:center;padding:var(--sp-24) var(--sp-6) var(--sp-16);position:relative;overflow:hidden}
 .hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 0%,var(--glow) 0%,transparent 70%);pointer-events:none}
-.hero .mark{width:64px;height:64px;margin:0 auto var(--sp-5);border-radius:14px;object-fit:contain;position:relative}
-.hero .eyebrow{font-size:var(--text-xs);letter-spacing:.2em;text-transform:uppercase;color:var(--primary);font-weight:600;margin-bottom:var(--sp-4)}
-.hero h1{font-family:var(--font-display);font-size:var(--text-hero);font-weight:600;line-height:1.02;letter-spacing:-.01em;margin-bottom:var(--sp-5)}
-.hero h1 em{font-style:italic;color:var(--primary)}
+.hero .mark{width:72px;height:72px;margin:0 auto var(--sp-5);object-fit:contain;position:relative}
+.hero .eyebrow{font-family:var(--font-display);font-style:italic;font-size:var(--text-base);color:var(--primary);margin-bottom:var(--sp-3)}
+.hero h1{font-family:var(--font-display);font-size:var(--text-hero);font-weight:500;line-height:1.02;letter-spacing:-.01em;margin-bottom:var(--sp-3)}
+.hero .orn{color:var(--primary);opacity:.6;letter-spacing:.5em;font-size:1rem;margin-bottom:var(--sp-5)}
 .hero .tagline{font-family:var(--font-display);font-style:italic;font-size:var(--text-lg);color:var(--muted);max-width:34ch;margin:0 auto var(--sp-8)}
 .hero-actions{display:flex;gap:var(--sp-3);justify-content:center;flex-wrap:wrap}
 
 /* SECTIONS */
 section.block{padding:var(--sp-16) 0;border-top:1px solid var(--divider)}
-.kicker{font-size:var(--text-xs);letter-spacing:.16em;text-transform:uppercase;color:var(--primary);font-weight:600;margin-bottom:var(--sp-3);text-align:center}
-.block h2{font-family:var(--font-display);font-weight:600;font-size:var(--text-2xl);line-height:1.1;text-align:center;letter-spacing:-.01em;margin-bottom:var(--sp-4)}
-.block .lead{font-size:var(--text-lg);color:var(--muted);max-width:60ch;margin:0 auto var(--sp-10);text-align:center;line-height:1.7}
-.block .lead em{font-style:italic;color:var(--text)}
+.kicker{font-family:var(--font-display);font-size:var(--text-xs);letter-spacing:.18em;text-transform:uppercase;color:var(--primary);font-weight:600;margin-bottom:var(--sp-3);text-align:center}
+.block h2{font-family:var(--font-display);font-weight:500;font-size:var(--text-2xl);line-height:1.12;text-align:center;letter-spacing:-.01em;margin-bottom:var(--sp-6);max-width:18ch;margin-left:auto;margin-right:auto}
+.block h2 em{color:var(--primary)}
+.prose{max-width:60ch;margin:0 auto;text-align:center}
+.prose p{font-size:var(--text-base);color:var(--muted);line-height:1.8;margin-bottom:var(--sp-5)}
+.prose p.em{font-family:var(--font-display);font-style:italic;font-size:var(--text-lg);color:var(--primary)}
 
-/* FEATURE CARDS */
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-5)}
-@media(max-width:760px){.cards{grid-template-columns:1fr}}
+/* TESTIMONIAL */
+.testi{max-width:60ch;margin:0 auto;text-align:center}
+.testi .mk{font-family:var(--font-display);font-size:4rem;line-height:.4;color:var(--primary);opacity:.4;height:1.6rem;display:block}
+.testi blockquote{font-family:var(--font-display);font-style:italic;font-size:var(--text-xl);line-height:1.5;color:var(--text);margin:var(--sp-4) 0 var(--sp-6)}
+.testi .author{font-family:var(--font-display);font-size:var(--text-xs);letter-spacing:.16em;text-transform:uppercase;color:var(--primary)}
+.testi .foot{font-family:var(--font-display);font-style:italic;font-size:var(--text-base);color:var(--muted);margin-top:var(--sp-6);max-width:48ch;margin-left:auto;margin-right:auto}
+
+/* CARDS */
+.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--sp-5);max-width:880px;margin:0 auto}
+@media(max-width:680px){.cards{grid-template-columns:1fr}}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:var(--sp-6);box-shadow:var(--shadow)}
-.card .ic{width:40px;height:40px;color:var(--primary);margin-bottom:var(--sp-4)}
+.card .orn{color:var(--primary);font-size:1.1rem;margin-bottom:var(--sp-2);display:block}
 .card h3{font-family:var(--font-display);font-weight:600;font-size:var(--text-lg);margin-bottom:var(--sp-2)}
 .card p{font-size:var(--text-sm);color:var(--muted);line-height:1.65}
 
-/* NÃO É */
-.notis{max-width:720px;margin:var(--sp-8) auto 0;display:flex;flex-wrap:wrap;gap:var(--sp-2);justify-content:center}
-.notis span{font-size:var(--text-sm);color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-full);padding:.4rem .9rem}
-.notis span s{color:var(--faint)}
-
-/* COMPANION PAGES */
+/* COMPANIONS */
 .companions{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-5)}
-@media(max-width:760px){.companions{grid-template-columns:1fr}}
-.comp{display:block;text-decoration:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:var(--sp-6);box-shadow:var(--shadow);transition:all var(--tr);position:relative;overflow:hidden}
+@media(max-width:680px){.companions{grid-template-columns:1fr}}
+.comp{display:block;text-decoration:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:var(--sp-6);box-shadow:var(--shadow);transition:all var(--tr)}
 .comp:hover{border-color:var(--primary);transform:translateY(-2px);box-shadow:var(--shadow-lg)}
 .comp .tag{font-size:var(--text-xs);letter-spacing:.12em;text-transform:uppercase;color:var(--primary);font-weight:600}
 .comp h3{font-family:var(--font-display);font-weight:600;font-size:var(--text-xl);margin:var(--sp-2) 0}
@@ -101,17 +105,19 @@ section.block{padding:var(--sp-16) 0;border-top:1px solid var(--divider)}
 .comp .go{font-size:var(--text-sm);color:var(--primary);font-weight:500}
 
 /* STEPS */
-.steps{max-width:680px;margin:var(--sp-8) auto 0;display:flex;flex-direction:column;gap:var(--sp-5)}
-.step{display:flex;gap:var(--sp-4);align-items:flex-start}
-.step .n{flex-shrink:0;width:36px;height:36px;border-radius:var(--r-full);background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600}
-.step h4{font-family:var(--font-display);font-weight:600;font-size:var(--text-base);margin-bottom:2px}
-.step p{font-size:var(--text-sm);color:var(--muted);line-height:1.6}
+.steps{max-width:680px;margin:var(--sp-8) auto 0;display:flex;flex-direction:column;gap:var(--sp-6)}
+.step{display:flex;gap:var(--sp-5);align-items:flex-start}
+.step .n{flex-shrink:0;font-family:var(--font-display);font-style:italic;font-size:var(--text-2xl);color:var(--primary);line-height:1;width:1.6em;text-align:center}
+.step h4{font-family:var(--font-display);font-weight:600;font-size:var(--text-lg);margin-bottom:2px}
+.step p{font-size:var(--text-sm);color:var(--muted);line-height:1.65}
 .center-cta{text-align:center;margin-top:var(--sp-10)}
 
-/* QUOTE */
-.quote-block{text-align:center;padding:var(--sp-16) var(--sp-6)}
-.quote-block .q{font-family:var(--font-display);font-style:italic;font-size:var(--text-xl);color:var(--text);max-width:42ch;margin:0 auto var(--sp-3);line-height:1.4}
-.quote-block .a{font-size:var(--text-sm);color:var(--muted)}
+/* INVITE (fecho) */
+.invite{text-align:center;padding:var(--sp-20) var(--sp-6)}
+.invite .orn{color:var(--primary);opacity:.5;font-size:1.3rem;margin-bottom:var(--sp-4)}
+.invite h2{font-family:var(--font-display);font-weight:500;font-size:var(--text-2xl);line-height:1.2;max-width:20ch;margin:0 auto var(--sp-5);color:var(--text)}
+.invite p{font-size:var(--text-base);color:var(--muted);max-width:54ch;margin:0 auto var(--sp-3);line-height:1.7}
+.invite .sig{font-family:var(--font-display);font-style:italic;color:var(--faint);margin-top:var(--sp-6)}
 
 /* FOOTER */
 footer{background:var(--surface);border-top:1px solid var(--border);padding:var(--sp-12) var(--sp-6);text-align:center}
@@ -119,7 +125,6 @@ footer .fl{display:flex;gap:var(--sp-5);justify-content:center;flex-wrap:wrap;ma
 footer .fl a{font-size:var(--text-sm);color:var(--muted);text-decoration:none}
 footer .fl a:hover{color:var(--primary)}
 footer .brand{font-family:var(--font-display);font-size:var(--text-sm);color:var(--faint)}
-.ornament{color:var(--primary);opacity:.5;font-size:1.2rem;margin-bottom:var(--sp-3)}
 </style>
 </head>
 <body>
@@ -136,9 +141,10 @@ footer .brand{font-family:var(--font-display);font-size:var(--text-sm);color:var
 
 <section class="hero">
   <img class="mark" src="/symbol.png" alt="Marginália">
-  <p class="eyebrow">Clube de Leitura</p>
+  <p class="eyebrow">um clube pessoal de leitura profunda</p>
   <h1>Marginália</h1>
-  <p class="tagline">"Cada livro é uma porta. Você nunca lê sozinha."</p>
+  <div class="orn">❦ ❦ ❦</div>
+  <p class="tagline">Notas à margem, pontes entre obras, círculos de leitura com amigos.</p>
   <div class="hero-actions">
     <a class="btn" href="/">Entrar no app →</a>
     <a class="btn ghost" href="#sobre">Conhecer o clube</a>
@@ -148,38 +154,49 @@ footer .brand{font-family:var(--font-display);font-size:var(--text-sm);color:var
 <div class="wrap">
 
   <section class="block" id="sobre">
-    <p class="kicker">O que é</p>
-    <h2>Um caderno de leitura profunda</h2>
-    <p class="lead">O Marginália acompanha a sua leitura de obras densas — ficção literária, filosofia, ensaio, biografia — com uma camada de <em>ecos</em> (conexões interdisciplinares: outros livros, música, arte, cinema, contexto histórico) e uma camada de <em>margem</em> (suas anotações). E, quando quiser, uma camada de comunidade discreta: pequenos círculos para ler junto.</p>
-    <div class="cards">
-      <div class="card">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/><path d="M14 6l3 3"/></svg>
-        <h3>Margem</h3>
-        <p>Anotações, citações e impressões ancoradas no que você lê — seu pensamento à margem do texto, guardado e organizado por obra.</p>
-      </div>
-      <div class="card">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>
-        <h3>Ecos</h3>
-        <p>Para cada livro, ressonâncias com outras obras, música, arte, cinema, filosofia e história — o que conversa com o que você está lendo.</p>
-      </div>
-      <div class="card">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 5.2A3 3 0 0 1 16 11M21.5 20c0-2.6-1.5-4.6-3.7-5.5"/></svg>
-        <h3>Círculos</h3>
-        <p>Leitura em comunidade, opcional e em pequena escala: rodas de 5 a 200 leitores, com mural e desafios. Entra quem você aprova.</p>
-      </div>
+    <p class="kicker">I · O que é</p>
+    <h2>Um espaço para ler <em>com mais profundidade</em> e menos solidão</h2>
+    <div class="prose">
+      <p>Marginália é um aplicativo de clube de leitura — ainda em construção, ainda em teste — que nasceu de uma convicção simples:</p>
+      <p class="em">ler é melhor quando a experiência não fica apenas dentro de nós.</p>
+      <p>O nome vem das anotações feitas à margem dos livros. Aquelas pequenas marcas que revelam como cada leitor habita um texto de maneira única.</p>
+      <p class="em">Aqui, essas marcas ganham voz — e encontram outras.</p>
     </div>
-    <div class="notis">
-      <span>Não é <s>Goodreads</s></span>
-      <span>Não é <s>leitor de e-book</s></span>
-      <span>Não é <s>gamificado</s></span>
-      <span>Não é <s>rede social aberta</s></span>
+  </section>
+
+  <section class="block">
+    <p class="kicker">II · Sozinho ou em companhia</p>
+    <h2>Coletivo ou intimista — <em>você escolhe</em></h2>
+    <div class="prose">
+      <p>Mesmo lendo sozinho, o Marginália acompanha. Defina seu ritmo, acesse os livros, registre as ressonâncias que um texto provoca em você.</p>
+      <p class="em">Se desafie com leituras que sempre adiou — ou se acolha nas que trazem calma.</p>
+    </div>
+  </section>
+
+  <section class="block">
+    <p class="kicker">III · Por que existe</p>
+    <div class="testi">
+      <span class="mk">"</span>
+      <blockquote>Sempre anotei nas margens. Sempre quis conversar sobre o que li. O Marginália nasceu da vontade de juntar essas duas coisas — e de compartilhá-las com pessoas que também levam a leitura a sério.</blockquote>
+      <div class="author">Mari, criadora do projeto</div>
+      <p class="foot">O app ainda é jovem. Vocês são os primeiros leitores de fora a experimentá-lo.</p>
+    </div>
+  </section>
+
+  <section class="block">
+    <p class="kicker">IV · O que você encontra</p>
+    <h2>Ferramentas para leitores que <em>levam isso a sério</em></h2>
+    <div class="cards">
+      <div class="card"><span class="orn">❦</span><h3>Caderno de Leitura</h3><p>Registre suas notas, impressões e citações livro a livro. Seu caderno pessoal, sempre à mão.</p></div>
+      <div class="card"><span class="orn">❦</span><h3>Pontes entre Obras</h3><p>Conecte temas, personagens e ideias que atravessam diferentes livros. Tudo que você leu conversa.</p></div>
+      <div class="card"><span class="orn">❦</span><h3>Círculo de Leitura</h3><p>Leia em companhia. Compartilhe notas, discuta passagens, crie uma leitura coletiva.</p></div>
+      <div class="card"><span class="orn">❦</span><h3>Marginália Clube</h3><p>O clube de leitura digital — com curadoria, discussões guiadas e leituras mensais em grupo.</p></div>
     </div>
   </section>
 
   <section class="block">
     <p class="kicker">Para explorar</p>
     <h2>Páginas-companheiras</h2>
-    <p class="lead">Duas portas que abrem para além do app — públicas, é só entrar.</p>
     <div class="companions">
       <a class="comp" href="/linha-do-tempo/">
         <span class="tag">✦ Linha amiga</span>
@@ -197,22 +214,24 @@ footer .brand{font-family:var(--font-display);font-size:var(--text-sm);color:var
   </section>
 
   <section class="block">
-    <p class="kicker">Como entrar</p>
-    <h2>Comece a ler com a gente</h2>
+    <p class="kicker">V · Como participar</p>
+    <h2>Três passos para <em>entrar no clube</em></h2>
     <div class="steps">
-      <div class="step"><div class="n">1</div><div><h4>Abra o app</h4><p>O Marginália funciona no navegador e pode ser instalado como app no celular.</p></div></div>
-      <div class="step"><div class="n">2</div><div><h4>Entre com seu e-mail</h4><p>Login simples por código — sem senha. Seus livros e notas ficam salvos e sincronizam entre aparelhos.</p></div></div>
-      <div class="step"><div class="n">3</div><div><h4>Leia, anote, ecoe</h4><p>Registre suas leituras, escreva à margem, descubra os ecos de cada obra — e, se quiser, entre num círculo.</p></div></div>
+      <div class="step"><div class="n">I</div><div><h4>Abra o link no celular</h4><p>Ele foi desenhado para funcionar como app no seu próprio celular.</p></div></div>
+      <div class="step"><div class="n">II</div><div><h4>Adicione à tela inicial</h4><p>iPhone (Safari): compartilhar → "Adicionar à Tela de Início". Android (Chrome): menu → "Adicionar à tela inicial". Vira um app de verdade.</p></div></div>
+      <div class="step"><div class="n">III</div><div><h4>Explore e me conte</h4><p>Ainda está sendo construído — seu olhar de testador é precioso. O que funciona? O que confunde? O que falta?</p></div></div>
     </div>
     <div class="center-cta"><a class="btn" href="/">Entrar no app →</a></div>
   </section>
 
 </div>
 
-<div class="quote-block">
-  <div class="ornament">❦</div>
-  <div class="q">"Para mim, as palavras numa página dão coerência ao mundo."</div>
-  <div class="a">— Alberto Manguel</div>
+<div class="invite">
+  <div class="orn">❦</div>
+  <h2>Toda leitura ganha mais quando tem testemunhas.</h2>
+  <p>Obrigada por fazer parte desse experimento. Vocês não são só os primeiros usuários —</p>
+  <p><em>são os primeiros leitores desta ideia.</em></p>
+  <div class="sig">Marginália — um clube pessoal de leitura profunda</div>
 </div>
 
 <footer>
