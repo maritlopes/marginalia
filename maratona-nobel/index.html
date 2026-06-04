@@ -445,7 +445,7 @@ footer .brand a:hover{text-decoration:underline}
     <input type="file" id="import-file" accept=".json" style="display:none">
   </div>
 
-  <p class="save-hint">💾 Seus livros ficam salvos <strong>neste navegador</strong>. Para não perdê-los ao trocar de aparelho ou limpar o navegador, use <strong>Exportar resultado</strong> ou <strong>Backup</strong> — ou entre com seu e-mail na <strong>Sincronização</strong> abaixo (não precisa de convite).</p>
+  <p class="save-hint"><strong>🔒 Suas leituras ficam só com você</strong> — ninguém mais vê a sua lista. Elas são salvas <strong>neste navegador</strong>; para não perdê-las ao trocar de aparelho ou limpar o navegador, use <strong>Exportar resultado</strong> / <strong>Backup</strong>, ou entre com seu e-mail na <strong>Sincronização</strong> (não precisa de convite).</p>
 
   <!-- SINCRONIZAÇÃO -->
   <section class="sync" id="sync-panel" style="display:none">
@@ -1459,7 +1459,7 @@ function render(){
   if (user) {
     body.innerHTML =
       '<div class="sync-status"><span class="ok">☁ Sincronizado</span> · ' + esc(user.email||'conta conectada') +
-      '<br>Suas leituras salvam na nuvem e aparecem em qualquer aparelho onde você entrar.</div>' +
+      '<br>Suas leituras salvam na nuvem e aparecem em qualquer aparelho onde você entrar. <strong>🔒 Só você vê</strong> — ninguém mais acessa a sua lista.</div>' +
       '<div class="sync-row"><button class="sync-btn ghost" id="sync-out">Sair desta conta</button>' +
       '<span id="sync-msg" class="sync-note"></span></div>';
     document.getElementById('sync-out').onclick = signOut;
@@ -1475,7 +1475,7 @@ function render(){
     var ci=document.getElementById('sync-code'); if(ci){ ci.focus(); ci.onkeydown=function(e){ if(e.key==='Enter') verifyCode(); }; }
   } else {
     body.innerHTML =
-      '<div class="sync-status">Sincronize sua maratona entre o <strong>celular</strong> e o <strong>computador</strong>. Entre com seu e-mail — chega um código. <strong>Não precisa de convite.</strong></div>' +
+      '<div class="sync-status">Sincronize sua maratona entre o <strong>celular</strong> e o <strong>computador</strong>. Entre com seu e-mail — chega um código. <strong>Não precisa de convite.</strong> 🔒 Só você vê suas leituras.</div>' +
       '<div class="sync-row"><input id="sync-email" type="email" inputmode="email" placeholder="seu@email.com" autocomplete="email">' +
       '<button class="sync-btn" id="sync-send">Enviar código</button></div>' +
       '<div class="sync-note" id="sync-msg"></div>';
