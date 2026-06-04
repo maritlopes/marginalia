@@ -149,6 +149,7 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .cat-section[data-cat="c"] .book-row.done .cb{background:var(--cat-c);border-color:var(--cat-c)}
 .book-row .info{flex:1;min-width:0}
 .book-row .info .title-line{font-family:var(--font-display);font-weight:600;font-size:var(--text-base);line-height:1.25;color:var(--color-text)}
+.flag{font-size:.82em;vertical-align:baseline}
 .book-row .info .meta{font-size:var(--text-xs);color:var(--color-text-muted);margin-top:1px}
 .book-row .info .read-books{margin-top:var(--space-2);display:flex;flex-direction:column;gap:3px}
 .read-line{font-size:var(--text-sm);color:var(--color-text);line-height:1.4;display:flex;align-items:center;gap:.4em;flex-wrap:wrap}
@@ -561,6 +562,22 @@ var THEME_KEY = 'maratona-nobel-theme';
 var CAT_PTS = { a: 3, b: 2, c: 1 };
 var CAT_BADGE = { a: 'badge-a', b: 'badge-b', c: 'badge-c' };
 var STATUS_LABEL = { tbr: 'Quero ler', lendo: 'Lendo', lido: 'Lido' };
+var COUNTRY_FLAG = {
+  'França':'🇫🇷','Alemanha':'🇩🇪','Noruega':'🇳🇴','Espanha':'🇪🇸','Polônia':'🇵🇱','Itália':'🇮🇹',
+  'Reino Unido':'🇬🇧','Suécia':'🇸🇪','Bélgica':'🇧🇪','Índia':'🇮🇳','Dinamarca':'🇩🇰','Suíça':'🇨🇭',
+  'Irlanda':'🇮🇪','EUA':'🇺🇸','Rússia':'🇷🇺','Finlândia':'🇫🇮','Chile':'🇨🇱','URSS':'🇷🇺',
+  'Guatemala':'🇬🇹','Japão':'🇯🇵','Israel':'🇮🇱','Iugoslávia':'🇷🇸','Grécia':'🇬🇷','Austrália':'🇦🇺',
+  'Islândia':'🇮🇸','Bulgária':'🇧🇬','Colômbia':'🇨🇴','Tcheco-Eslováquia':'🇨🇿','Nigéria':'🇳🇬',
+  'Egito':'🇪🇬','México':'🇲🇽','África do Sul':'🇿🇦','Santa Lúcia':'🇱🇨','Canadá':'🇨🇦','Portugal':'🇵🇹',
+  'China':'🇨🇳','Trinidad':'🇹🇹','Hungria':'🇭🇺','Áustria':'🇦🇹','Turquia':'🇹🇷','Romênia':'🇷🇴',
+  'Peru':'🇵🇪','Bielorrússia':'🇧🇾','Tanzânia':'🇹🇿','Coreia do Sul':'🇰🇷','Ruanda':'🇷🇼',
+  'Antígua e Barbuda':'🇦🇬','Moçambique':'🇲🇿','Quênia':'🇰🇪','Argentina':'🇦🇷','Brasil':'🇧🇷'
+};
+function countryFlag(c){
+  if (!c) return '';
+  var first = c.split('/')[0].trim();
+  return COUNTRY_FLAG[first] || '';
+}
 var nextId = 1;
 var laureates = [];
 
@@ -857,7 +874,7 @@ function render() {
       return '<li class="' + cls + '" data-id="' + l.id + '">' +
         '<div class="cb">' + (done ? '✓' : '') + '</div>' +
         '<div class="info">' +
-          '<div class="title-line">' + escHtml(l.author) + '</div>' +
+          '<div class="title-line">' + escHtml(l.author) + (countryFlag(l.country) ? ' <span class="flag" title="' + escHtml(l.country) + '">' + countryFlag(l.country) + '</span>' : '') + '</div>' +
           (metaParts ? '<div class="meta">' + escHtml(metaParts) + '</div>' : '') +
           booksHtml +
         '</div>' +
@@ -1116,7 +1133,7 @@ function renderPicker(q) {
     var metaParts = [l.nobel, l.country].filter(Boolean).join(' · ');
     var n = l.books.length ? ' · ' + l.books.length + '✓' : '';
     return '<li data-id="' + l.id + '">' +
-      '<span class="p-name">' + escHtml(l.author) + '<br><span class="p-meta">' + escHtml(metaParts) + n + '</span></span>' +
+      '<span class="p-name">' + escHtml(l.author) + (countryFlag(l.country) ? ' ' + countryFlag(l.country) : '') + '<br><span class="p-meta">' + escHtml(metaParts) + n + '</span></span>' +
       '<span class="p-badge" style="background:' + catCol[l.cat] + '">' + catName[l.cat] + '</span>' +
     '</li>';
   }).join('');
