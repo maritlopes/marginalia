@@ -66,7 +66,7 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .logo-sub{font-family:var(--font-display);font-style:italic;font-size:var(--text-sm);color:var(--color-text-muted)}
 .logo-sub a{color:inherit;text-decoration:underline;text-underline-offset:2px;text-decoration-thickness:.06em}
 .logo-sub a:hover{color:var(--color-primary)}
-.logo-mnl{font-family:var(--font-display);font-weight:700;font-size:var(--text-xl);color:var(--color-primary);letter-spacing:.08em;line-height:1;flex-shrink:0}
+.medal-glyph{width:30px;height:30px;flex-shrink:0}
 @media(max-width:560px){.logo-em,.logo-sub{display:none}}
 .theme-toggle{width:38px;height:38px;border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;color:var(--color-text-muted);border:1px solid var(--color-border);transition:all var(--transition)}
 .theme-toggle:hover{color:var(--color-text);background:var(--color-surface-2);border-color:var(--color-primary)}
@@ -225,7 +225,7 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 /* FOOTER */
 footer{background:var(--color-surface);border-top:1px solid var(--color-border);text-align:center;padding:var(--space-12) var(--space-6) var(--space-10);margin-top:var(--space-16)}
 footer .ornament{color:var(--color-primary);font-size:1.2rem;opacity:.55;margin-bottom:var(--space-3)}
-.mnl-sign{font-family:var(--font-display);font-weight:700;font-size:2rem;letter-spacing:.14em;color:var(--color-primary);margin-bottom:var(--space-4)}
+.medal-sign{width:66px;height:66px;display:block;margin:0 auto var(--space-4)}
 footer .quote{font-family:var(--font-display);font-style:italic;font-size:var(--text-base);color:var(--color-text-muted);max-width:48ch;margin:0 auto var(--space-2);line-height:1.5}
 footer .attr{font-size:var(--text-xs);color:var(--color-text-faint);letter-spacing:.04em}
 footer .brand{margin-top:var(--space-5);font-family:var(--font-display);font-size:var(--text-sm);color:var(--color-text-faint)}
@@ -251,10 +251,42 @@ footer .brand a:hover{text-decoration:underline}
 </head>
 <body>
 
+<!-- Medalha do Nobel (marca provisória — vetor original) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="nobelGold" cx="42%" cy="36%" r="68%">
+      <stop offset="0%" stop-color="#EFDDAB"/><stop offset="52%" stop-color="#CDA950"/><stop offset="100%" stop-color="#9A772B"/>
+    </radialGradient>
+  </defs>
+  <symbol id="medal" viewBox="0 0 120 120">
+    <circle cx="60" cy="60" r="50" fill="url(#nobelGold)" stroke="#7E6320" stroke-width="2.5"/>
+    <circle cx="60" cy="60" r="42" fill="none" stroke="#7E6320" stroke-width="1" opacity=".5"/>
+    <g fill="none" stroke="#7E6320" stroke-width="2" stroke-linecap="round" opacity=".85">
+      <path d="M60 98 C 41 94, 30 78, 28 54"/>
+      <path d="M60 98 C 79 94, 90 78, 92 54"/>
+    </g>
+    <g fill="#7E6320" opacity=".8">
+      <ellipse cx="46" cy="92" rx="5" ry="2.3" transform="rotate(-58 46 92)"/>
+      <ellipse cx="37" cy="84" rx="5" ry="2.3" transform="rotate(-44 37 84)"/>
+      <ellipse cx="31" cy="74" rx="5" ry="2.3" transform="rotate(-26 31 74)"/>
+      <ellipse cx="28" cy="64" rx="5" ry="2.3" transform="rotate(-10 28 64)"/>
+      <ellipse cx="27" cy="55" rx="4.6" ry="2.2" transform="rotate(6 27 55)"/>
+      <ellipse cx="74" cy="92" rx="5" ry="2.3" transform="rotate(58 74 92)"/>
+      <ellipse cx="83" cy="84" rx="5" ry="2.3" transform="rotate(44 83 84)"/>
+      <ellipse cx="89" cy="74" rx="5" ry="2.3" transform="rotate(26 89 74)"/>
+      <ellipse cx="92" cy="64" rx="5" ry="2.3" transform="rotate(10 92 64)"/>
+      <ellipse cx="93" cy="55" rx="4.6" ry="2.2" transform="rotate(-6 93 55)"/>
+    </g>
+    <path d="M60 98 q -7 6 -13 4 q 6 1 13 -2 q 7 3 13 2 q -6 2 -13 -4z" fill="#7E6320" opacity=".85"/>
+    <path d="M60 44 l3.4 8 8.6 .7 -6.6 5.6 2 8.4 -7.4-4.6 -7.4 4.6 2-8.4 -6.6-5.6 8.6-.7z" fill="#7E6320"/>
+    <ellipse cx="46" cy="42" rx="14" ry="9" fill="#FBF1D2" opacity=".35" transform="rotate(-28 46 42)"/>
+  </symbol>
+</svg>
+
 <header class="site-header">
   <div class="header-inner">
     <div class="logo" title="Maratona Nobel de Literatura">
-      <span class="logo-mnl">MNL</span>
+      <svg class="medal-glyph" aria-label="Maratona Nobel"><use href="#medal"/></svg>
       <span class="logo-mg">Maratona Nobel</span>
       <span class="logo-em">·</span>
       <span class="logo-sub">acompanhe pelo <a href="/">Marginália</a></span>
@@ -391,7 +423,7 @@ footer .brand a:hover{text-decoration:underline}
 </div>
 
 <footer>
-  <div class="mnl-sign">MNL</div>
+  <svg class="medal-sign" aria-label="Maratona Nobel de Literatura"><use href="#medal"/></svg>
   <div class="quote">"Para mim, as palavras numa página dão coerência ao mundo."</div>
   <div class="attr">— Alberto Manguel</div>
   <div class="brand">Idealização, curadoria e sistema de pontos: <strong>Jamile e João</strong>. O <a href="/">Marginália</a> apoia o leitor com esta página de acompanhamento. · 2026</div>
