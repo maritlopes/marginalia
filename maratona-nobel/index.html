@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#EFE8DA">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="description" content="Maratona Nobel de Literatura 2026 — um desafio do Marginália Clube de Leitura">
+<title>Maratona Nobel · Marginália</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --font-display: 'Fraunces', 'Georgia', serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+  --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+  --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+  --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+  --text-2xl: clamp(2rem, 1.2rem + 2.5vw, 3.5rem);
+  --text-hero: clamp(2.25rem, 1rem + 4vw, 4.5rem);
+  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem;
+  --space-4: 1rem; --space-5: 1.25rem; --space-6: 1.5rem;
+  --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem;
+  --space-16: 4rem; --space-20: 5rem; --space-24: 6rem;
+  --radius-sm: 0.375rem; --radius-md: 0.5rem; --radius-lg: 0.75rem;
+  --radius-xl: 1rem; --radius-full: 9999px;
+  --transition: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  /* categorias da maratona — tiers, na paleta Marginália */
+  --cat-a: #B0533A;   /* >50 anos · clássicos — terracota */
+  --cat-b: #C2871F;   /* <50 anos — âmbar-ouro */
+  --cat-c: #5E6B3E;   /* cotados — oliva */
+}
+[data-theme="dark"] {
+  --color-bg: #1A1612; --color-surface: #221E18; --color-surface-2: #2A2620;
+  --color-surface-3: #322C24; --color-border: rgba(247,241,228,0.12); --color-divider: rgba(247,241,228,0.07);
+  --color-text: #EFE8DA; --color-text-muted: #B8AE9C; --color-text-faint: #7A7263;
+  --color-primary: #C9836E; --color-primary-glow: rgba(201,131,110,0.16);
+  --shadow-md: 0 4px 24px rgba(0,0,0,0.45); --shadow-lg: 0 12px 48px rgba(0,0,0,0.6);
+  --cat-a: #D08C73; --cat-b: #DBA943; --cat-c: #82B07B;
+}
+[data-theme="light"] {
+  --color-bg: #EFE8DA; --color-surface: #F7F1E4; --color-surface-2: #FBF6EA;
+  --color-surface-3: #E8DFC9; --color-border: rgba(42,38,32,0.16); --color-divider: rgba(42,38,32,0.09);
+  --color-text: #2A2620; --color-text-muted: #6E6352; --color-text-faint: #9A8E7B;
+  --color-primary: #B0533A; --color-primary-glow: rgba(176,83,58,0.10);
+  --shadow-md: 0 4px 24px rgba(42,38,32,0.07); --shadow-lg: 0 12px 48px rgba(42,38,32,0.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);font-size:var(--text-base);background:var(--color-bg);color:var(--color-text);min-height:100dvh;line-height:1.6;transition:background .3s ease,color .3s ease}
+img{display:block;max-width:100%;height:auto}
+button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
+.container{max-width:1000px;margin:0 auto;padding:0 var(--space-6)}
+
+/* HEADER */
+.site-header{position:sticky;top:0;z-index:100;background:var(--color-surface);border-bottom:1px solid var(--color-border);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.header-inner{max-width:1200px;margin:0 auto;padding:var(--space-4) var(--space-6);display:flex;align-items:center;justify-content:space-between;gap:var(--space-4)}
+.logo{display:flex;align-items:center;gap:.5rem;text-decoration:none;color:var(--color-text);min-width:0}
+.logo-mark-mg{width:24px;height:24px;flex-shrink:0;object-fit:contain;border-radius:5px}
+.logo-mg{font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;color:var(--color-primary);white-space:nowrap}
+.logo-em{font-family:var(--font-display);font-style:italic;font-size:var(--text-sm);color:var(--color-text-faint)}
+.logo-sub{font-family:var(--font-display);font-style:italic;font-size:var(--text-sm);color:var(--color-text-muted)}
+@media(max-width:560px){.logo-em,.logo-sub{display:none}}
+.theme-toggle{width:38px;height:38px;border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;color:var(--color-text-muted);border:1px solid var(--color-border);transition:all var(--transition)}
+.theme-toggle:hover{color:var(--color-text);background:var(--color-surface-2);border-color:var(--color-primary)}
+
+/* HERO */
+.hero{max-width:1000px;margin:0 auto;padding:var(--space-16) var(--space-6) var(--space-10);text-align:center}
+.hero-eyebrow{font-size:var(--text-xs);letter-spacing:.18em;text-transform:uppercase;color:var(--color-primary);font-weight:500;margin-bottom:var(--space-4)}
+.hero-title{font-family:var(--font-display);font-size:var(--text-hero);font-weight:600;line-height:1.05;color:var(--color-text);margin-bottom:var(--space-5);letter-spacing:-.01em}
+.hero-title em{font-style:italic;color:var(--color-primary)}
+.hero-sub{font-size:var(--text-base);color:var(--color-text-muted);max-width:58ch;margin:0 auto;line-height:1.7}
+
+/* SCOREBOARD */
+.scoreboard{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-3);margin:var(--space-8) 0 var(--space-4)}
+.score-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-5) var(--space-3);text-align:center;box-shadow:var(--shadow-md);border-top:3px solid var(--cat-a)}
+.score-card .label{font-size:var(--text-xs);color:var(--color-text-muted);letter-spacing:.04em;text-transform:uppercase;font-weight:500}
+.score-card .value{font-family:var(--font-display);font-weight:600;font-size:var(--text-2xl);color:var(--color-text);margin-top:var(--space-1);line-height:1}
+.score-card.total{border-top-color:var(--color-primary)}
+.score-card.total .value{color:var(--color-primary)}
+.bonus-msg{text-align:center;padding:var(--space-3);margin-bottom:var(--space-4);background:var(--color-primary-glow);border:1px solid var(--color-primary);border-radius:var(--radius-lg);font-family:var(--font-display);font-style:italic;font-size:var(--text-base);color:var(--color-primary);display:none}
+.bonus-msg.visible{display:block}
+
+/* RULES */
+.rules-toggle{display:flex;align-items:center;justify-content:space-between;background:var(--color-surface);padding:var(--space-3) var(--space-4);border-radius:var(--radius-lg);cursor:pointer;font-family:var(--font-display);font-size:var(--text-base);font-weight:500;color:var(--color-text);border:1px solid var(--color-border);margin-bottom:var(--space-4);user-select:none;transition:border-color var(--transition)}
+.rules-toggle:hover{border-color:var(--color-primary)}
+.rules-toggle .arrow{transition:transform .25s;color:var(--color-text-faint)}
+.rules-toggle.open .arrow{transform:rotate(180deg)}
+.rules-content{display:none;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6);margin-bottom:var(--space-6);font-size:var(--text-sm);line-height:1.8}
+.rules-content.open{display:block}
+.rules-content ul{margin-left:1.2rem}
+.rules-content li{margin-bottom:var(--space-2)}
+.rules-content li strong{color:var(--color-primary)}
+
+/* CATEGORY SECTIONS */
+.cat-section{margin-bottom:var(--space-12)}
+.cat-header{display:flex;align-items:center;gap:var(--space-3);padding-bottom:var(--space-3);border-bottom:1px solid var(--color-border);margin-bottom:var(--space-5)}
+.cat-header h2{font-family:var(--font-display);font-weight:600;font-size:var(--text-xl);color:var(--color-text);letter-spacing:-.01em}
+.badge{display:inline-flex;align-items:center;padding:.2rem .6rem;border-radius:var(--radius-full);font-size:var(--text-xs);font-weight:600;letter-spacing:.02em;color:#fff;border:1.5px solid transparent}
+.badge-a{background:var(--cat-a)}
+.badge-b{background:var(--cat-b)}
+.badge-c{background:var(--cat-c)}
+.cat-count{font-family:var(--font-display);font-size:var(--text-sm);color:var(--color-text-muted);margin-left:auto;white-space:nowrap}
+
+/* LAUREATE ROWS */
+.book-list{list-style:none;display:flex;flex-direction:column;gap:var(--space-2)}
+.book-row{display:flex;align-items:flex-start;gap:var(--space-3);padding:var(--space-3) var(--space-4);background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);cursor:pointer;position:relative;overflow:hidden;transition:all var(--transition)}
+.book-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;opacity:.35;transition:opacity var(--transition)}
+.cat-section[data-cat="a"] .book-row::before{background:var(--cat-a)}
+.cat-section[data-cat="b"] .book-row::before{background:var(--cat-b)}
+.cat-section[data-cat="c"] .book-row::before{background:var(--cat-c)}
+.book-row:hover{border-color:var(--color-primary);transform:translateY(-1px);box-shadow:var(--shadow-md)}
+.book-row.done::before{opacity:1}
+.book-row .cb{width:20px;height:20px;border:2px solid var(--color-text-faint);border-radius:var(--radius-full);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all var(--transition);font-size:12px;color:#fff;margin-top:2px}
+.cat-section[data-cat="a"] .book-row.done .cb{background:var(--cat-a);border-color:var(--cat-a)}
+.cat-section[data-cat="b"] .book-row.done .cb{background:var(--cat-b);border-color:var(--cat-b)}
+.cat-section[data-cat="c"] .book-row.done .cb{background:var(--cat-c);border-color:var(--cat-c)}
+.book-row .info{flex:1;min-width:0}
+.book-row .info .title-line{font-family:var(--font-display);font-weight:600;font-size:var(--text-base);line-height:1.25;color:var(--color-text)}
+.book-row .info .meta{font-size:var(--text-xs);color:var(--color-text-muted);margin-top:1px}
+.book-row .info .read-books{margin-top:var(--space-2);display:flex;flex-direction:column;gap:3px}
+.read-line{font-size:var(--text-sm);color:var(--color-text);line-height:1.4;display:flex;align-items:baseline;gap:.4em}
+.read-line .bk-icon{color:var(--color-primary);flex-shrink:0;font-size:.85em}
+.read-line .bk-title{font-style:italic}
+.over500-tag{font-family:var(--font-body);font-size:.62rem;font-weight:600;letter-spacing:.03em;background:var(--color-surface-3);color:var(--color-text-muted);padding:.05rem .35rem;border-radius:var(--radius-sm);white-space:nowrap}
+.book-row .pts{font-family:var(--font-display);font-size:var(--text-sm);color:var(--color-text-faint);flex-shrink:0;min-width:42px;text-align:right;font-weight:500}
+.book-row.done .pts{color:var(--color-primary);font-weight:600}
+.book-row .actions{display:flex;gap:var(--space-2);flex-shrink:0;align-items:center;opacity:0;transition:opacity var(--transition)}
+.book-row:hover .actions{opacity:1}
+.btn-icon{background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-md);cursor:pointer;width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:var(--color-text-muted);transition:all var(--transition)}
+.btn-icon:hover{background:var(--color-surface-3);color:var(--color-text);border-color:var(--color-primary)}
+.btn-icon.del:hover{color:#9B2C2C;border-color:#9B2C2C}
+.btn-icon svg{width:15px;height:15px}
+
+/* ADD BUTTON */
+.add-btn{display:block;width:100%;padding:var(--space-3);text-align:center;border:1px dashed var(--color-border);border-radius:var(--radius-lg);cursor:pointer;font-family:var(--font-display);font-size:var(--text-sm);color:var(--color-text-muted);background:transparent;transition:all var(--transition);margin-top:var(--space-3)}
+.add-btn:hover{background:var(--color-surface);color:var(--color-text);border-color:var(--color-primary)}
+
+/* TOOLBAR */
+.toolbar{display:flex;gap:var(--space-3);justify-content:center;flex-wrap:wrap;margin:var(--space-6) 0 var(--space-8)}
+.toolbar button{font-family:var(--font-body);font-weight:500;font-size:var(--text-sm);padding:var(--space-3) var(--space-6);border-radius:var(--radius-full);cursor:pointer;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);transition:all var(--transition);display:inline-flex;align-items:center;gap:var(--space-2)}
+.toolbar button:hover{border-color:var(--color-primary);color:var(--color-primary)}
+.toolbar button.primary{background:var(--color-primary);color:#fff;border-color:var(--color-primary)}
+.toolbar button.primary:hover{opacity:.92;color:#fff}
+.toolbar button svg{width:16px;height:16px}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,22,18,.55);z-index:200;align-items:center;justify-content:center;padding:var(--space-4)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-xl);padding:var(--space-6);width:100%;max-width:480px;box-shadow:var(--shadow-lg);max-height:90vh;overflow-y:auto}
+.modal h3{font-family:var(--font-display);font-weight:600;font-size:var(--text-lg);margin-bottom:var(--space-1);color:var(--color-text)}
+.modal .modal-sub{font-size:var(--text-sm);color:var(--color-text-muted);margin-bottom:var(--space-5)}
+.modal label{display:block;font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:var(--space-1);margin-top:var(--space-4);letter-spacing:.03em;text-transform:uppercase;font-weight:500}
+.modal input,.modal select,.modal textarea{width:100%;padding:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);font-family:var(--font-body);font-size:var(--text-base);background:var(--color-surface);color:var(--color-text)}
+.modal input:focus,.modal select:focus,.modal textarea:focus{outline:none;border-color:var(--color-primary)}
+.modal textarea{resize:vertical;min-height:60px}
+.modal .check-row{display:flex;align-items:center;gap:var(--space-2);margin-top:var(--space-4)}
+.modal .check-row input[type=checkbox]{width:auto;accent-color:var(--color-primary)}
+.modal .check-row label{margin:0;text-transform:none;letter-spacing:0;font-size:var(--text-sm);color:var(--color-text)}
+.modal .btn-row{display:flex;gap:var(--space-3);justify-content:flex-end;margin-top:var(--space-6)}
+.modal .btn-row button{font-family:var(--font-body);font-weight:500;padding:var(--space-3) var(--space-5);border-radius:var(--radius-md);cursor:pointer;font-size:var(--text-sm);border:1px solid var(--color-border);transition:all var(--transition)}
+.modal .btn-save{background:var(--color-primary);color:#fff;border-color:var(--color-primary)}
+.modal .btn-save:hover{opacity:.92}
+.modal .btn-cancel{background:var(--color-surface);color:var(--color-text)}
+.modal .btn-cancel:hover{background:var(--color-surface-2)}
+.modal .link-btn{background:none;border:none;color:var(--color-text-faint);font-size:var(--text-sm);cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:0;margin-top:var(--space-5)}
+.modal .link-btn:hover{color:var(--color-primary)}
+
+/* BOOKS MODAL */
+.books-read{list-style:none;margin:var(--space-2) 0 0;display:flex;flex-direction:column;gap:var(--space-2)}
+.books-read li{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3);background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md)}
+.books-read .bk-name{flex:1;min-width:0;font-style:italic;font-family:var(--font-display);font-size:var(--text-base)}
+.books-read .bk-empty{color:var(--color-text-faint);font-size:var(--text-sm);padding:var(--space-3) 0}
+.add-book-form{margin-top:var(--space-4);padding-top:var(--space-4);border-top:1px solid var(--color-divider)}
+.picker-input{margin-bottom:var(--space-3)}
+.picker-results{list-style:none;max-height:46vh;overflow-y:auto;display:flex;flex-direction:column;gap:var(--space-2)}
+.picker-results li{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);cursor:pointer;transition:all var(--transition);background:var(--color-surface)}
+.picker-results li:hover{border-color:var(--color-primary);background:var(--color-surface-2)}
+.picker-results .p-name{font-family:var(--font-display);font-weight:600;flex:1;min-width:0}
+.picker-results .p-meta{font-size:var(--text-xs);color:var(--color-text-muted)}
+.picker-results .p-badge{font-size:.62rem;font-weight:600;padding:.1rem .4rem;border-radius:var(--radius-sm);color:#fff}
+.picker-empty{text-align:center;color:var(--color-text-faint);padding:var(--space-6) 0;font-size:var(--text-sm)}
+
+/* CONFIRM MODAL */
+.confirm-modal .modal{max-width:380px;text-align:center}
+.confirm-modal p{margin:var(--space-3) 0 var(--space-5);font-size:var(--text-base);color:var(--color-text-muted)}
+.confirm-modal .btn-row{justify-content:center}
+.confirm-modal .btn-del{background:#9B2C2C;color:#fff;border-color:#9B2C2C}
+.confirm-modal .btn-del:hover{opacity:.92}
+
+/* FOOTER */
+footer{background:var(--color-surface);border-top:1px solid var(--color-border);text-align:center;padding:var(--space-12) var(--space-6) var(--space-10);margin-top:var(--space-16)}
+footer .ornament{color:var(--color-primary);font-size:1.2rem;opacity:.55;margin-bottom:var(--space-3)}
+footer .quote{font-family:var(--font-display);font-style:italic;font-size:var(--text-base);color:var(--color-text-muted);max-width:48ch;margin:0 auto var(--space-2);line-height:1.5}
+footer .attr{font-size:var(--text-xs);color:var(--color-text-faint);letter-spacing:.04em}
+footer .brand{margin-top:var(--space-5);font-family:var(--font-display);font-size:var(--text-sm);color:var(--color-text-faint)}
+footer .brand a{color:var(--color-primary);text-decoration:none}
+footer .brand a:hover{text-decoration:underline}
+
+/* RESPONSIVE */
+@media(max-width:600px){
+  .container,.hero,.header-inner{padding-left:var(--space-4);padding-right:var(--space-4)}
+  .scoreboard{grid-template-columns:repeat(2,1fr)}
+  .book-row .actions{opacity:1}
+  .hero{padding-top:var(--space-12)}
+}
+
+/* PRINT */
+@media print{
+  .toolbar,.add-btn,.btn-icon,.rules-toggle,.rules-content,.modal-overlay,.theme-toggle,.book-row .actions{display:none!important}
+  body{background:#fff;color:#000;font-size:11pt}
+  .book-row,.score-card{break-inside:avoid;box-shadow:none;border-color:#ccc}
+  .site-header{position:static}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="/" class="logo" title="Voltar ao Marginália">
+      <img class="logo-mark-mg" src="/symbol.png" alt="">
+      <span class="logo-mg">Marginália</span>
+      <span class="logo-em">·</span>
+      <span class="logo-sub">Maratona Nobel</span>
+    </a>
+    <button class="theme-toggle" id="theme-toggle" aria-label="Alternar tema" title="Alternar tema claro/escuro">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </div>
+</header>
+
+<section class="hero">
+  <p class="hero-eyebrow">Junho — Outubro 2026</p>
+  <h1 class="hero-title">Maratona <em>Nobel</em></h1>
+  <p class="hero-sub">Um desafio do clube: atravessar 125 anos de Literatura premiada — dos clássicos de 1901 aos cotados de hoje. Marque os laureados que você ler e some pontos.</p>
+</section>
+
+<div class="container">
+
+  <!-- SCOREBOARD -->
+  <div class="scoreboard">
+    <div class="score-card">
+      <div class="label">Livros lidos</div>
+      <div class="value" id="sc-books">0</div>
+    </div>
+    <div class="score-card">
+      <div class="label">Pontos base</div>
+      <div class="value" id="sc-base">0</div>
+    </div>
+    <div class="score-card">
+      <div class="label">Multiplicador</div>
+      <div class="value" id="sc-mult">1&times;</div>
+    </div>
+    <div class="score-card total">
+      <div class="label">Total</div>
+      <div class="value" id="sc-total">0</div>
+    </div>
+  </div>
+  <div class="bonus-msg" id="bonus-msg">❦ Uma leitura em cada categoria — total duplicado!</div>
+
+  <!-- RULES -->
+  <div class="rules-toggle" id="rules-toggle">
+    <span>Sistema de pontos</span>
+    <span class="arrow">▾</span>
+  </div>
+  <div class="rules-content" id="rules-content">
+    <ul>
+      <li><strong>Categoria A</strong> (premiados há mais de 50 anos, até 1976): <strong>3 pontos</strong> por livro</li>
+      <li><strong>Categoria B</strong> (premiados há menos de 50 anos, 1977–2025): <strong>2 pontos</strong> por livro</li>
+      <li><strong>Cotados</strong> (ainda não premiados): <strong>1 ponto</strong> por livro — validar com a moderação</li>
+      <li>Livro com <strong>500+ páginas</strong>: pontos daquele livro <strong>dobrados</strong></li>
+      <li>Ler ao menos <strong>1 livro de cada categoria</strong>: total final <strong>dobrado</strong></li>
+      <li>Você pode registrar <strong>vários livros do mesmo laureado</strong> — cada um soma</li>
+      <li>Somente leituras de <strong>2026</strong> contam</li>
+      <li>Maior pontuação ganha um livro do Nobel do ano ❦</li>
+    </ul>
+  </div>
+
+  <!-- CATEGORY A -->
+  <section class="cat-section" data-cat="a">
+    <div class="cat-header">
+      <h2>Categoria A</h2>
+      <span class="badge badge-a">&gt;50 anos · 3 pts</span>
+      <span class="cat-count" id="count-a"></span>
+    </div>
+    <ul class="book-list" id="list-a"></ul>
+    <button class="add-btn" data-add="a">+ Adicionar laureado</button>
+  </section>
+
+  <!-- CATEGORY B -->
+  <section class="cat-section" data-cat="b">
+    <div class="cat-header">
+      <h2>Categoria B</h2>
+      <span class="badge badge-b">&lt;50 anos · 2 pts</span>
+      <span class="cat-count" id="count-b"></span>
+    </div>
+    <ul class="book-list" id="list-b"></ul>
+    <button class="add-btn" data-add="b">+ Adicionar laureado</button>
+  </section>
+
+  <!-- CATEGORY C -->
+  <section class="cat-section" data-cat="c">
+    <div class="cat-header">
+      <h2>Cotados</h2>
+      <span class="badge badge-c">Cotados · 1 pt</span>
+      <span class="cat-count" id="count-c"></span>
+    </div>
+    <ul class="book-list" id="list-c"></ul>
+    <button class="add-btn" data-add="c">+ Adicionar cotado</button>
+  </section>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <button class="primary" id="btn-register">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      Registrar leitura
+    </button>
+    <button id="btn-export">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+      Exportar
+    </button>
+    <button id="btn-import">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg>
+      Importar
+    </button>
+    <input type="file" id="import-file" accept=".json" style="display:none">
+  </div>
+
+</div>
+
+<footer>
+  <div class="ornament">❦</div>
+  <div class="quote">"A leitura é uma forma de felicidade."</div>
+  <div class="attr">— Alberto Manguel</div>
+  <div class="brand"><a href="/">Marginália</a> · Clube de Leitura · 2026</div>
+</footer>
+
+<!-- BOOKS / REGISTER MODAL -->
+<div class="modal-overlay" id="books-modal">
+  <div class="modal">
+    <h3 id="books-title">Laureado</h3>
+    <div class="modal-sub" id="books-sub"></div>
+    <label>Livros lidos deste laureado</label>
+    <ul class="books-read" id="books-read"></ul>
+    <div class="add-book-form">
+      <label for="bk-title">Registrar um livro lido</label>
+      <input id="bk-title" type="text" placeholder="Título do livro que você leu">
+      <div class="check-row">
+        <input type="checkbox" id="bk-over500">
+        <label for="bk-over500">500+ páginas (pontos dobrados)</label>
+      </div>
+      <div class="btn-row">
+        <button class="btn-save" id="bk-add">Adicionar livro</button>
+      </div>
+    </div>
+    <button class="link-btn" id="bk-edit-laureate">Editar dados do laureado</button>
+    <div class="btn-row">
+      <button class="btn-cancel" id="books-close">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT LAUREATE MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <h3 id="modal-title">Editar laureado</h3>
+    <div class="modal-sub">Dados do autor premiado / cotado.</div>
+    <label for="f-author">Autor(a)</label>
+    <input id="f-author" type="text" placeholder="Nome do(a) autor(a)">
+    <label for="f-cat">Categoria</label>
+    <select id="f-cat">
+      <option value="a">A — premiados &gt;50 anos (3 pts)</option>
+      <option value="b">B — premiados &lt;50 anos (2 pts)</option>
+      <option value="c">Cotados (1 pt)</option>
+    </select>
+    <label for="f-nobel">Nobel / Ano</label>
+    <input id="f-nobel" type="text" placeholder="Nobel YYYY (deixe vazio se cotado)">
+    <label for="f-country">País</label>
+    <input id="f-country" type="text" placeholder="País">
+    <div class="btn-row">
+      <button class="btn-cancel" id="edit-cancel">Cancelar</button>
+      <button class="btn-save" id="edit-save">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- PICKER MODAL -->
+<div class="modal-overlay" id="picker-modal">
+  <div class="modal">
+    <h3>Registrar leitura</h3>
+    <div class="modal-sub">Busque o laureado e registre o livro que você leu.</div>
+    <input class="picker-input" id="picker-search" type="text" placeholder="Buscar por autor, país ou ano…" autocomplete="off">
+    <ul class="picker-results" id="picker-results"></ul>
+    <div class="btn-row">
+      <button class="btn-cancel" id="picker-close">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay confirm-modal" id="confirm-modal">
+  <div class="modal">
+    <h3 id="confirm-title">Confirmar</h3>
+    <p id="confirm-msg"></p>
+    <div class="btn-row">
+      <button class="btn-cancel" id="confirm-cancel">Cancelar</button>
+      <button class="btn-del" id="confirm-ok">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+var STORAGE_KEY = 'maratona-nobel-2026-v3';
+var OLD_KEY = 'maratona-nobel-2026-v2';
+var THEME_KEY = 'maratona-nobel-theme';
+var CAT_PTS = { a: 3, b: 2, c: 1 };
+var CAT_BADGE = { a: 'badge-a', b: 'badge-b', c: 'badge-c' };
+var nextId = 1;
+var laureates = [];
+
+/* ---------- DEFAULT DATA ---------- */
+function defaultData() {
+  var d = [];
+  var id = 1;
+  function mk(cat, author, nobel, country) {
+    d.push({ id: id++, cat: cat, author: author, nobel: nobel || '', country: country || '', books: [] });
+  }
+
+  // CATEGORY A (>50 anos, 3 pts) — 1901–1976
+  mk('a','Sully Prudhomme','Nobel 1901','França');
+  mk('a','Theodor Mommsen','Nobel 1902','Alemanha');
+  mk('a','Bjørnstjerne Bjørnson','Nobel 1903','Noruega');
+  mk('a','Frédéric Mistral','Nobel 1904','França');
+  mk('a','José Echegaray','Nobel 1904','Espanha');
+  mk('a','Henryk Sienkiewicz','Nobel 1905','Polônia');
+  mk('a','Giosuè Carducci','Nobel 1906','Itália');
+  mk('a','Rudyard Kipling','Nobel 1907','Reino Unido');
+  mk('a','Rudolf Eucken','Nobel 1908','Alemanha');
+  mk('a','Selma Lagerlöf','Nobel 1909','Suécia');
+  mk('a','Paul Heyse','Nobel 1910','Alemanha');
+  mk('a','Maurice Maeterlinck','Nobel 1911','Bélgica');
+  mk('a','Gerhart Hauptmann','Nobel 1912','Alemanha');
+  mk('a','Rabindranath Tagore','Nobel 1913','Índia');
+  mk('a','Romain Rolland','Nobel 1915','França');
+  mk('a','Verner von Heidenstam','Nobel 1916','Suécia');
+  mk('a','Karl Gjellerup','Nobel 1917','Dinamarca');
+  mk('a','Henrik Pontoppidan','Nobel 1917','Dinamarca');
+  mk('a','Carl Spitteler','Nobel 1919','Suíça');
+  mk('a','Knut Hamsun','Nobel 1920','Noruega');
+  mk('a','Anatole France','Nobel 1921','França');
+  mk('a','Jacinto Benavente','Nobel 1922','Espanha');
+  mk('a','W.B. Yeats','Nobel 1923','Irlanda');
+  mk('a','Władysław Reymont','Nobel 1924','Polônia');
+  mk('a','George Bernard Shaw','Nobel 1925','Irlanda');
+  mk('a','Grazia Deledda','Nobel 1926','Itália');
+  mk('a','Henri Bergson','Nobel 1927','França');
+  mk('a','Sigrid Undset','Nobel 1928','Noruega');
+  mk('a','Thomas Mann','Nobel 1929','Alemanha');
+  mk('a','Sinclair Lewis','Nobel 1930','EUA');
+  mk('a','Erik Axel Karlfeldt','Nobel 1931','Suécia');
+  mk('a','John Galsworthy','Nobel 1932','Reino Unido');
+  mk('a','Ivan Bunin','Nobel 1933','Rússia');
+  mk('a','Luigi Pirandello','Nobel 1934','Itália');
+  mk('a','Eugene O’Neill','Nobel 1936','EUA');
+  mk('a','Roger Martin du Gard','Nobel 1937','França');
+  mk('a','Pearl S. Buck','Nobel 1938','EUA');
+  mk('a','Frans Eemil Sillanpää','Nobel 1939','Finlândia');
+  mk('a','Johannes V. Jensen','Nobel 1944','Dinamarca');
+  mk('a','Gabriela Mistral','Nobel 1945','Chile');
+  mk('a','Hermann Hesse','Nobel 1946','Alemanha');
+  mk('a','André Gide','Nobel 1947','França');
+  mk('a','T.S. Eliot','Nobel 1948','Reino Unido');
+  mk('a','William Faulkner','Nobel 1949','EUA');
+  mk('a','Bertrand Russell','Nobel 1950','Reino Unido');
+  mk('a','Pär Lagerkvist','Nobel 1951','Suécia');
+  mk('a','François Mauriac','Nobel 1952','França');
+  mk('a','Winston Churchill','Nobel 1953','Reino Unido');
+  mk('a','Ernest Hemingway','Nobel 1954','EUA');
+  mk('a','Halldór Laxness','Nobel 1955','Islândia');
+  mk('a','Juan Ramón Jiménez','Nobel 1956','Espanha');
+  mk('a','Albert Camus','Nobel 1957','França');
+  mk('a','Boris Pasternak','Nobel 1958','URSS');
+  mk('a','Salvatore Quasimodo','Nobel 1959','Itália');
+  mk('a','Saint-John Perse','Nobel 1960','França');
+  mk('a','Ivo Andrić','Nobel 1961','Iugoslávia');
+  mk('a','John Steinbeck','Nobel 1962','EUA');
+  mk('a','Giorgos Seferis','Nobel 1963','Grécia');
+  mk('a','Jean-Paul Sartre','Nobel 1964','França');
+  mk('a','Mikhail Sholokhov','Nobel 1965','URSS');
+  mk('a','Shmuel Yosef Agnon','Nobel 1966','Israel');
+  mk('a','Nelly Sachs','Nobel 1966','Alemanha/Suécia');
+  mk('a','Miguel Ángel Asturias','Nobel 1967','Guatemala');
+  mk('a','Yasunari Kawabata','Nobel 1968','Japão');
+  mk('a','Samuel Beckett','Nobel 1969','Irlanda');
+  mk('a','Aleksandr Solzhenitsyn','Nobel 1970','URSS');
+  mk('a','Pablo Neruda','Nobel 1971','Chile');
+  mk('a','Heinrich Böll','Nobel 1972','Alemanha');
+  mk('a','Patrick White','Nobel 1973','Austrália');
+  mk('a','Eyvind Johnson','Nobel 1974','Suécia');
+  mk('a','Harry Martinson','Nobel 1974','Suécia');
+  mk('a','Eugenio Montale','Nobel 1975','Itália');
+  mk('a','Saul Bellow','Nobel 1976','EUA');
+
+  // CATEGORY B (<50 anos, 2 pts) — 1977–2025
+  mk('b','Vicente Aleixandre','Nobel 1977','Espanha');
+  mk('b','Isaac Bashevis Singer','Nobel 1978','EUA');
+  mk('b','Odysseas Elytis','Nobel 1979','Grécia');
+  mk('b','Czesław Miłosz','Nobel 1980','Polônia');
+  mk('b','Elias Canetti','Nobel 1981','Bulgária/Reino Unido');
+  mk('b','Gabriel García Márquez','Nobel 1982','Colômbia');
+  mk('b','William Golding','Nobel 1983','Reino Unido');
+  mk('b','Jaroslav Seifert','Nobel 1984','Tcheco-Eslováquia');
+  mk('b','Claude Simon','Nobel 1985','França');
+  mk('b','Wole Soyinka','Nobel 1986','Nigéria');
+  mk('b','Joseph Brodsky','Nobel 1987','URSS/EUA');
+  mk('b','Naguib Mahfouz','Nobel 1988','Egito');
+  mk('b','Camilo José Cela','Nobel 1989','Espanha');
+  mk('b','Octavio Paz','Nobel 1990','México');
+  mk('b','Nadine Gordimer','Nobel 1991','África do Sul');
+  mk('b','Derek Walcott','Nobel 1992','Santa Lúcia');
+  mk('b','Toni Morrison','Nobel 1993','EUA');
+  mk('b','Kenzaburō Ōe','Nobel 1994','Japão');
+  mk('b','Seamus Heaney','Nobel 1995','Irlanda');
+  mk('b','Wisława Szymborska','Nobel 1996','Polônia');
+  mk('b','Dario Fo','Nobel 1997','Itália');
+  mk('b','José Saramago','Nobel 1998','Portugal');
+  mk('b','Günter Grass','Nobel 1999','Alemanha');
+  mk('b','Gao Xingjian','Nobel 2000','China/França');
+  mk('b','V.S. Naipaul','Nobel 2001','Trinidad/Reino Unido');
+  mk('b','Imre Kertész','Nobel 2002','Hungria');
+  mk('b','J.M. Coetzee','Nobel 2003','África do Sul');
+  mk('b','Elfriede Jelinek','Nobel 2004','Áustria');
+  mk('b','Harold Pinter','Nobel 2005','Reino Unido');
+  mk('b','Orhan Pamuk','Nobel 2006','Turquia');
+  mk('b','Doris Lessing','Nobel 2007','Reino Unido');
+  mk('b','J.M.G. Le Clézio','Nobel 2008','França');
+  mk('b','Herta Müller','Nobel 2009','Romênia/Alemanha');
+  mk('b','Mario Vargas Llosa','Nobel 2010','Peru');
+  mk('b','Tomas Tranströmer','Nobel 2011','Suécia');
+  mk('b','Mo Yan','Nobel 2012','China');
+  mk('b','Alice Munro','Nobel 2013','Canadá');
+  mk('b','Patrick Modiano','Nobel 2014','França');
+  mk('b','Svetlana Alexievich','Nobel 2015','Bielorrússia');
+  mk('b','Bob Dylan','Nobel 2016','EUA');
+  mk('b','Kazuo Ishiguro','Nobel 2017','Reino Unido');
+  mk('b','Olga Tokarczuk','Nobel 2018','Polônia');
+  mk('b','Peter Handke','Nobel 2019','Áustria');
+  mk('b','Louise Glück','Nobel 2020','EUA');
+  mk('b','Abdulrazak Gurnah','Nobel 2021','Tanzânia/Reino Unido');
+  mk('b','Annie Ernaux','Nobel 2022','França');
+  mk('b','Jon Fosse','Nobel 2023','Noruega');
+  mk('b','Han Kang','Nobel 2024','Coreia do Sul');
+  mk('b','László Krasznahorkai','Nobel 2025','Hungria');
+
+  // COTADOS (1 pt)
+  mk('c','Raul Zurita','','Chile');
+  mk('c','Adélia Prado','','Brasil');
+  mk('c','Rachel Cusk','','Canadá');
+  mk('c','Anne Carson','','Canadá');
+  mk('c','Milton Hatoum','','Brasil');
+  mk('c','Scholastique Mukasonga','','Ruanda');
+  mk('c','Jesmyn Ward','','EUA');
+  mk('c','Jenny Erpenbeck','','Alemanha');
+  mk('c','Jamaica Kincaid','','Antígua e Barbuda');
+  mk('c','Mia Couto','','Moçambique');
+  mk('c','Ngugi wa Thiong’o','','Quênia');
+  mk('c','Haruki Murakami','','Japão');
+  mk('c','César Aira','','Argentina');
+  mk('c','Mircea Cărtărescu','','Romênia');
+  mk('c','Can Xue','','China');
+  mk('c','Gerald Murnane','','Austrália');
+  mk('c','Lyudmila Ulitskaya','','Rússia');
+  mk('c','Margaret Atwood','','Canadá');
+  mk('c','Salman Rushdie','','Reino Unido/Índia');
+  mk('c','Thomas Pynchon','','EUA');
+
+  nextId = id;
+  return d;
+}
+
+/* ---------- MIGRATION (v2 -> v3) ---------- */
+function migrateV2(oldArr) {
+  // v2 row: {id, cat, title(=author), author(empty), nobel, country, over500, done, obs}
+  var maxId = 0;
+  var out = oldArr.map(function(b) {
+    if (b.id > maxId) maxId = b.id;
+    var author = (b.author && b.author.trim()) ? b.author : (b.title || '');
+    var books = [];
+    if (b.done) {
+      // título do livro lido era desconhecido no modelo antigo (o "title" era o autor)
+      books.push({ title: '', over500: !!b.over500, obs: b.obs || '' });
+    }
+    return { id: b.id, cat: b.cat || 'c', author: author, nobel: b.nobel || '', country: b.country || '', books: books };
+  });
+  nextId = maxId + 1;
+  return out;
+}
+
+/* ---------- STATE ---------- */
+function recomputeNextId() {
+  nextId = laureates.reduce(function(m, l){ return Math.max(m, l.id); }, 0) + 1;
+}
+
+function load() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      laureates = JSON.parse(raw);
+      normalize();
+      recomputeNextId();
+      return;
+    }
+    var old = localStorage.getItem(OLD_KEY);
+    if (old) {
+      laureates = migrateV2(JSON.parse(old));
+      save();
+      return;
+    }
+    laureates = defaultData();
+  } catch (e) {
+    laureates = defaultData();
+  }
+}
+
+function normalize() {
+  laureates.forEach(function(l) {
+    if (!Array.isArray(l.books)) l.books = [];
+    if (typeof l.author !== 'string') l.author = l.title || '';
+  });
+}
+
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(laureates)); } catch (e) {}
+}
+
+function findLaureate(id) {
+  return laureates.find(function(l){ return l.id === id; });
+}
+
+/* ---------- HELPERS ---------- */
+function escHtml(s) {
+  var d = document.createElement('div');
+  d.textContent = s == null ? '' : String(s);
+  return d.innerHTML;
+}
+
+function bookPts(cat, over500) {
+  var p = CAT_PTS[cat] || 1;
+  return over500 ? p * 2 : p;
+}
+
+function laureatePts(l) {
+  return l.books.reduce(function(s, bk){ return s + bookPts(l.cat, bk.over500); }, 0);
+}
+
+/* ---------- RENDER ---------- */
+function render() {
+  ['a','b','c'].forEach(function(cat) {
+    var list = document.getElementById('list-' + cat);
+    var items = laureates.filter(function(l){ return l.cat === cat; });
+    var readAuthors = items.filter(function(l){ return l.books.length > 0; }).length;
+    var bookTotal = items.reduce(function(s, l){ return s + l.books.length; }, 0);
+    var countEl = document.getElementById('count-' + cat);
+    countEl.textContent = readAuthors + '/' + items.length + ' autores' + (bookTotal ? ' · ' + bookTotal + (bookTotal === 1 ? ' livro' : ' livros') : '');
+
+    list.innerHTML = items.map(function(l) {
+      var pts = laureatePts(l);
+      var done = l.books.length > 0;
+      var cls = done ? 'book-row done' : 'book-row';
+      var metaParts = [l.nobel, l.country].filter(Boolean).join(' · ');
+      var booksHtml = '';
+      if (done) {
+        booksHtml = '<div class="read-books">' + l.books.map(function(bk) {
+          var tag = bk.over500 ? ' <span class="over500-tag">500+</span>' : '';
+          var t = bk.title ? escHtml(bk.title) : '<span style="opacity:.6">(livro sem título)</span>';
+          return '<div class="read-line"><span class="bk-icon">❦</span><span class="bk-title">' + t + '</span>' + tag + '</div>';
+        }).join('') + '</div>';
+      }
+      return '<li class="' + cls + '" data-id="' + l.id + '">' +
+        '<div class="cb">' + (done ? '✓' : '') + '</div>' +
+        '<div class="info">' +
+          '<div class="title-line">' + escHtml(l.author) + '</div>' +
+          (metaParts ? '<div class="meta">' + escHtml(metaParts) + '</div>' : '') +
+          booksHtml +
+        '</div>' +
+        '<div class="pts">' + (done ? pts + ' pt' + (pts !== 1 ? 's' : '') : '') + '</div>' +
+        '<div class="actions">' +
+          '<button class="btn-icon act-edit" title="Editar dados"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/><path d="M14 6l3 3"/></svg></button>' +
+          '<button class="btn-icon del act-del" title="Excluir laureado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg></button>' +
+        '</div>' +
+      '</li>';
+    }).join('');
+  });
+  updateScore();
+  save();
+}
+
+function updateScore() {
+  var booksRead = 0, basePoints = 0;
+  var hasCat = { a: false, b: false, c: false };
+  laureates.forEach(function(l) {
+    if (l.books.length) hasCat[l.cat] = true;
+    l.books.forEach(function(bk) {
+      booksRead++;
+      basePoints += bookPts(l.cat, bk.over500);
+    });
+  });
+  var allCats = hasCat.a && hasCat.b && hasCat.c;
+  var mult = allCats ? 2 : 1;
+  var total = basePoints * mult;
+
+  document.getElementById('sc-books').textContent = booksRead;
+  document.getElementById('sc-base').textContent = basePoints;
+  document.getElementById('sc-mult').innerHTML = mult + '&times;';
+  document.getElementById('sc-total').textContent = total;
+  document.getElementById('bonus-msg').classList.toggle('visible', allCats);
+}
+
+/* ---------- BOOKS MODAL (register reads for a laureate) ---------- */
+var booksModalId = null;
+
+function openBooks(id) {
+  var l = findLaureate(id);
+  if (!l) return;
+  booksModalId = id;
+  document.getElementById('books-title').textContent = l.author;
+  var metaParts = [l.nobel, l.country].filter(Boolean).join(' · ');
+  document.getElementById('books-sub').textContent = metaParts || ({a:'Categoria A · 3 pts',b:'Categoria B · 2 pts',c:'Cotado · 1 pt'}[l.cat]);
+  renderBooksList();
+  document.getElementById('bk-title').value = '';
+  document.getElementById('bk-over500').checked = false;
+  document.getElementById('books-modal').classList.add('open');
+  setTimeout(function(){ document.getElementById('bk-title').focus(); }, 50);
+}
+
+function renderBooksList() {
+  var l = findLaureate(booksModalId);
+  var ul = document.getElementById('books-read');
+  if (!l || !l.books.length) {
+    ul.innerHTML = '<li class="bk-empty">Nenhum livro registrado ainda.</li>';
+    return;
+  }
+  ul.innerHTML = l.books.map(function(bk, i) {
+    var tag = bk.over500 ? ' <span class="over500-tag">500+</span>' : '';
+    var t = bk.title ? escHtml(bk.title) : '(livro sem título)';
+    return '<li>' +
+      '<span class="bk-name">' + t + '</span>' + tag +
+      '<button class="btn-icon del bk-remove" data-idx="' + i + '" title="Remover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
+    '</li>';
+  }).join('');
+}
+
+function addBook() {
+  var l = findLaureate(booksModalId);
+  if (!l) return;
+  var input = document.getElementById('bk-title');
+  var title = input.value.trim();
+  var over500 = document.getElementById('bk-over500').checked;
+  l.books.push({ title: title, over500: over500, obs: '' });
+  input.value = '';
+  document.getElementById('bk-over500').checked = false;
+  input.focus();
+  renderBooksList();
+  render();
+}
+
+function closeBooks() {
+  document.getElementById('books-modal').classList.remove('open');
+  booksModalId = null;
+}
+
+/* ---------- EDIT / ADD LAUREATE ---------- */
+var editingId = null;
+
+function openEdit(id) {
+  var l = findLaureate(id);
+  if (!l) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = 'Editar laureado';
+  document.getElementById('f-author').value = l.author || '';
+  document.getElementById('f-cat').value = l.cat;
+  document.getElementById('f-nobel').value = l.nobel || '';
+  document.getElementById('f-country').value = l.country || '';
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+function openAdd(cat) {
+  editingId = null;
+  document.getElementById('modal-title').textContent = cat === 'c' ? 'Adicionar cotado' : 'Adicionar laureado';
+  document.getElementById('f-author').value = '';
+  document.getElementById('f-cat').value = cat;
+  document.getElementById('f-nobel').value = '';
+  document.getElementById('f-country').value = '';
+  document.getElementById('edit-modal').classList.add('open');
+  setTimeout(function(){ document.getElementById('f-author').focus(); }, 50);
+}
+
+function saveEntry() {
+  var author = document.getElementById('f-author').value.trim();
+  if (!author) { document.getElementById('f-author').focus(); return; }
+  var data = {
+    author: author,
+    cat: document.getElementById('f-cat').value,
+    nobel: document.getElementById('f-nobel').value.trim(),
+    country: document.getElementById('f-country').value.trim()
+  };
+  if (editingId !== null) {
+    var l = findLaureate(editingId);
+    if (l) { l.author = data.author; l.cat = data.cat; l.nobel = data.nobel; l.country = data.country; }
+  } else {
+    laureates.push({ id: nextId++, cat: data.cat, author: data.author, nobel: data.nobel, country: data.country, books: [] });
+  }
+  closeEditModal();
+  render();
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.remove('open');
+  editingId = null;
+}
+
+/* ---------- PICKER (register reading) ---------- */
+function openPicker() {
+  document.getElementById('picker-search').value = '';
+  renderPicker('');
+  document.getElementById('picker-modal').classList.add('open');
+  setTimeout(function(){ document.getElementById('picker-search').focus(); }, 50);
+}
+
+function renderPicker(q) {
+  q = (q || '').toLowerCase().trim();
+  var ul = document.getElementById('picker-results');
+  var matches = laureates.filter(function(l) {
+    if (!q) return true;
+    return (l.author + ' ' + l.country + ' ' + l.nobel).toLowerCase().indexOf(q) !== -1;
+  }).slice(0, 60);
+  if (!matches.length) {
+    ul.innerHTML = '<li class="picker-empty" style="cursor:default;border:none;background:none">Nenhum laureado encontrado.</li>';
+    return;
+  }
+  var catName = { a: 'A', b: 'B', c: 'Cotado' };
+  var catCol = { a: 'var(--cat-a)', b: 'var(--cat-b)', c: 'var(--cat-c)' };
+  ul.innerHTML = matches.map(function(l) {
+    var metaParts = [l.nobel, l.country].filter(Boolean).join(' · ');
+    var n = l.books.length ? ' · ' + l.books.length + '✓' : '';
+    return '<li data-id="' + l.id + '">' +
+      '<span class="p-name">' + escHtml(l.author) + '<br><span class="p-meta">' + escHtml(metaParts) + n + '</span></span>' +
+      '<span class="p-badge" style="background:' + catCol[l.cat] + '">' + catName[l.cat] + '</span>' +
+    '</li>';
+  }).join('');
+}
+
+function closePicker() {
+  document.getElementById('picker-modal').classList.remove('open');
+}
+
+/* ---------- DELETE ---------- */
+var deleteCtx = null;
+
+function openDelLaureate(id) {
+  var l = findLaureate(id);
+  if (!l) return;
+  deleteCtx = { type: 'laureate', id: id };
+  document.getElementById('confirm-title').textContent = 'Excluir laureado';
+  document.getElementById('confirm-msg').textContent = 'Remover "' + l.author + '" da lista? Os livros registrados nele serão perdidos.';
+  document.getElementById('confirm-modal').classList.add('open');
+}
+
+function confirmDelete() {
+  if (deleteCtx && deleteCtx.type === 'laureate') {
+    laureates = laureates.filter(function(l){ return l.id !== deleteCtx.id; });
+  }
+  closeConfirm();
+  render();
+}
+
+function closeConfirm() {
+  document.getElementById('confirm-modal').classList.remove('open');
+  deleteCtx = null;
+}
+
+/* ---------- EXPORT / IMPORT ---------- */
+function exportJSON() {
+  var blob = new Blob([JSON.stringify(laureates, null, 2)], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'maratona-nobel-2026.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importJSON(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      var data = JSON.parse(ev.target.result);
+      if (Array.isArray(data)) {
+        // aceita tanto o formato novo quanto o antigo (v2)
+        var looksOld = data.length && data[0] && data[0].books === undefined && (data[0].done !== undefined || data[0].title !== undefined);
+        laureates = looksOld ? migrateV2(data) : data;
+        normalize();
+        recomputeNextId();
+        render();
+      } else { alert('Arquivo JSON inválido.'); }
+    } catch (err) { alert('Arquivo JSON inválido.'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+/* ---------- THEME ---------- */
+function initTheme() {
+  var saved = localStorage.getItem(THEME_KEY) || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+}
+function toggleTheme() {
+  var cur = document.documentElement.getAttribute('data-theme');
+  var next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+}
+
+/* ---------- EVENTS ---------- */
+function onListClick(e) {
+  var row = e.target.closest('.book-row');
+  if (!row) return;
+  var id = parseInt(row.getAttribute('data-id'), 10);
+  if (e.target.closest('.act-edit')) { e.stopPropagation(); openEdit(id); return; }
+  if (e.target.closest('.act-del')) { e.stopPropagation(); openDelLaureate(id); return; }
+  openBooks(id);
+}
+
+function wire() {
+  ['a','b','c'].forEach(function(cat) {
+    document.getElementById('list-' + cat).addEventListener('click', onListClick);
+  });
+  document.querySelectorAll('.add-btn').forEach(function(btn) {
+    btn.addEventListener('click', function(){ openAdd(btn.getAttribute('data-add')); });
+  });
+  document.getElementById('rules-toggle').addEventListener('click', function() {
+    this.classList.toggle('open');
+    document.getElementById('rules-content').classList.toggle('open');
+  });
+  document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+
+  // books modal
+  document.getElementById('bk-add').addEventListener('click', addBook);
+  document.getElementById('bk-title').addEventListener('keydown', function(e){ if (e.key === 'Enter') addBook(); });
+  document.getElementById('books-read').addEventListener('click', function(e) {
+    var rm = e.target.closest('.bk-remove');
+    if (!rm) return;
+    var l = findLaureate(booksModalId);
+    if (l) { l.books.splice(parseInt(rm.getAttribute('data-idx'), 10), 1); renderBooksList(); render(); }
+  });
+  document.getElementById('bk-edit-laureate').addEventListener('click', function() {
+    var id = booksModalId; closeBooks(); openEdit(id);
+  });
+  document.getElementById('books-close').addEventListener('click', closeBooks);
+
+  // edit modal
+  document.getElementById('edit-save').addEventListener('click', saveEntry);
+  document.getElementById('edit-cancel').addEventListener('click', closeEditModal);
+  document.getElementById('f-author').addEventListener('keydown', function(e){ if (e.key === 'Enter') saveEntry(); });
+
+  // picker
+  document.getElementById('btn-register').addEventListener('click', openPicker);
+  document.getElementById('picker-search').addEventListener('input', function(){ renderPicker(this.value); });
+  document.getElementById('picker-results').addEventListener('click', function(e) {
+    var li = e.target.closest('li[data-id]');
+    if (!li) return;
+    var id = parseInt(li.getAttribute('data-id'), 10);
+    closePicker();
+    openBooks(id);
+  });
+  document.getElementById('picker-close').addEventListener('click', closePicker);
+
+  // confirm
+  document.getElementById('confirm-ok').addEventListener('click', confirmDelete);
+  document.getElementById('confirm-cancel').addEventListener('click', closeConfirm);
+
+  // export / import
+  document.getElementById('btn-export').addEventListener('click', exportJSON);
+  document.getElementById('btn-import').addEventListener('click', function(){ document.getElementById('import-file').click(); });
+  document.getElementById('import-file').addEventListener('change', importJSON);
+
+  // overlay click closes
+  document.querySelectorAll('.modal-overlay').forEach(function(ov) {
+    ov.addEventListener('click', function(e){ if (e.target === ov) ov.classList.remove('open'); });
+  });
+  // escape closes all
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.open').forEach(function(ov){ ov.classList.remove('open'); });
+      booksModalId = null; editingId = null; deleteCtx = null;
+    }
+  });
+}
+
+/* ---------- INIT ---------- */
+initTheme();
+load();
+wire();
+render();
+
+})();
+</script>
+</body>
+</html>
