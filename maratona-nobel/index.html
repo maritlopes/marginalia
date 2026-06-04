@@ -88,6 +88,21 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .how li::before{content:'❦';color:var(--color-primary);flex-shrink:0}
 .how .how-note{margin-top:var(--space-4);font-size:var(--text-xs);color:var(--color-text-faint);font-style:italic}
 
+/* SINCRONIZAÇÃO */
+.sync{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6);margin:var(--space-6) 0}
+.sync-head{display:flex;align-items:center;gap:var(--space-2);font-family:var(--font-display);font-weight:600;font-size:var(--text-base);color:var(--color-text);margin-bottom:var(--space-3)}
+.sync-head svg{width:18px;height:18px;color:var(--color-primary)}
+.sync-status{font-size:var(--text-sm);color:var(--color-text-muted);line-height:1.6}
+.sync-status .ok{color:var(--color-primary);font-weight:600}
+.sync-row{display:flex;gap:var(--space-2);flex-wrap:wrap;align-items:center;margin-top:var(--space-3)}
+.sync-row input{flex:1;min-width:180px;padding:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);font-family:var(--font-body);font-size:var(--text-base);background:var(--color-bg);color:var(--color-text)}
+.sync-row input:focus{outline:none;border-color:var(--color-primary)}
+.sync-btn{font-family:var(--font-body);font-weight:500;font-size:var(--text-sm);padding:var(--space-3) var(--space-5);border-radius:var(--radius-full);cursor:pointer;border:1px solid var(--color-primary);background:var(--color-primary);color:#fff;transition:all var(--transition);white-space:nowrap}
+.sync-btn:hover{opacity:.92}
+.sync-btn.ghost{background:transparent;color:var(--color-text-muted);border-color:var(--color-border)}
+.sync-btn.ghost:hover{color:var(--color-primary);border-color:var(--color-primary)}
+.sync-note{margin-top:var(--space-3);font-size:var(--text-xs);color:var(--color-text-faint)}
+
 /* SCOREBOARD */
 .scoreboard{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-3);margin:var(--space-8) 0 var(--space-4)}
 .score-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-5) var(--space-3);text-align:center;box-shadow:var(--shadow-md);border-top:3px solid var(--cat-a)}
@@ -359,6 +374,15 @@ footer .brand a:hover{text-decoration:underline}
     </button>
     <input type="file" id="import-file" accept=".json" style="display:none">
   </div>
+
+  <!-- SINCRONIZAÇÃO -->
+  <section class="sync" id="sync-panel" style="display:none">
+    <div class="sync-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-7.5-4M3 12a9 9 0 0 1 9-9 9 9 0 0 1 7.5 4"/><path d="M3 4v4h4M21 20v-4h-4"/></svg>
+      Sincronização
+    </div>
+    <div class="sync-body" id="sync-body"></div>
+  </section>
 
 </div>
 
@@ -668,7 +692,17 @@ function normalize() {
 
 function save() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(laureates)); } catch (e) {}
+  if (typeof window.__onMaratonaChange === 'function') { try { window.__onMaratonaChange(); } catch (e) {} }
 }
+
+// API para a camada de sincronização (script separado)
+window.__maratona = {
+  snapshot: function () { return JSON.parse(JSON.stringify(laureates)); },
+  replace: function (arr) {
+    if (!Array.isArray(arr)) return;
+    laureates = arr; normalize(); recomputeNextId(); render();
+  }
+};
 
 function findLaureate(id) {
   return laureates.find(function(l){ return l.id === id; });
@@ -1097,6 +1131,126 @@ load();
 wire();
 render();
 
+})();
+</script>
+
+<!-- Sincronização na nuvem (compartilha a sessão do app Marginália, mesma origem) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+'use strict';
+if (typeof supabase === 'undefined' || !window.__maratona) return;
+
+var SB = supabase.createClient(
+  'https://rpsiewnsvqpeadwaqsib.supabase.co',
+  'sb_publishable_QyDwy0ZCCRYzSFfTXCXQYQ_h3vEAL3I',
+  { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'marginalia-auth' } }
+);
+var TABLE = 'maratona_state';
+
+var user = null, applying = false, pushTimer = null, pendingEmail = '';
+var panel = document.getElementById('sync-panel');
+var body = document.getElementById('sync-body');
+
+function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
+function bookKey(b){ return (b.title||'').trim().toLowerCase() + '|' + (b.over500 ? '1' : '0'); }
+
+function mergeData(localArr, cloudArr){
+  var map = new Map();
+  (localArr||[]).forEach(function(l){ map.set(l.id, JSON.parse(JSON.stringify(l))); });
+  (cloudArr||[]).forEach(function(c){
+    if (!map.has(c.id)) { map.set(c.id, JSON.parse(JSON.stringify(c))); return; }
+    var l = map.get(c.id);
+    if (!Array.isArray(l.books)) l.books = [];
+    var seen = new Set(l.books.map(bookKey));
+    (c.books||[]).forEach(function(b){ var k=bookKey(b); if(!seen.has(k)){ l.books.push(b); seen.add(k); } });
+  });
+  return Array.from(map.values());
+}
+
+function msg(t, isErr){ var m=document.getElementById('sync-msg'); if(m){ m.textContent=t||''; m.style.color = isErr ? '#9B2C2C' : ''; } }
+
+function render(){
+  if (!body) return;
+  if (user) {
+    body.innerHTML =
+      '<div class="sync-status"><span class="ok">☁ Sincronizado</span> · ' + esc(user.email||'conta conectada') +
+      '<br>Suas leituras salvam na nuvem e aparecem em qualquer aparelho onde você entrar.</div>' +
+      '<div class="sync-row"><button class="sync-btn ghost" id="sync-out">Sair desta conta</button>' +
+      '<span id="sync-msg" class="sync-note"></span></div>';
+    document.getElementById('sync-out').onclick = signOut;
+  } else if (pendingEmail) {
+    body.innerHTML =
+      '<div class="sync-status">Enviei um <strong>código</strong> para <strong>' + esc(pendingEmail) + '</strong>. Digite abaixo.</div>' +
+      '<div class="sync-row"><input id="sync-code" inputmode="numeric" placeholder="Código do e-mail" autocomplete="one-time-code">' +
+      '<button class="sync-btn" id="sync-verify">Entrar</button></div>' +
+      '<div class="sync-row"><button class="sync-btn ghost" id="sync-back">Usar outro e-mail</button>' +
+      '<span id="sync-msg" class="sync-note"></span></div>';
+    document.getElementById('sync-verify').onclick = verifyCode;
+    document.getElementById('sync-back').onclick = function(){ pendingEmail=''; render(); };
+    var ci=document.getElementById('sync-code'); if(ci){ ci.focus(); ci.onkeydown=function(e){ if(e.key==='Enter') verifyCode(); }; }
+  } else {
+    body.innerHTML =
+      '<div class="sync-status">Sincronize sua maratona entre o <strong>celular</strong> e o <strong>computador</strong>. Entre com seu e-mail (o mesmo do app, se você usa) — chega um código.</div>' +
+      '<div class="sync-row"><input id="sync-email" type="email" inputmode="email" placeholder="seu@email.com" autocomplete="email">' +
+      '<button class="sync-btn" id="sync-send">Enviar código</button></div>' +
+      '<div class="sync-note" id="sync-msg"></div>';
+    document.getElementById('sync-send').onclick = sendCode;
+    var ei=document.getElementById('sync-email'); if(ei){ ei.onkeydown=function(e){ if(e.key==='Enter') sendCode(); }; }
+  }
+}
+
+async function sendCode(){
+  var ei=document.getElementById('sync-email'); var email=(ei&&ei.value||'').trim();
+  if(!email){ if(ei) ei.focus(); return; }
+  msg('Enviando…');
+  try { var r=await SB.auth.signInWithOtp({ email: email, options:{ shouldCreateUser:true } }); if(r.error) throw r.error; pendingEmail=email; render(); }
+  catch(e){ msg('Não consegui enviar o código agora. Tente de novo em alguns minutos.', true); }
+}
+async function verifyCode(){
+  var ci=document.getElementById('sync-code'); var token=(ci&&ci.value||'').trim();
+  if(!token){ if(ci) ci.focus(); return; }
+  msg('Entrando…');
+  try { var r=await SB.auth.verifyOtp({ email: pendingEmail, token: token, type:'email' }); if(r.error) throw r.error; pendingEmail=''; await afterLogin(); }
+  catch(e){ msg('Código inválido ou expirado.', true); }
+}
+async function signOut(){ try{ await SB.auth.signOut(); }catch(e){} user=null; render(); }
+
+async function pull(){
+  try {
+    var r = await SB.from(TABLE).select('data').eq('user_id', user.id).maybeSingle();
+    if (r.error) return false;
+    var cloud = r.data && r.data.data;
+    var local = window.__maratona.snapshot();
+    if (Array.isArray(cloud)) { applying=true; window.__maratona.replace(mergeData(local, cloud)); applying=false; }
+    return await push();
+  } catch(e){ return false; }
+}
+async function push(){
+  if (!user) return false;
+  try {
+    var r = await SB.from(TABLE).upsert({ user_id: user.id, data: window.__maratona.snapshot(), updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+    if (r.error) { msg('Sincronização ainda não ativada (tabela pendente no Supabase).', true); return false; }
+    msg('Salvo na nuvem ✓'); return true;
+  } catch(e){ return false; }
+}
+function schedulePush(){ if(!user||applying) return; if(pushTimer) clearTimeout(pushTimer); pushTimer=setTimeout(push,1200); }
+window.__onMaratonaChange = schedulePush;
+
+async function afterLogin(){ render(); var ok=await pull(); if(ok) msg('Sincronizado ✓'); }
+
+async function init(){
+  if (panel) panel.style.display = '';
+  render();
+  try { var r=await SB.auth.getUser(); user = r.data && r.data.user; } catch(e){ user=null; }
+  if (user) await afterLogin();
+  SB.auth.onAuthStateChange(function(_e, session){
+    var u = session && session.user;
+    if (u && (!user || user.id!==u.id)) { user=u; afterLogin(); }
+    else if (!u && user) { user=null; render(); }
+  });
+}
+init();
 })();
 </script>
 </body>
