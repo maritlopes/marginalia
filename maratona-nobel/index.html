@@ -66,7 +66,7 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .logo-sub{font-family:var(--font-display);font-style:italic;font-size:var(--text-sm);color:var(--color-text-muted)}
 .logo-sub a{color:inherit;text-decoration:underline;text-underline-offset:2px;text-decoration-thickness:.06em}
 .logo-sub a:hover{color:var(--color-primary)}
-.medal-glyph{width:30px;height:30px;flex-shrink:0}
+.medal-glyph{width:32px;height:32px;flex-shrink:0;object-fit:contain}
 @media(max-width:560px){.logo-em,.logo-sub{display:none}}
 .theme-toggle{width:38px;height:38px;border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;color:var(--color-text-muted);border:1px solid var(--color-border);transition:all var(--transition)}
 .theme-toggle:hover{color:var(--color-text);background:var(--color-surface-2);border-color:var(--color-primary)}
@@ -261,7 +261,7 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 /* FOOTER */
 footer{background:var(--color-surface);border-top:1px solid var(--color-border);text-align:center;padding:var(--space-12) var(--space-6) var(--space-10);margin-top:var(--space-16)}
 footer .ornament{color:var(--color-primary);font-size:1.2rem;opacity:.55;margin-bottom:var(--space-3)}
-.medal-sign{width:66px;height:66px;display:block;margin:0 auto var(--space-4)}
+.medal-sign{width:72px;height:72px;display:block;margin:0 auto var(--space-4);object-fit:contain}
 footer .quote{font-family:var(--font-display);font-style:italic;font-size:var(--text-base);color:var(--color-text-muted);max-width:48ch;margin:0 auto var(--space-2);line-height:1.5}
 footer .attr{font-size:var(--text-xs);color:var(--color-text-faint);letter-spacing:.04em}
 footer .brand{margin-top:var(--space-5);font-family:var(--font-display);font-size:var(--text-sm);color:var(--color-text-faint)}
@@ -322,7 +322,7 @@ footer .brand a:hover{text-decoration:underline}
 <header class="site-header">
   <div class="header-inner">
     <div class="logo" title="Maratona Nobel de Literatura">
-      <svg class="medal-glyph" aria-label="Maratona Nobel"><use href="#medal"/></svg>
+      <img class="medal-glyph" src="/nobel-medal.png" alt="Maratona Nobel">
       <span class="logo-mg">Maratona Nobel</span>
       <span class="logo-em">·</span>
       <span class="logo-sub">acompanhe pelo <a href="/">Marginália</a></span>
@@ -459,7 +459,8 @@ footer .brand a:hover{text-decoration:underline}
 </div>
 
 <footer>
-  <svg class="medal-sign" aria-label="Maratona Nobel de Literatura"><use href="#medal"/></svg>
+  <img class="medal-sign" src="/nobel-medal.png" alt="Maratona Nobel de Literatura">
+
   <div class="quote">"Para mim, as palavras numa página dão coerência ao mundo."</div>
   <div class="attr">— Alberto Manguel</div>
   <div class="brand">Idealização, curadoria e sistema de pontos: <strong>Jamile e João</strong>. O <a href="/">Marginália</a> apoia o leitor com esta página de acompanhamento. · 2026</div>
