@@ -74,6 +74,16 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .hero-title{font-family:var(--font-display);font-size:var(--text-hero);font-weight:600;line-height:1.05;color:var(--color-text);margin-bottom:var(--space-5);letter-spacing:-.01em}
 .hero-title em{font-style:italic;color:var(--color-primary)}
 .hero-sub{font-size:var(--text-base);color:var(--color-text-muted);max-width:58ch;margin:0 auto;line-height:1.7}
+.hero-credit{margin-top:var(--space-4);font-family:var(--font-display);font-style:italic;font-size:var(--text-sm);color:var(--color-text-faint)}
+.hero-credit strong{color:var(--color-primary);font-weight:600;font-style:normal}
+
+/* COMO FUNCIONA */
+.how{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6);margin:var(--space-4) 0}
+.how h2{font-family:var(--font-display);font-weight:600;font-size:var(--text-lg);color:var(--color-text);margin-bottom:var(--space-3)}
+.how ul{list-style:none;display:flex;flex-direction:column;gap:var(--space-3)}
+.how li{display:flex;gap:var(--space-3);font-size:var(--text-sm);line-height:1.6;color:var(--color-text-muted)}
+.how li::before{content:'❦';color:var(--color-primary);flex-shrink:0}
+.how .how-note{margin-top:var(--space-4);font-size:var(--text-xs);color:var(--color-text-faint);font-style:italic}
 
 /* SCOREBOARD */
 .scoreboard{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-3);margin:var(--space-8) 0 var(--space-4)}
@@ -237,7 +247,8 @@ footer .brand a:hover{text-decoration:underline}
 <section class="hero">
   <p class="hero-eyebrow">Junho — Outubro 2026</p>
   <h1 class="hero-title">Maratona <em>Nobel</em></h1>
-  <p class="hero-sub">Um desafio do clube: atravessar 125 anos de Literatura premiada — dos clássicos de 1901 aos cotados de hoje. Marque os laureados que você ler e some pontos.</p>
+  <p class="hero-sub">O jogo de leitura do Nobel: a cada ano, de junho até o anúncio do prêmio, lemos autores já laureados ou cotados — e somamos pontos pelas leituras. Marque o que você ler; o placar conta sozinho.</p>
+  <p class="hero-credit">Idealização e curadoria de <strong>Jamile e João</strong></p>
 </section>
 
 <div class="container">
@@ -263,21 +274,31 @@ footer .brand a:hover{text-decoration:underline}
   </div>
   <div class="bonus-msg" id="bonus-msg">❦ Uma leitura em cada categoria — total duplicado!</div>
 
+  <!-- COMO FUNCIONA -->
+  <section class="how">
+    <h2>Como funciona a Maratona</h2>
+    <ul>
+      <li>Todo ano, de junho até o anúncio do prêmio — que ocorre no início de outubro —, focamos nas leituras dos autores que já ganharam o Nobel ou aqueles que estão cotados.</li>
+      <li>Temos um grupo de bate-papo para discutirmos e, ao final de todo mês, uma reunião sobre o andamento da maratona.</li>
+    </ul>
+    <p class="how-note">Idealização, curadoria e moderação de Jamile e João.</p>
+  </section>
+
   <!-- RULES -->
   <div class="rules-toggle" id="rules-toggle">
     <span>Sistema de pontos</span>
     <span class="arrow">▾</span>
   </div>
   <div class="rules-content" id="rules-content">
+    <p style="margin-bottom:.9rem;color:var(--color-text-muted)">A ideia não é quem lê mais, mas incentivar a leitura e aproveitar as trocas. Como estímulo, <strong>Jamile e João</strong> criaram este jogo de pontuação:</p>
     <ul>
-      <li><strong>Categoria A</strong> (premiados há mais de 50 anos, até 1976): <strong>3 pontos</strong> por livro</li>
-      <li><strong>Categoria B</strong> (premiados há menos de 50 anos, 1977–2025): <strong>2 pontos</strong> por livro</li>
-      <li><strong>Cotados</strong> (ainda não premiados): <strong>1 ponto</strong> por livro — validar com a moderação</li>
-      <li>Livro com <strong>500+ páginas</strong>: pontos daquele livro <strong>dobrados</strong></li>
-      <li>Ler ao menos <strong>1 livro de cada categoria</strong>: total final <strong>dobrado</strong></li>
-      <li>Você pode registrar <strong>vários livros do mesmo laureado</strong> — cada um soma</li>
-      <li>Somente leituras de <strong>2026</strong> contam</li>
-      <li>Maior pontuação ganha um livro do Nobel do ano ❦</li>
+      <li>Cada livro lido de autor premiado <strong>há mais de 50 anos</strong> (em 2026, os que ganharam até 1976): <strong>3 pontos</strong></li>
+      <li>Premiado <strong>há menos de 50 anos</strong>: <strong>2 pontos</strong></li>
+      <li>Livro de autor <strong>cotado</strong>: <strong>1 ponto</strong> — valide antes com os moderadores se o autor pode ser considerado cotado</li>
+      <li>Só vale a <strong>leitura do ano corrente</strong>; as anteriores não contam para a maratona</li>
+      <li>Livro com <strong>mais de 500 páginas</strong>: pontuação dele <strong>dobrada</strong></li>
+      <li>Lendo <strong>ao menos 1 de cada categoria</strong>: pontos finais <strong>dobram</strong></li>
+      <li>A <strong>maior pontuação</strong> ganha um livro do laureado do ano; sem publicação no Brasil, outro Nobel à sua escolha. Havendo empate, sorteio ❦</li>
     </ul>
   </div>
 
@@ -335,9 +356,9 @@ footer .brand a:hover{text-decoration:underline}
 
 <footer>
   <div class="ornament">❦</div>
-  <div class="quote">"A leitura é uma forma de felicidade."</div>
+  <div class="quote">"Para mim, as palavras numa página dão coerência ao mundo."</div>
   <div class="attr">— Alberto Manguel</div>
-  <div class="brand"><a href="/">Marginália</a> · Clube de Leitura · 2026</div>
+  <div class="brand">Idealização, curadoria e sistema de pontos por <strong>Jamile e João</strong> · em conexão com <a href="/">Marginália</a> · 2026</div>
 </footer>
 
 <!-- BOOKS / REGISTER MODAL -->
