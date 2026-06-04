@@ -4,7 +4,7 @@
 // Chave da API do Google Books (restrita por referrer ao domínio do app — pode
 // ficar no código, igual à chave pública do Supabase). Vazia = usa sem chave
 // (cota global compartilhada, sujeita a 429). Cole a chave entre as aspas:
-const GOOGLE_BOOKS_KEY = '';
+const GOOGLE_BOOKS_KEY = 'AIzaSyBZfN2cMIPWl5ehNmC5bzeefSIl-vVZxoI';
 
 const CACHE = {};
 
