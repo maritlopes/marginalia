@@ -993,8 +993,8 @@ function searchBooks(q) {
     var v = it.volumeInfo || {};
     return { title: v.title ? (v.title + (v.subtitle ? ': ' + v.subtitle : '')) : '', authors: (v.authors || []).join(', '), year: (v.publishedDate || '').slice(0, 4), pages: v.pageCount || 0 };
   }
-  function gb(extra) {
-    return fetch('https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(q) + '&maxResults=40&printType=books&orderBy=relevance&country=BR' + keyParam + extra)
+  function gb(qstr, extra) {
+    return fetch('https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(qstr) + '&maxResults=40&printType=books&orderBy=relevance&country=BR' + keyParam + (extra || ''))
       .then(function(r) { return r.ok ? r.json() : null; })
       .then(function(j) { return (j && j.items || []).map(mapGB).filter(function(x) { return x.title; }); })
       .catch(function() { return []; });
@@ -1010,13 +1010,16 @@ function searchBooks(q) {
         return dedupeBooks(items).slice(0, 18);
       }).catch(function() { return []; });
   }
-  // 1) Google Books em português (gasta pouca cota); 2) completa com a geral; 3) Open Library
-  return gb('&langRestrict=pt').then(function(pt) {
-    pt = dedupeBooks(pt);
-    if (pt.length >= 5) return pt.slice(0, 18);
-    return gb('').then(function(gen) {
-      var merged = dedupeBooks(pt.concat(gen));
-      return merged.length ? merged.slice(0, 18) : openLib();
+  // busca as OBRAS DO autor (inauthor) — português primeiro; depois geral; por fim Open Library
+  var byAuthor = 'inauthor:"' + q.replace(/"/g, '') + '"';
+  return gb(byAuthor, '&langRestrict=pt').then(function(aPt) {
+    return gb(byAuthor, '').then(function(aAll) {
+      var merged = dedupeBooks(aPt.concat(aAll));
+      if (merged.length >= 3) return merged.slice(0, 18);
+      return gb(q, '').then(function(gen) {
+        merged = dedupeBooks(merged.concat(gen));
+        return merged.length ? merged.slice(0, 18) : openLib();
+      });
     });
   });
 }
