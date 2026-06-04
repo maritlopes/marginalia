@@ -1744,6 +1744,27 @@ function ScreenMetas({ onNav = () => {} }) {
         </div>
       </div>
 
+      {/* PORTAL — convite para a Maratona Nobel (desafio do clube) */}
+      <div style={{ padding: '8px 24px 0' }}>
+        <a href="/maratona-nobel/" style={{ textDecoration: 'none', display: 'block' }}>
+          <div style={{ background: T.ink, color: T.cream, borderRadius: 14, padding: '18px 18px 16px', position: 'relative', overflow: 'hidden' }}>
+            <img src="/nobel-medal.png" alt="" style={{ position: 'absolute', right: -16, top: -16, width: 118, height: 118, opacity: 0.18, pointerEvents: 'none' }}/>
+            <div style={{ fontSize: 9, letterSpacing: 1.8, textTransform: 'uppercase', color: T.ochre, fontWeight: 700, marginBottom: 8 }}>
+              ✦ Convite · desafio do clube
+            </div>
+            <div style={{ fontFamily: T.serif, fontSize: 20, fontWeight: 500, lineHeight: 1.15, marginBottom: 8 }}>
+              Maratona Nobel
+            </div>
+            <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, lineHeight: 1.5, color: 'rgba(247,241,228,0.82)', marginBottom: 12, maxWidth: '86%' }}>
+              O jogo de leitura do Nobel — de junho a outubro. Idealização e curadoria de Jamile e João; acompanhe as leituras por aqui.
+            </div>
+            <div style={{ fontSize: 11, letterSpacing: 0.6, fontWeight: 700, color: T.ochre, textTransform: 'uppercase' }}>
+              Entrar na Maratona →
+            </div>
+          </div>
+        </a>
+      </div>
+
       {/* metas em curso */}
       {ativas.length > 0 ? (
         <div style={{ padding: '16px 24px 0' }}>
