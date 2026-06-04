@@ -206,6 +206,15 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .books-read .bk-name{flex:1;min-width:0;font-style:italic;font-family:var(--font-display);font-size:var(--text-base)}
 .books-read .bk-empty{color:var(--color-text-faint);font-size:var(--text-sm);padding:var(--space-3) 0}
 .add-book-form{margin-top:var(--space-4);padding-top:var(--space-4);border-top:1px solid var(--color-divider)}
+.bk-search-row{display:flex;gap:var(--space-2);margin-bottom:var(--space-2)}
+.bk-search-row input{flex:1;min-width:0}
+.bk-search-row button{white-space:nowrap}
+.bk-results{list-style:none;max-height:34vh;overflow-y:auto;display:flex;flex-direction:column;gap:var(--space-2);margin-bottom:var(--space-2)}
+.bk-results li{padding:var(--space-2) var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);cursor:pointer;background:var(--color-surface);transition:all var(--transition)}
+.bk-results li:hover{border-color:var(--color-primary);background:var(--color-surface-2)}
+.bk-results .r-title{font-family:var(--font-display);font-weight:600;font-size:var(--text-sm);line-height:1.3}
+.bk-results .r-meta{font-size:var(--text-xs);color:var(--color-text-muted);margin-top:1px}
+.bk-results .r-empty{color:var(--color-text-faint);font-size:var(--text-sm);padding:var(--space-2);cursor:default;border:none;background:none}
 .picker-input{margin-bottom:var(--space-3)}
 .picker-results{list-style:none;max-height:46vh;overflow-y:auto;display:flex;flex-direction:column;gap:var(--space-2)}
 .picker-results li{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);cursor:pointer;transition:all var(--transition);background:var(--color-surface)}
@@ -437,11 +446,17 @@ footer .brand a:hover{text-decoration:underline}
     <label id="books-list-label">Livros lidos deste laureado</label>
     <ul class="books-read" id="books-read"></ul>
     <div class="add-book-form">
-      <label for="bk-title">Registrar um livro lido</label>
+      <label for="bk-search">Buscar o livro (preenche o título pra você)</label>
+      <div class="bk-search-row">
+        <input id="bk-search" type="text" placeholder="Autor ou título do livro…" autocomplete="off">
+        <button class="sync-btn" id="bk-search-btn" type="button">Buscar</button>
+      </div>
+      <ul class="bk-results" id="bk-results"></ul>
+      <label for="bk-title">Título do livro lido</label>
       <input id="bk-title" type="text" placeholder="Título do livro que você leu">
       <div class="check-row">
         <input type="checkbox" id="bk-over500">
-        <label for="bk-over500">500+ páginas (pontos dobrados)</label>
+        <label for="bk-over500">Mais de 500 páginas (pontos dobrados)</label>
       </div>
       <div class="btn-row">
         <button class="btn-save" id="bk-add">Adicionar livro</button>
@@ -837,6 +852,8 @@ function openBooks(id) {
   renderBooksList();
   document.getElementById('bk-title').value = '';
   document.getElementById('bk-over500').checked = false;
+  var bs = document.getElementById('bk-search'); if (bs) bs.value = l.author || '';
+  var br = document.getElementById('bk-results'); if (br) { br.innerHTML = ''; br._items = null; }
   document.getElementById('books-modal').classList.add('open');
   setTimeout(function(){ document.getElementById('bk-title').focus(); }, 50);
 }
@@ -875,6 +892,61 @@ function addBook() {
 function closeBooks() {
   document.getElementById('books-modal').classList.remove('open');
   booksModalId = null;
+}
+
+/* ---------- BUSCA DE LIVRO (Google Books + Open Library) ---------- */
+function dedupeBooks(items) {
+  var seen = {}, out = [];
+  items.forEach(function(it) {
+    var k = (it.title || '').toLowerCase().trim();
+    if (k && !seen[k]) { seen[k] = 1; out.push(it); }
+  });
+  return out;
+}
+
+function searchBooks(q) {
+  q = (q || '').trim();
+  if (!q) return Promise.resolve([]);
+  // 1) Google Books
+  return fetch('https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(q) + '&maxResults=20&printType=books&orderBy=relevance&country=BR')
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(j) {
+      var items = (j && j.items || []).map(function(it) {
+        var v = it.volumeInfo || {};
+        return { title: v.title ? (v.title + (v.subtitle ? ': ' + v.subtitle : '')) : '', authors: (v.authors || []).join(', '), year: (v.publishedDate || '').slice(0, 4), pages: v.pageCount || 0 };
+      }).filter(function(x) { return x.title; });
+      if (items.length) return dedupeBooks(items).slice(0, 12);
+      throw new Error('vazio');
+    })
+    .catch(function() {
+      // 2) Open Library (reserva)
+      return fetch('https://openlibrary.org/search.json?q=' + encodeURIComponent(q) + '&fields=title,author_name,first_publish_year,number_of_pages_median&limit=20')
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(j) {
+          var items = (j && j.docs || []).map(function(d) {
+            return { title: d.title || '', authors: (d.author_name || []).join(', '), year: d.first_publish_year || '', pages: d.number_of_pages_median || 0 };
+          }).filter(function(x) { return x.title; });
+          return dedupeBooks(items).slice(0, 12);
+        })
+        .catch(function() { return []; });
+    });
+}
+
+function doBookSearch() {
+  var inp = document.getElementById('bk-search');
+  var ul = document.getElementById('bk-results');
+  var q = (inp.value || '').trim();
+  if (!q) { ul.innerHTML = ''; return; }
+  ul.innerHTML = '<li class="r-empty">Buscando…</li>';
+  searchBooks(q).then(function(items) {
+    if (!items.length) { ul.innerHTML = '<li class="r-empty">Nada encontrado — você pode digitar o título à mão abaixo.</li>'; return; }
+    ul._items = items;
+    ul.innerHTML = items.map(function(it, i) {
+      var meta = [it.year, it.pages ? it.pages + ' pág' : ''].filter(Boolean).join(' · ');
+      var line = [it.authors, meta].filter(Boolean).join(' — ');
+      return '<li data-i="' + i + '"><div class="r-title">' + escHtml(it.title) + '</div>' + (line ? '<div class="r-meta">' + escHtml(line) + '</div>' : '') + '</li>';
+    }).join('');
+  });
 }
 
 /* ---------- EDIT / ADD LAUREATE ---------- */
@@ -1111,6 +1183,19 @@ function wire() {
   // books modal
   document.getElementById('bk-add').addEventListener('click', addBook);
   document.getElementById('bk-title').addEventListener('keydown', function(e){ if (e.key === 'Enter') addBook(); });
+  document.getElementById('bk-search-btn').addEventListener('click', doBookSearch);
+  document.getElementById('bk-search').addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); doBookSearch(); } });
+  document.getElementById('bk-results').addEventListener('click', function(e){
+    var li = e.target.closest('li[data-i]');
+    if (!li) return;
+    var ul = document.getElementById('bk-results');
+    var it = (ul._items || [])[parseInt(li.getAttribute('data-i'), 10)];
+    if (!it) return;
+    document.getElementById('bk-title').value = it.title;
+    document.getElementById('bk-over500').checked = (it.pages || 0) > 500;
+    ul.innerHTML = ''; ul._items = null;
+    document.getElementById('bk-title').focus();
+  });
   document.getElementById('books-read').addEventListener('click', function(e) {
     var rm = e.target.closest('.bk-remove');
     if (!rm) return;
