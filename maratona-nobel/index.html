@@ -215,6 +215,7 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .bk-results .r-title{font-family:var(--font-display);font-weight:600;font-size:var(--text-sm);line-height:1.3}
 .bk-results .r-meta{font-size:var(--text-xs);color:var(--color-text-muted);margin-top:1px}
 .bk-results .r-empty{color:var(--color-text-faint);font-size:var(--text-sm);padding:var(--space-2);cursor:default;border:none;background:none}
+.bk-hint{font-size:var(--text-xs);color:var(--color-text-faint);margin:0 0 var(--space-3)}
 .picker-input{margin-bottom:var(--space-3)}
 .picker-results{list-style:none;max-height:46vh;overflow-y:auto;display:flex;flex-direction:column;gap:var(--space-2)}
 .picker-results li{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);cursor:pointer;transition:all var(--transition);background:var(--color-surface)}
@@ -452,6 +453,7 @@ footer .brand a:hover{text-decoration:underline}
         <button class="sync-btn" id="bk-search-btn" type="button">Buscar</button>
       </div>
       <ul class="bk-results" id="bk-results"></ul>
+      <p class="bk-hint">O título pode aparecer no idioma original — é só ajustar no campo abaixo.</p>
       <label for="bk-title">Título do livro lido</label>
       <input id="bk-title" type="text" placeholder="Título do livro que você leu">
       <div class="check-row">
@@ -904,32 +906,45 @@ function dedupeBooks(items) {
   return out;
 }
 
+// Chave do Google Books (opcional): preencha para acabar com o limite de cota (429)
+// e tornar a busca em português confiável. Crie em console.cloud.google.com (Books API),
+// restrinja ao referrer https://clubemarginalia.com.br/* e cole aqui.
+var GOOGLE_BOOKS_KEY = '';
+
 function searchBooks(q) {
   q = (q || '').trim();
   if (!q) return Promise.resolve([]);
-  // 1) Google Books
-  return fetch('https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(q) + '&maxResults=20&printType=books&orderBy=relevance&country=BR')
-    .then(function(r) { return r.ok ? r.json() : null; })
-    .then(function(j) {
-      var items = (j && j.items || []).map(function(it) {
-        var v = it.volumeInfo || {};
-        return { title: v.title ? (v.title + (v.subtitle ? ': ' + v.subtitle : '')) : '', authors: (v.authors || []).join(', '), year: (v.publishedDate || '').slice(0, 4), pages: v.pageCount || 0 };
-      }).filter(function(x) { return x.title; });
-      if (items.length) return dedupeBooks(items).slice(0, 12);
-      throw new Error('vazio');
-    })
-    .catch(function() {
-      // 2) Open Library (reserva)
-      return fetch('https://openlibrary.org/search.json?q=' + encodeURIComponent(q) + '&fields=title,author_name,first_publish_year,number_of_pages_median&limit=20')
-        .then(function(r) { return r.ok ? r.json() : null; })
-        .then(function(j) {
-          var items = (j && j.docs || []).map(function(d) {
-            return { title: d.title || '', authors: (d.author_name || []).join(', '), year: d.first_publish_year || '', pages: d.number_of_pages_median || 0 };
-          }).filter(function(x) { return x.title; });
-          return dedupeBooks(items).slice(0, 12);
-        })
-        .catch(function() { return []; });
+  var keyParam = GOOGLE_BOOKS_KEY ? '&key=' + GOOGLE_BOOKS_KEY : '';
+  function mapGB(it) {
+    var v = it.volumeInfo || {};
+    return { title: v.title ? (v.title + (v.subtitle ? ': ' + v.subtitle : '')) : '', authors: (v.authors || []).join(', '), year: (v.publishedDate || '').slice(0, 4), pages: v.pageCount || 0 };
+  }
+  function gb(extra) {
+    return fetch('https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(q) + '&maxResults=40&printType=books&orderBy=relevance&country=BR' + keyParam + extra)
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(j) { return (j && j.items || []).map(mapGB).filter(function(x) { return x.title; }); })
+      .catch(function() { return []; });
+  }
+  function openLib() {
+    return fetch('https://openlibrary.org/search.json?q=' + encodeURIComponent(q) + '&fields=title,author_name,first_publish_year,number_of_pages_median,language&limit=30')
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(j) {
+        var items = (j && j.docs || []).map(function(d) {
+          return { title: d.title || '', authors: (d.author_name || []).join(', '), year: d.first_publish_year || '', pages: d.number_of_pages_median || 0, por: (d.language || []).indexOf('por') !== -1 };
+        }).filter(function(x) { return x.title; });
+        items.sort(function(a, b) { return (b.por ? 1 : 0) - (a.por ? 1 : 0); });
+        return dedupeBooks(items).slice(0, 18);
+      }).catch(function() { return []; });
+  }
+  // 1) Google Books em português (gasta pouca cota); 2) completa com a geral; 3) Open Library
+  return gb('&langRestrict=pt').then(function(pt) {
+    pt = dedupeBooks(pt);
+    if (pt.length >= 5) return pt.slice(0, 18);
+    return gb('').then(function(gen) {
+      var merged = dedupeBooks(pt.concat(gen));
+      return merged.length ? merged.slice(0, 18) : openLib();
     });
+  });
 }
 
 function doBookSearch() {
