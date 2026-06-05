@@ -83,13 +83,17 @@ function UserAvatar({ size = 36 }) {
     return () => { alive = false; };
   }, [tick]);
   const abrir = () => { if (typeof window !== 'undefined' && window.__openAccount) window.__openAccount(); };
+  // <button> (não <div>): no iOS em modo standalone/tela-inicial, toques em <div onClick>
+  // não disparam de forma confiável; um botão nativo sempre recebe o toque.
   return (
-    <div onClick={abrir} title="Seu perfil · entrar e sincronizar" style={{
+    <button type="button" onClick={abrir} title="Seu perfil · entrar e sincronizar" style={{
       width: size, height: size, borderRadius: '50%', background: T.ink, color: T.cream,
       display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
       fontFamily: T.serif, fontWeight: 500, fontSize: Math.round(size * 0.42),
       boxShadow: ini ? 'none' : '0 0 0 2px ' + T.terra,
-    }}>{ini || <Icon name="user" size={Math.round(size * 0.45)} color={T.cream}/>}</div>
+      border: 0, padding: 0, margin: 0, lineHeight: 1, flexShrink: 0,
+      WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent',
+    }}>{ini || <Icon name="user" size={Math.round(size * 0.45)} color={T.cream}/>}</button>
   );
 }
 
