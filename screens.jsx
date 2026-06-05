@@ -398,7 +398,7 @@ function EcosPanel({ book, isDemo, onNav = () => {} }) {
           Ecos escolhidos à mão para esta obra.
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {curados.map((p, i) => <PonteCard key={p.id || i} p={p}/>)}
+          {curados.map((p, i) => <PonteCard key={p.id || i} p={p} book={b}/>)}
         </div>
       </div>
     );
@@ -408,7 +408,7 @@ function EcosPanel({ book, isDemo, onNav = () => {} }) {
   if (isDemo) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {ecos.slice(0, 6).map((p, i) => <PonteCard key={p.id || i} p={p}/>)}
+        {ecos.slice(0, 6).map((p, i) => <PonteCard key={p.id || i} p={p} book={b}/>)}
       </div>
     );
   }
@@ -445,7 +445,7 @@ function EcosPanel({ book, isDemo, onNav = () => {} }) {
         }}>{busy ? '…' : '↻ regenerar'}</button>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {ecos.map((p, i) => <PonteCard key={i} p={p}/>)}
+        {ecos.map((p, i) => <PonteCard key={i} p={p} book={b}/>)}
       </div>
       {err && <div style={{ marginTop: 12, fontSize: 12, color: '#8E3E2A' }}>{err}</div>}
     </div>
@@ -453,7 +453,24 @@ function EcosPanel({ book, isDemo, onNav = () => {} }) {
 }
 
 // Cartão de Ponte (usado no BookDetail / ecos)
-function PonteCard({ p, onClick }) {
+function PonteCard({ p, onClick, book }) {
+  const [deep, setDeep] = React.useState(p.deep || null);
+  const [busy, setBusy] = React.useState(false);
+  const [err, setErr] = React.useState(null);
+  const podeAprofundar = !!(book && book.title && typeof window !== 'undefined'
+    && window.MGCloud && window.MGCloud.available && window.MGCloud.aprofundarEco);
+  const aprofundar = async (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (busy || deep) return;
+    const cloud = window.MGCloud;
+    const u = cloud.currentUser ? await cloud.currentUser() : null;
+    if (!u) { setErr('Para aprofundar, entre na sua conta em Biblioteca → Sincronização.'); return; }
+    setBusy(true); setErr(null);
+    const r = await cloud.aprofundarEco(book, p);
+    setBusy(false);
+    if (r.error || !r.deep) { setErr('Não consegui aprofundar agora. Tente de novo.'); return; }
+    setDeep(r.deep);
+  };
   const catColors = {
     filosofia: '#6E3F4E', literatura: T.terra, musica: T.olive,
     arte: T.ochre, cinema: T.ink, historia: '#C9836E',
@@ -491,6 +508,20 @@ function PonteCard({ p, onClick }) {
           “{p.quote}”
         </div>
       )}
+      {deep && (
+        <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.hairline}`,
+          fontFamily: T.serif, fontSize: 12.5, lineHeight: 1.5, color: T.ink }}>
+          {deep}
+        </div>
+      )}
+      {!deep && podeAprofundar && (
+        <button type="button" onClick={aprofundar} disabled={busy} style={{
+          marginTop: 10, background: 'transparent', border: 0, color: T.terra,
+          fontFamily: T.sans, fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase',
+          cursor: 'pointer', padding: 0, WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent',
+        }}>{busy ? 'aprofundando…' : 'aprofundar →'}</button>
+      )}
+      {err && <div style={{ marginTop: 8, fontSize: 11, color: '#8E3E2A', lineHeight: 1.4 }}>{err}</div>}
     </div>
   );
 }

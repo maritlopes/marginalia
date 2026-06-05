@@ -335,6 +335,20 @@
     }
   };
 
+  // aprofunda UM eco específico (modo 'aprofundar' da função 'ecos')
+  window.MGCloud.aprofundarEco = async function (book, eco) {
+    try {
+      const { data, error } = await sb.functions.invoke('ecos', {
+        body: { title: book && book.title, author: book && book.author, eco },
+      });
+      if (error) return { error };
+      if (data && data.error) return { error: { message: data.error } };
+      return { deep: (data && data.deep) || '' };
+    } catch (e) {
+      return { error: { message: String(e) } };
+    }
+  };
+
   // sempre que o app salva localmente, agenda um envio à nuvem (se logada)
   window.__onLocalSave = schedulePush;
 
