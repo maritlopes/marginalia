@@ -2883,6 +2883,14 @@ function CloudAccount({ showAdmin = true } = {}) {
   const [msg, setMsg] = React.useState(null);
   const [nome, setNome] = React.useState('');
   const status = (typeof window !== 'undefined' && window.__cloudStatus) || '';
+  const syncRef = React.useRef(null);
+  // quando se chega aqui vindo do cartão/avatar da home, rola até a seção de login
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && window.__scrollToSync) {
+      window.__scrollToSync = false;
+      setTimeout(() => { if (syncRef.current && syncRef.current.scrollIntoView) syncRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 300);
+    }
+  }, []);
 
   React.useEffect(() => {
     let alive = true;
@@ -2961,7 +2969,7 @@ function CloudAccount({ showAdmin = true } = {}) {
   return (
     <>
     {showAdmin && <AppAdminPanel/>}
-    <div style={{ marginBottom: 22, borderBottom: `1px solid ${T.hairline}`, paddingBottom: 20 }}>
+    <div ref={syncRef} style={{ marginBottom: 22, borderBottom: `1px solid ${T.hairline}`, paddingBottom: 20 }}>
       <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 6 }}>
         Sincronização na nuvem
       </div>

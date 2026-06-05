@@ -82,7 +82,12 @@ function UserAvatar({ size = 36 }) {
     }
     return () => { alive = false; };
   }, [tick]);
-  const abrir = () => { if (typeof window !== 'undefined' && window.__openAccount) window.__openAccount(); };
+  // caminho único e robusto: leva à tela de login da Biblioteca (form inline, confiável no modo app)
+  const abrir = () => {
+    if (typeof window === 'undefined') return;
+    window.__scrollToSync = true;
+    if (window.__setRoute) window.__setRoute('library');
+  };
   // <button> (não <div>): no iOS em modo standalone/tela-inicial, toques em <div onClick>
   // não disparam de forma confiável; um botão nativo sempre recebe o toque.
   return (
@@ -111,24 +116,25 @@ function LoginPrompt() {
     return () => { alive = false; };
   }, [tick]);
   if (user === undefined || user) return null; // carregando, ou já conectada → não aparece
-  const abrir = () => { if (typeof window !== 'undefined' && window.__openAccount) window.__openAccount(); };
+  // caminho único e robusto: leva à tela de login da Biblioteca (form inline, confiável no modo app)
+  const ir = () => {
+    if (typeof window === 'undefined') return;
+    window.__scrollToSync = true;
+    if (window.__setRoute) window.__setRoute('library');
+  };
   return (
-    <button type="button" onClick={abrir} style={{
-      display: 'block', width: '100%', textAlign: 'left', cursor: 'pointer',
-      border: 0, borderRadius: 16, padding: '16px 18px', marginBottom: 22,
-      background: T.ink, color: T.cream, fontFamily: T.sans,
+    <button type="button" onClick={ir} style={{
+      display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', cursor: 'pointer',
+      border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '10px 13px', marginBottom: 18,
+      background: T.cream, color: T.ink, fontFamily: T.sans,
       WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent',
-      boxShadow: '0 6px 20px rgba(42,38,32,0.18)',
     }}>
-      <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.ochre || '#C48A2C', fontWeight: 700, marginBottom: 6 }}>✦ Sua conta</div>
-      <div style={{ fontFamily: T.serif, fontSize: 19, fontWeight: 500, marginBottom: 4 }}>Entre e sincronize</div>
-      <div style={{ fontSize: 13, lineHeight: 1.45, opacity: 0.85, marginBottom: 12 }}>
-        Seus livros e notas em todos os aparelhos — e você nunca perde nada.
-      </div>
-      <span style={{
-        display: 'inline-block', background: T.cream, color: T.ink,
-        borderRadius: 999, padding: '8px 16px', fontSize: 13, fontWeight: 600,
-      }}>Entrar →</span>
+      <Icon name="user" size={15} color={T.terra}/>
+      <span style={{ flex: 1, lineHeight: 1.3 }}>
+        <span style={{ display: 'block', fontSize: 12.5, fontWeight: 600 }}>Você ainda não entrou</span>
+        <span style={{ display: 'block', fontSize: 11, color: T.brown }}>Toque para entrar e sincronizar (abre na Biblioteca)</span>
+      </span>
+      <span style={{ fontSize: 15, color: T.terra }}>→</span>
     </button>
   );
 }
