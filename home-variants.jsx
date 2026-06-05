@@ -203,7 +203,11 @@ function HomeVariantA({ onNav = () => {} }) {
   // curadoria — mostra 3 na home; "ver mais" abre o banco completo (todas)
   const [showAllCuradoria, setShowAllCuradoria] = React.useState(false);
   const curadoriaAll = (window.CURADORIA || []);
-  const curadoria = showAllCuradoria ? curadoriaAll : curadoriaAll.slice(0, 3);
+  // mostra 3 por vez, girando a cada dia para passear por toda a curadoria
+  // (atemporal: só muda QUAIS 3 aparecem; cada card segue verdadeiro sempre)
+  const _curStart = curadoriaAll.length ? (Math.floor(Date.now() / 86400000) % curadoriaAll.length) : 0;
+  const _curRot = [...curadoriaAll.slice(_curStart), ...curadoriaAll.slice(0, _curStart)];
+  const curadoria = showAllCuradoria ? curadoriaAll : _curRot.slice(0, 3);
 
   // sugestões para o livro atual
   const sugestoes = (window.SUGESTOES_POR_LIVRO || {})[b.id] || [];
