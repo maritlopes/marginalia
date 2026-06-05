@@ -97,6 +97,42 @@ function UserAvatar({ size = 36 }) {
   );
 }
 
+// LoginPrompt — cartão de login/sincronização para quem ainda não entrou (some após logar).
+// O cartão inteiro é <button> (toque robusto no iOS, inclusive pelo ícone na tela inicial).
+function LoginPrompt() {
+  const [user, setUser] = React.useState(undefined);
+  const tick = (typeof window !== 'undefined' && window.__cloudStatus) || '';
+  React.useEffect(() => {
+    let alive = true;
+    const c = (typeof window !== 'undefined') ? window.MGCloud : null;
+    if (c && c.available && c.currentUser) {
+      c.currentUser().then((u) => { if (alive) setUser(u); }).catch(() => { if (alive) setUser(null); });
+    } else { setUser(null); }
+    return () => { alive = false; };
+  }, [tick]);
+  if (user === undefined || user) return null; // carregando, ou já conectada → não aparece
+  const abrir = () => { if (typeof window !== 'undefined' && window.__openAccount) window.__openAccount(); };
+  return (
+    <button type="button" onClick={abrir} style={{
+      display: 'block', width: '100%', textAlign: 'left', cursor: 'pointer',
+      border: 0, borderRadius: 16, padding: '16px 18px', marginBottom: 22,
+      background: T.ink, color: T.cream, fontFamily: T.sans,
+      WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent',
+      boxShadow: '0 6px 20px rgba(42,38,32,0.18)',
+    }}>
+      <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.ochre || '#C48A2C', fontWeight: 700, marginBottom: 6 }}>✦ Sua conta</div>
+      <div style={{ fontFamily: T.serif, fontSize: 19, fontWeight: 500, marginBottom: 4 }}>Entre e sincronize</div>
+      <div style={{ fontSize: 13, lineHeight: 1.45, opacity: 0.85, marginBottom: 12 }}>
+        Seus livros e notas em todos os aparelhos — e você nunca perde nada.
+      </div>
+      <span style={{
+        display: 'inline-block', background: T.cream, color: T.ink,
+        borderRadius: 999, padding: '8px 16px', fontSize: 13, fontWeight: 600,
+      }}>Entrar →</span>
+    </button>
+  );
+}
+
 function HomeVariantA({ onNav = () => {} }) {
   const b = (typeof currentBook === 'function' ? currentBook() : BOOK_CURRENT);
   const lang = (typeof I18n !== 'undefined') ? I18n.current() : 'pt';
@@ -216,6 +252,9 @@ function HomeVariantA({ onNav = () => {} }) {
             <UserAvatar size={36}/>
           </div>
         </div>
+
+        {/* cartão de login/sincronização — só para quem ainda não entrou */}
+        <LoginPrompt/>
 
         {/* ✨ HOJE NA MARGINÁLIA — banner rotativo */}
         {banner.length > 0 && (() => {
@@ -700,6 +739,7 @@ function HomeVariantB({ onNav = () => {} }) {
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
           <UserAvatar size={32}/>
         </div>
+        <LoginPrompt/>
         {/* greeting */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase', color: T.muted, marginBottom: 6 }}>
@@ -839,6 +879,8 @@ function HomeVariantC({ onNav = () => {} }) {
             <UserAvatar size={32}/>
           </div>
         </div>
+
+        <LoginPrompt/>
 
         {/* focus card — book at center */}
         <div style={{
