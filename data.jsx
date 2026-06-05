@@ -186,6 +186,58 @@ const PONTES = [
   },
 ];
 
+// ─────────────────────────────────────────────────────────────
+// ECOS CURADOS — ressonâncias feitas à mão para obras canônicas.
+// Quando o livro aberto casa com uma chave aqui, o app mostra ESTES ecos
+// (curadoria do clube) no lugar de gerar com IA. Somamos obras lote a lote.
+// Casa pelo título (ignora acentos/pontuação; basta o miolo do título bater).
+// ─────────────────────────────────────────────────────────────
+function _normTitle(s) {
+  return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+const ECOS_CURADOS = {
+  'grande sertao': [
+    { id: 'gs1', cat: 'literatura', where: 'Alemanha · 1808',
+      title: 'Fausto, Primeira Parte', author: 'Goethe',
+      why: 'O suposto pacto de Riobaldo nas Veredas-Mortas ecoa o mito fáustico — só que aqui "o diabo existe é que não existe", e a alma fica na dúvida para sempre.',
+      quote: 'Duas almas, ai!, habitam o meu peito.', nivel: 'profundo' },
+    { id: 'gs2', cat: 'filosofia', where: 'Grécia · séc. V a.C.',
+      title: 'Fragmentos — sobre o rio', author: 'Heráclito',
+      why: 'A "travessia" de Riobaldo é o rio de Heráclito: ninguém atravessa o mesmo sertão duas vezes — viver é mudar de margem. Por isso "viver é muito perigoso".',
+      quote: 'Não se entra duas vezes no mesmo rio.', nivel: 'profundo' },
+    { id: 'gs3', cat: 'literatura', where: 'Brasil · 1902',
+      title: 'Os Sertões', author: 'Euclides da Cunha',
+      why: 'O mesmo sertão que Euclides mede com a ciência, Rosa atravessa com o mito — a reportagem e a epopeia do mesmo Brasil profundo.',
+      nivel: 'intermediario' },
+    { id: 'gs4', cat: 'musica', where: 'Brasil · 1930',
+      title: 'Bachianas Brasileiras nº 2 — O Trenzinho do Caipira', author: 'Villa-Lobos',
+      why: 'O interior do Brasil feito som: Villa-Lobos veste Bach de sertão, como Rosa veste a epopeia de fala roceira.',
+      spotify: true, nivel: 'todos' },
+    { id: 'gs5', cat: 'arte', where: 'Brasil · 1944',
+      title: 'Os Retirantes', author: 'Candido Portinari',
+      why: 'A dureza do sertão em tinta — os corpos secos, os urubus, a terra de pedra: o avesso trágico da epopeia de Rosa.',
+      nivel: 'todos' },
+    { id: 'gs6', cat: 'cinema', where: 'Brasil · 1964',
+      title: 'Deus e o Diabo na Terra do Sol', author: 'Glauber Rocha',
+      why: 'O sertão místico do Cinema Novo — beato, cangaceiro e coronel; o mesmo bem-e-mal sem fronteira que atormenta Riobaldo, virado imagem.',
+      nivel: 'intermediario' },
+    { id: 'gs7', cat: 'historia', where: 'Sertão · início do séc. XX',
+      title: 'O mundo dos jagunços e do cangaço', author: 'contexto histórico',
+      why: 'Riobaldo e Diadorim vivem o sertão dos bandos armados, coronéis e vinganças — o chão de Lampião, antes do asfalto e da lei do Estado.',
+      nivel: 'todos' },
+  ],
+};
+// casa pelo miolo do título (ex.: "Grande Sertão: Veredas" → 'grande sertao')
+function curatedEcos(book) {
+  const t = _normTitle(book && book.title);
+  if (!t) return null;
+  for (const key in ECOS_CURADOS) {
+    if (t.indexOf(key) !== -1) return ECOS_CURADOS[key];
+  }
+  return null;
+}
+
 const PONTE_CATS = [
   { id: 'todos', label: 'Todos', color: 'terra' },
   { id: 'filosofia', label: 'Filosofia', color: 'plum' },
@@ -535,7 +587,7 @@ function computeMemorias({ books, notes, today = new Date() } = {}) {
 
 Object.assign(window, {
   BOOK_CURRENT, NOTES_SEED, BOOKS_SEED, THEMES_STUDY, ACTIVITY,
-  PONTES, PONTE_CATS, GLOSSARIO,
+  PONTES, PONTE_CATS, GLOSSARIO, ECOS_CURADOS, curatedEcos,
   BOOK_STATUS, HOJE_BANNER, FRASES_MARCANTES, CURADORIA, SUGESTOES_POR_LIVRO,
   CHALLENGE_TYPES, CHALLENGE_PERIODS, CHALLENGE_SUGESTOES, periodWindow,
   computeMemorias,

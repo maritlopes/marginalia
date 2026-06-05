@@ -388,6 +388,22 @@ function EcosPanel({ book, isDemo, onNav = () => {} }) {
     if (typeof MG !== 'undefined' && MG.updateBook) MG.updateBook(b.id, { ecos: novos });
   };
 
+  // ecos CURADOS À MÃO (obras canônicas) — têm prioridade sobre IA e exemplo
+  const curados = (typeof curatedEcos === 'function') ? curatedEcos(b) : null;
+  if (curados && curados.length) {
+    return (
+      <div>
+        <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 4 }}>✦ Curadoria do clube</div>
+        <div style={{ fontSize: 11, color: T.muted, fontStyle: 'italic', fontFamily: T.serif, marginBottom: 12 }}>
+          Ecos escolhidos à mão para esta obra.
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {curados.map((p, i) => <PonteCard key={p.id || i} p={p}/>)}
+        </div>
+      </div>
+    );
+  }
+
   // exemplo (Meditações): curadoria fixa
   if (isDemo) {
     return (
