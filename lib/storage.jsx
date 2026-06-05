@@ -154,6 +154,13 @@ const MG = {
     if (typeof window.__rerender === 'function') window.__rerender();
     return next;
   },
+  updateNote(noteId, patch) {
+    const next = this.getNotes().map(n => n.id === noteId ? { ...n, ...patch } : n);
+    this.setNotes(next);
+    if (typeof window._refreshLive === 'function') window._refreshLive();
+    if (typeof window.__rerender === 'function') window.__rerender();
+    return next;
+  },
 
   // registro de leitura (páginas lidas por dia) — alimenta "Esta semana" e o ritmo
   getReadingLog() {

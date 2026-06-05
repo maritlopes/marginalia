@@ -122,7 +122,7 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
 
             {/* quick actions */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 22 }}>
-              <QuickCard icon="note" title="Escrever nota" sub={`${bookNotes.length} ${bookNotes.length === 1 ? 'nota' : 'notas'}`} primary onClick={() => onNav('note')}/>
+              <QuickCard icon="note" title="Escrever nota" sub={`${bookNotes.length} ${bookNotes.length === 1 ? 'nota' : 'notas'}`} primary onClick={() => { if (typeof window !== 'undefined') window.__editingNote = null; onNav('note'); }}/>
               <QuickCard icon="clock" title="Foco" sub="Sessão com timer" onClick={() => onNav('foco')}/>
               <QuickCard icon="pen" title="Editar livro" sub="Status, páginas, capa" onClick={openEditor}/>
             </div>
@@ -232,14 +232,14 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
               }}>
                 <Icon name="note" size={14} color={T.terra}/> Enviar todas por e-mail
               </button>
-              {bookNotes.map(n => <NoteCard key={n.id} n={n} onClick={() => onNav('note')}/>)}
+              {bookNotes.map(n => <NoteCard key={n.id} n={n} onClick={() => { if (typeof window !== 'undefined') window.__editingNote = n; onNav('note'); }}/>)}
             </div>
           ) : (
             <div style={{ textAlign: 'center', padding: '40px 16px' }}>
               <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 15, color: T.muted, marginBottom: 16, lineHeight: 1.5 }}>
                 Nenhuma nota neste livro ainda.<br/>A margem está em branco, à sua espera.
               </div>
-              <button onClick={() => onNav('note')} style={{
+              <button onClick={() => { if (typeof window !== 'undefined') window.__editingNote = null; onNav('note'); }} style={{
                 background: T.terra, color: T.cream, border: 0, borderRadius: 999,
                 padding: '10px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
                 fontFamily: T.sans, letterSpacing: 0.3,
@@ -491,11 +491,6 @@ function PonteCard({ p, onClick }) {
           “{p.quote}”
         </div>
       )}
-      <div style={{ display: 'flex', gap: 14, marginTop: 10, fontSize: 10, color: T.muted, letterSpacing: 0.4, textTransform: 'uppercase', fontWeight: 600 }}>
-        <span style={{ cursor: 'pointer', color: T.terra }}>+ aceitar</span>
-        <span style={{ cursor: 'pointer' }}>aprofundar</span>
-        <span style={{ cursor: 'pointer' }}>recusar</span>
-      </div>
     </div>
   );
 }
@@ -654,29 +649,49 @@ function NoteCard({ n, onClick }) {
 // Reader — focused reading view, page of the book
 // ─────────────────────────────────────────────────────────────
 function ScreenNoteEditor({ onNav = () => {} }) {
-  const [kind, setKind] = React.useState('ressonância');
-  const [text, setText] = React.useState('');
+  // se veio de tocar numa nota, edita ela; senão, é nota nova
+  const editing = (typeof window !== 'undefined') ? window.__editingNote : null;
+  const initialKind = editing
+    ? ((typeof noteKind === 'function' && noteKind(editing.kind) && noteKind(editing.kind).id) || editing.kind || 'ressonância')
+    : 'ressonância';
+  const [kind, setKind] = React.useState(initialKind);
+  const [text, setText] = React.useState(editing ? (editing.text || '') : '');
   const [saved, setSaved] = React.useState(false);
   // o livro REAL ao qual a nota pertence (não o exemplo)
   const cur = window.__viewBook || (typeof currentBook === 'function' ? currentBook() : BOOK_CURRENT) || {};
   const kinds = NOTE_KINDS;
   const kindInfo = noteKind(kind);
 
+  const fechar = () => { if (typeof window !== 'undefined') window.__editingNote = null; onNav('book'); };
+
   const handleSave = () => {
     const trimmed = text.trim();
-    if (!trimmed) { onNav('book'); return; }
-    if (typeof MG !== 'undefined' && MG.addNote) {
-      MG.addNote({
-        bookId: cur.id,
-        book: cur.title,
-        page: cur.currentPage || 0,
-        chapter: cur.chapter || '',
-        kind,
-        text: trimmed,
-      });
+    if (!trimmed) { fechar(); return; }
+    if (typeof MG !== 'undefined') {
+      if (editing && editing.id && MG.updateNote) {
+        MG.updateNote(editing.id, { kind, text: trimmed });
+      } else if (MG.addNote) {
+        MG.addNote({
+          bookId: cur.id,
+          book: cur.title,
+          page: cur.currentPage || 0,
+          chapter: cur.chapter || '',
+          kind,
+          text: trimmed,
+        });
+      }
     }
+    if (typeof window !== 'undefined') window.__editingNote = null;
     setSaved(true);
     setTimeout(() => onNav('book'), 400);
+  };
+
+  const apagar = () => {
+    if (!editing || !editing.id) return;
+    if (typeof window !== 'undefined' && window.confirm && !window.confirm('Apagar esta nota? Não dá para desfazer.')) return;
+    if (typeof MG !== 'undefined' && MG.removeNote) MG.removeNote(editing.id);
+    if (typeof window !== 'undefined') window.__editingNote = null;
+    onNav('book');
   };
 
   return (
@@ -689,12 +704,12 @@ function ScreenNoteEditor({ onNav = () => {} }) {
         padding: '56px 20px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         borderBottom: `1px solid ${T.hairline}`,
       }}>
-        <button onClick={() => onNav('book')} style={{
+        <button onClick={fechar} style={{
           background: 'transparent', border: 0, cursor: 'pointer',
           fontSize: 14, color: T.brown,
         }}>Cancelar</button>
         <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 500 }}>
-          {saved ? 'Salvo na margem' : 'Nova nota'}
+          {saved ? 'Salvo na margem' : (editing ? 'Editar nota' : 'Nova nota')}
         </div>
         <button onClick={handleSave} disabled={saved} style={{
           background: saved ? T.olive : T.ink, color: T.cream, border: 0, borderRadius: 999,
@@ -755,6 +770,16 @@ function ScreenNoteEditor({ onNav = () => {} }) {
             fontStyle: (kindInfo && kindInfo.italic) ? 'italic' : 'normal',
           }}/>
       </div>
+
+      {editing && (
+        <div style={{ padding: '0 20px 4px' }}>
+          <button onClick={apagar} style={{
+            background: 'transparent', border: `1px solid ${T.hairline}`, color: '#8E3E2A',
+            borderRadius: 10, padding: '9px 14px', fontSize: 12, fontWeight: 600,
+            cursor: 'pointer', fontFamily: T.sans,
+          }}>Apagar nota</button>
+        </div>
+      )}
 
       <div style={{
         padding: '12px 20px 16px', borderTop: `1px solid ${T.hairline}`,
