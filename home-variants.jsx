@@ -82,11 +82,13 @@ function UserAvatar({ size = 36 }) {
     }
     return () => { alive = false; };
   }, [tick]);
+  const abrir = () => { if (typeof window !== 'undefined' && window.__openAccount) window.__openAccount(); };
   return (
-    <div title="Seu perfil" style={{
+    <div onClick={abrir} title="Seu perfil · entrar e sincronizar" style={{
       width: size, height: size, borderRadius: '50%', background: T.ink, color: T.cream,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
       fontFamily: T.serif, fontWeight: 500, fontSize: Math.round(size * 0.42),
+      boxShadow: ini ? 'none' : '0 0 0 2px ' + T.terra,
     }}>{ini || <Icon name="user" size={Math.round(size * 0.45)} color={T.cream}/>}</div>
   );
 }

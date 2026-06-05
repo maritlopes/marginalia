@@ -2872,7 +2872,8 @@ function ScreenLibrary({ onNav = () => {} }) {
 // ─────────────────────────────────────────────────────────────
 // CloudAccount — entrar/sair da sincronização na nuvem (Supabase, Fase 1).
 // Login por código de 6 dígitos enviado por e-mail.
-function CloudAccount() {
+// showAdmin=false esconde o painel de administradora (usado no mini-perfil do avatar).
+function CloudAccount({ showAdmin = true } = {}) {
   const cloud = (typeof window !== 'undefined') ? window.MGCloud : null;
   const [user, setUser] = React.useState(null);
   const [email, setEmail] = React.useState('');
@@ -2959,7 +2960,7 @@ function CloudAccount() {
 
   return (
     <>
-    <AppAdminPanel/>
+    {showAdmin && <AppAdminPanel/>}
     <div style={{ marginBottom: 22, borderBottom: `1px solid ${T.hairline}`, paddingBottom: 20 }}>
       <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 6 }}>
         Sincronização na nuvem
@@ -3023,6 +3024,33 @@ function CloudAccount() {
       )}
     </div>
     </>
+  );
+}
+
+// AccountSheet — mini-perfil deslizante aberto ao tocar no avatar da home.
+// Reaproveita o login/sincronização do CloudAccount, sem o painel de admin.
+function AccountSheet({ onClose = () => {} }) {
+  return (
+    <div onClick={onClose} style={{
+      position: 'absolute', inset: 0, background: 'rgba(42,38,32,0.55)',
+      display: 'flex', alignItems: 'flex-end', zIndex: 90,
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: '100%', background: T.paper, borderRadius: '24px 24px 0 0',
+        padding: '14px 20px 28px', maxHeight: '92%', overflow: 'auto',
+        fontFamily: T.sans, color: T.ink,
+      }}>
+        <div style={{ width: 36, height: 4, background: T.hairline, borderRadius: 4, margin: '0 auto 14px' }}/>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <button onClick={onClose} style={{
+            background: 'transparent', border: 0, cursor: 'pointer', fontSize: 13, color: T.brown,
+          }}>Fechar</button>
+          <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 500 }}>Seu perfil</div>
+          <div style={{ width: 50 }}/>
+        </div>
+        <CloudAccount showAdmin={false}/>
+      </div>
+    </div>
   );
 }
 
