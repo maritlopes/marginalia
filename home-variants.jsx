@@ -692,6 +692,10 @@ function HomeVariantB({ onNav = () => {} }) {
       <StatusBar/>
 
       <div style={{ padding: '6px 24px 0' }}>
+        {/* perfil no topo */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
+          <UserAvatar size={32}/>
+        </div>
         {/* greeting */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase', color: T.muted, marginBottom: 6 }}>
@@ -826,7 +830,10 @@ function HomeVariantC({ onNav = () => {} }) {
       <div style={{ padding: '6px 24px 0' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 500, letterSpacing: -0.4 }}>Seu estudo</div>
-          <Icon name="search" size={20} color={T.muted}/>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <Icon name="search" size={20} color={T.muted}/>
+            <UserAvatar size={32}/>
+          </div>
         </div>
 
         {/* focus card — book at center */}
