@@ -682,6 +682,28 @@ function HomeVariantA({ onNav = () => {} }) {
           </div>
         </a>
 
+        {/* PORTAL — convite para o Nobel de Literatura (página irmã) */}
+        <a href="/nobel/" style={{ textDecoration: 'none', display: 'block', marginBottom: 22 }}>
+          <div style={{
+            background: T.ink, color: T.cream, borderRadius: 14, padding: '18px 18px 16px',
+            position: 'relative', overflow: 'hidden',
+          }}>
+            <img src="/nobel-medal.png" alt="" style={{ position: 'absolute', right: -16, top: -16, width: 116, height: 116, opacity: 0.16, pointerEvents: 'none' }}/>
+            <div style={{ fontSize: 9, letterSpacing: 1.8, textTransform: 'uppercase', color: T.ochre, fontWeight: 700, marginBottom: 8 }}>
+              ✦ Portal · página irmã
+            </div>
+            <div style={{ fontFamily: T.serif, fontSize: 20, fontWeight: 500, lineHeight: 1.15, marginBottom: 8 }}>
+              Nobel de Literatura
+            </div>
+            <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, lineHeight: 1.5, color: 'rgba(247,241,228,0.82)', marginBottom: 12, maxWidth: '92%' }}>
+              Cada laureado, de 1901 até hoje, e os cotados de cada ano. Marque o que leu, organize sua estante e guarde a sua nota — à margem do mais célebre prêmio das letras.
+            </div>
+            <div style={{ fontSize: 11, letterSpacing: 0.6, fontWeight: 700, color: T.ochre, textTransform: 'uppercase' }}>
+              Entrar no Nobel →
+            </div>
+          </div>
+        </a>
+
         {/* EM TESTE — chamada leve de feedback */}
         {typeof FeedbackButton !== 'undefined' && (
           <>
