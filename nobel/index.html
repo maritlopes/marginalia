@@ -286,6 +286,42 @@ footer .brand a:hover{text-decoration:underline}
   .book-row,.score-card{break-inside:avoid;box-shadow:none;border-color:#ccc}
   .site-header{position:static}
 }
+/* ---------- sub-navegação de seções ---------- */
+.section-nav{position:sticky;top:62px;z-index:90;background:var(--color-surface);border-bottom:1px solid var(--color-divider)}
+.section-nav-inner{max-width:1000px;margin:0 auto;padding:var(--space-2) var(--space-6);display:flex;gap:var(--space-1);overflow-x:auto}
+.section-nav a{font-family:var(--font-body);font-size:var(--text-sm);letter-spacing:.02em;color:var(--color-text-muted);text-decoration:none;padding:7px 14px;border-radius:var(--radius-full);white-space:nowrap;transition:all var(--transition)}
+.section-nav a:hover{color:var(--color-primary);background:var(--color-surface-2)}
+
+/* ---------- seções editoriais ---------- */
+.nb-section{margin:var(--space-12) 0 0;scroll-margin-top:120px}
+.nb-h{font-family:var(--font-display);font-size:var(--text-xl);font-weight:600;color:var(--color-text);margin-bottom:var(--space-2)}
+.nb-note{font-style:italic;color:var(--color-text-muted);font-size:var(--text-sm);margin-bottom:var(--space-5);line-height:1.55;max-width:62ch}
+.nb-bignums{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:var(--space-3);margin-bottom:var(--space-8)}
+.nb-bignum{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-4);text-align:center}
+.nb-bignum .n{font-family:var(--font-display);font-weight:700;font-size:2.2rem;color:var(--color-primary);line-height:1}
+.nb-bignum .l{font-size:var(--text-xs);color:var(--color-text-muted);margin-top:6px;font-style:italic}
+.nb-chart-h{font-family:var(--font-body);text-transform:uppercase;letter-spacing:.12em;font-size:var(--text-xs);color:var(--color-primary);font-weight:600;margin:var(--space-6) 0 var(--space-3)}
+.nb-genderbar{display:flex;height:34px;border-radius:var(--radius-md);overflow:hidden;border:1px solid var(--color-border);font-size:var(--text-xs);font-family:var(--font-body)}
+.nb-genderbar .m{background:var(--cat-c);color:#F7F1E4;display:flex;align-items:center;justify-content:center;font-weight:600}
+.nb-genderbar .f{background:var(--color-primary);color:#F7F1E4;display:flex;align-items:center;justify-content:center;font-weight:600}
+.nb-bar{display:grid;grid-template-columns:130px 1fr 44px;gap:var(--space-3);align-items:center;margin:5px 0}
+.nb-bar .lbl{font-size:var(--text-sm);text-align:right;color:var(--color-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nb-bar .track{background:var(--color-surface-3);border-radius:var(--radius-sm);height:18px;overflow:hidden}
+.nb-bar .fill{height:100%;background:linear-gradient(90deg,var(--cat-b),var(--color-primary));border-radius:var(--radius-sm)}
+.nb-bar .v{font-size:var(--text-sm);color:var(--color-text-muted)}
+.nb-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--space-4)}
+.nb-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-4) var(--space-4) var(--space-5);position:relative;overflow:hidden}
+.nb-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--color-primary);opacity:.5}
+.nb-card h3{font-family:var(--font-display);font-weight:600;color:var(--color-primary);font-size:var(--text-lg);margin-bottom:6px;line-height:1.15}
+.nb-card p{margin:0;font-size:var(--text-sm);color:var(--color-text);line-height:1.5;font-family:var(--font-display)}
+.nb-acc{border-bottom:1px solid var(--color-divider)}
+.nb-acc summary{cursor:pointer;list-style:none;padding:var(--space-4) 2px;font-family:var(--font-display);font-size:var(--text-lg);color:var(--color-text);display:flex;align-items:baseline;gap:10px}
+.nb-acc summary::-webkit-details-marker{display:none}
+.nb-acc summary::before{content:'\2766';color:var(--cat-b);font-size:.8em}
+.nb-acc summary .y{font-size:var(--text-xs);color:var(--color-text-faint);font-style:italic;margin-left:auto}
+.nb-acc[open] summary{color:var(--color-primary)}
+.nb-acc .body{padding:0 2px var(--space-5) 28px;font-size:var(--text-base);line-height:1.6;color:var(--color-text-muted)}
+.nb-acc .body p{margin:0 0 12px}
 </style>
 </head>
 <body>
@@ -337,6 +373,15 @@ footer .brand a:hover{text-decoration:underline}
   </div>
 </header>
 
+<nav class="section-nav">
+  <div class="section-nav-inner">
+    <a href="#laureados">Laureados</a>
+    <a href="#estatisticas">Estatísticas</a>
+    <a href="#curiosidades">Curiosidades</a>
+    <a href="#historia">História</a>
+  </div>
+</nav>
+
 <section class="hero">
   <p class="hero-eyebrow">Clube de Leitura</p>
   <h1 class="hero-title">Nobel <em>de Literatura</em></h1>
@@ -349,7 +394,7 @@ footer .brand a:hover{text-decoration:underline}
   <p class="how-note" style="text-align:center;margin:0 0 1.5rem;color:var(--color-text-muted);font-style:italic">Uma estante particular à margem do Nobel: marque o que já leu, o que está lendo e o que ainda quer ler — e guarde a sua nota para cada livro.</p>
 
   <!-- LAUREADOS -->
-  <section class="cat-section" data-cat="a">
+  <section class="cat-section" data-cat="a" id="laureados">
     <div class="cat-header">
       <h2>Os Laureados</h2>
       <span class="cat-count" id="count-a"></span>
@@ -395,6 +440,31 @@ footer .brand a:hover{text-decoration:underline}
       Sincronização
     </div>
     <div class="sync-body" id="sync-body"></div>
+  </section>
+
+  <section class="nb-section" id="estatisticas">
+    <h2 class="nb-h">Estatísticas</h2>
+    <p class="nb-note">O que os números dizem — e o que denunciam — em mais de um século de prêmio.</p>
+    <div class="nb-bignums" id="nb-bignums"></div>
+    <div class="nb-chart-h">Homens e mulheres</div>
+    <div class="nb-genderbar" id="nb-genderbar"></div>
+    <p class="nb-note" style="margin-top:10px">Entre 1946 e 1990 — quarenta e quatro anos — uma única mulher foi premiada: Nelly Sachs, em 1966.</p>
+    <div class="nb-chart-h">Mulheres laureadas por década</div>
+    <div id="nb-decadeChart"></div>
+    <div class="nb-chart-h">Países com mais laureados</div>
+    <div id="nb-countryChart"></div>
+  </section>
+
+  <section class="nb-section" id="curiosidades">
+    <h2 class="nb-h">Curiosidades</h2>
+    <p class="nb-note">Recusas, escândalos, póstumos e o eterno azar de Murakami — as notas de rodapé da glória.</p>
+    <div class="nb-cards" id="nb-cards"></div>
+  </section>
+
+  <section class="nb-section" id="historia" style="margin-bottom:var(--space-12)">
+    <h2 class="nb-h">História &amp; Contradições</h2>
+    <p class="nb-note">Glória, poder e as contradições do cânone — em dez chaves.</p>
+    <div id="nb-hist"></div>
   </section>
 
 </div>
@@ -1299,11 +1369,77 @@ function wire() {
   });
 }
 
+/* ---------- SEÇÕES EDITORIAIS (estatísticas · curiosidades · história) ---------- */
+var NOBEL_WOMEN = {
+  'Selma Lagerlöf':1,'Grazia Deledda':1,'Sigrid Undset':1,'Pearl S. Buck':1,'Gabriela Mistral':1,
+  'Nelly Sachs':1,'Nadine Gordimer':1,'Toni Morrison':1,'Wisława Szymborska':1,'Elfriede Jelinek':1,
+  'Doris Lessing':1,'Herta Müller':1,'Alice Munro':1,'Svetlana Alexievich':1,'Olga Tokarczuk':1,
+  'Louise Glück':1,'Annie Ernaux':1,'Han Kang':1
+};
+function nobelYear(l){ var m = String(l.nobel || '').match(/\d{4}/); return m ? +m[0] : null; }
+function isLaureate(l){ return l.cat === 'a' || l.cat === 'b'; }
+
+function renderNbStats(){
+  var host = document.getElementById('nb-bignums'); if (!host) return;
+  var laur = laureates.filter(isLaureate); if (!laur.length) return;
+  var women = laur.filter(function(l){ return NOBEL_WOMEN[l.author]; }).length;
+  var countries = {}; laur.forEach(function(l){ var c = (l.country || '').split('/')[0].trim(); if (c) countries[c] = (countries[c] || 0) + 1; });
+  var years = {}; laur.forEach(function(l){ var y = nobelYear(l); if (y) years[y] = 1; });
+  var bn = [[Object.keys(years).length, 'edições'], [laur.length, 'laureados'], [women, 'mulheres'], [Object.keys(countries).length, 'países']];
+  host.innerHTML = bn.map(function(p){ return '<div class="nb-bignum"><div class="n">' + p[0] + '</div><div class="l">' + p[1] + '</div></div>'; }).join('');
+  var wp = Math.round(women / laur.length * 100);
+  document.getElementById('nb-genderbar').innerHTML = '<div class="m" style="width:' + (100 - wp) + '%">Homens ' + (100 - wp) + '%</div><div class="f" style="width:' + wp + '%">Mulheres ' + wp + '%</div>';
+  var dec = {}; laur.forEach(function(l){ if (NOBEL_WOMEN[l.author]) { var y = nobelYear(l); if (y) { var d = Math.floor(y / 10) * 10; dec[d] = (dec[d] || 0) + 1; } } });
+  var decs = []; for (var d = 1900; d <= 2020; d += 10) decs.push([d, dec[d] || 0]);
+  var maxd = Math.max.apply(null, decs.map(function(x){ return x[1]; }).concat([1]));
+  document.getElementById('nb-decadeChart').innerHTML = decs.map(function(x){ return '<div class="nb-bar"><div class="lbl">' + x[0] + 's</div><div class="track"><div class="fill" style="width:' + (x[1] / maxd * 100) + '%"></div></div><div class="v">' + (x[1] || '') + '</div></div>'; }).join('');
+  var top = Object.keys(countries).map(function(c){ return [c, countries[c]]; }).sort(function(a, b){ return b[1] - a[1]; }).slice(0, 12);
+  var maxc = top.length ? top[0][1] : 1;
+  document.getElementById('nb-countryChart').innerHTML = top.map(function(x){ return '<div class="nb-bar"><div class="lbl">' + (countryFlag(x[0]) || '') + ' ' + escHtml(x[0]) + '</div><div class="track"><div class="fill" style="width:' + (x[1] / maxc * 100) + '%"></div></div><div class="v">' + x[1] + '</div></div>'; }).join('');
+}
+
+var NOBEL_CUR = [
+  ["O homem que inventou a dinamite", "O prêmio nasceu do remorso de Alfred Nobel, que leu o próprio obituário chamando-o de “mercador da morte” e decidiu mudar o que deixaria ao mundo."],
+  ["Três palavras ambíguas", "O testamento pede a obra “em direção idealista” (i idealisk riktning). O que isso significa rendeu 125 anos de discórdia na Academia."],
+  ["O mais jovem e a mais velha", "Kipling tinha 41 anos em 1907; Doris Lessing, 88 em 2007 — chegava do mercado de táxi quando soube, e só disse: “Oh, Cristo.”"],
+  ["O único póstumo", "Erik Axel Karlfeldt morreu em abril de 1931 e foi premiado em novembro. Desde 1974, prêmios póstumos são proibidos."],
+  ["Os que disseram não", "Sartre recusou em 1964 — “um escritor não deve virar instituição”. Pasternak aceitou e foi forçado pelo regime soviético a recusar."],
+  ["Quando a literatura virou canção", "Bob Dylan (2016) dividiu o mundo. Leonard Cohen comparou o prêmio a “pregar uma medalha no Everest por ser a montanha mais alta”."],
+  ["O eterno azar de Murakami", "Favorito das apostas há mais de quinze anos, o japonês nunca ganha — há quem diga que a Academia foge de quem lidera as odds."],
+  ["A Academia premiando a si mesma", "Em 1974, dois membros da própria Academia, Johnson e Martinson, dividiram o prêmio. A imprensa sueca falou em provincianismo."],
+  ["Literatura em sentido largo", "Churchill ganhou pela prosa histórica; Russell, filósofo; Beckett e Pinter, dramaturgos. A Academia sempre esticou o conceito de “literatura”."],
+  ["O ano sem Nobel", "Em 2018, um escândalo de abuso e vazamentos derrubou a Academia. Pela primeira vez desde 1943, não houve prêmio — concedido em dobro em 2019."]
+];
+function renderNbCur(){
+  var host = document.getElementById('nb-cards'); if (!host) return;
+  host.innerHTML = NOBEL_CUR.map(function(c){ return '<div class="nb-card"><h3>' + c[0] + '</h3><p>' + c[1] + '</p></div>'; }).join('');
+}
+
+var NOBEL_HIST = [
+  ["A origem e o paradoxo do testamento", "1895", "<p>Em 1895, o químico sueco Alfred Nobel — inventor da dinamite — destinou sua fortuna a prêmios anuais, entre eles o de literatura, para a obra “mais notável em direção idealista”.</p><p>A expressão, deliberadamente vaga, foi lida ao longo do século ora como moralidade edificante, ora como humanismo, até a Academia praticamente abandonar qualquer interpretação rígida.</p>"],
+  ["A Academia Sueca: poder e segredo", "1786", "<p>Dezoito membros vitalícios, substituíveis só após a morte, e um secretário permanente que molda o tom público do prêmio. As deliberações ficam seladas por cinquenta anos.</p><p>Os primeiros anos foram dominados por Carl David af Wirsén, que vetou Tolstói, Ibsen, Zola e Strindberg — e fez o prêmio estrear, em 1901, com o hoje esquecido Sully Prudhomme.</p>"],
+  ["Os grandes esquecidos", "", "<p>A lista dos que nunca ganharam rivaliza com a dos premiados: Tolstói, Ibsen, Strindberg, Kafka, Proust, Joyce, Virginia Woolf, Borges, Nabokov, Tchekhov, Conrad, Philip Roth, Primo Levi.</p><p>Tolstói foi bloqueado como “agitador moral”; Borges, segundo biógrafos, pesou contra si o apoio a ditaduras; Nabokov foi vetado por Graham Greene, que achava Lolita repugnante.</p>"],
+  ["Escolhas que geraram furor", "", "<p>1938: Pearl Buck em vez de Woolf. 1958: Pasternak, forçado a recusar. 1964: Sartre recusa. 1974: dois membros da própria Academia. 2016: Dylan. 2019: Peter Handke, ligado ao negacionismo do genocídio bósnio, sob protesto internacional.</p>"],
+  ["O escândalo de 2018", "2018", "<p>Acusações de abuso sexual contra Jean-Claude Arnault — marido de uma acadêmica — e o vazamento reiterado de nomes de laureados para apostas mergulharam a Academia em colapso.</p><p>Sem quórum, o prêmio de 2018 foi suspenso e concedido só em 2019, junto com o de 2019. Foi o maior golpe à credibilidade do Nobel em sua história.</p>"],
+  ["O problema do eurocentrismo", "", "<p>Até 1990, 80% dos laureados do século XX eram europeus ou norte-americanos. A Suécia sozinha tem tantos prêmios quanto a Ásia e a América Latina somadas.</p><p>Nenhum autor que escreva em língua africana jamais venceu — o caso de Ngũgĩ wa Thiong'o, que abandonou o inglês pelo kikuyu, tornou-se símbolo dessa lacuna.</p>"],
+  ["A questão de gênero", "", "<p>De 1901 a 2025, só 18 mulheres venceram — menos de 15%. Entre 1946 e 1990, uma única: Nelly Sachs, em 1966.</p><p>Desde 2018 há uma alternância de gênero quase regular, o que levanta a dúvida sobre se a Academia passou a gerir ativamente a representatividade.</p>"],
+  ["O sistema de apostas", "", "<p>Nas semanas que antecedem outubro, casas britânicas publicam odds diárias — o único dado público sobre uma deliberação secreta. Murakami lidera há anos e nunca ganha.</p><p>Analistas enxergam padrões: alternância entre Europa e resto do mundo, entre prosa e poesia, entre homem e mulher.</p>"],
+  ["O efeito Nobel", "", "<p>O prêmio cria mercados: Mahfouz passou de 300 cópias em três anos para 30.000 em três minutos; Fosse multiplicou por vinte as vendas de sua editora; Coetzee vendeu 300 mil livros nos meses seguintes ao prêmio.</p>"],
+  ["O futuro do prêmio", "", "<p>Três desafios: a representatividade de literaturas fora das línguas europeias dominantes; a inteligência artificial e a pergunta sobre o que é um autor; e a opacidade de uma instituição que decide em segredo, numa cidade de dez milhões.</p><p>Espelho mais potente e mais distorcido que a literatura tem de si mesma — e por isso mesmo, ainda o prêmio mais comentado do mundo.</p>"]
+];
+function renderNbHist(){
+  var host = document.getElementById('nb-hist'); if (!host) return;
+  host.innerHTML = NOBEL_HIST.map(function(h){ return '<details class="nb-acc"><summary>' + h[0] + (h[1] ? '<span class="y">' + h[1] + '</span>' : '') + '</summary><div class="body">' + h[2] + '</div></details>'; }).join('');
+}
+
 /* ---------- INIT ---------- */
 initTheme();
 load();
 wire();
 render();
+renderNbStats();
+renderNbCur();
+renderNbHist();
 
 })();
 </script>
