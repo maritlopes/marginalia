@@ -322,6 +322,19 @@ footer .brand a:hover{text-decoration:underline}
 .nb-acc[open] summary{color:var(--color-primary)}
 .nb-acc .body{padding:0 2px var(--space-5) 28px;font-size:var(--text-base);line-height:1.6;color:var(--color-text-muted)}
 .nb-acc .body p{margin:0 0 12px}
+.nb-mapbox{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:6px;position:relative}
+.nb-map{display:block;width:100%;height:auto}
+.nb-grat{stroke:var(--color-divider);stroke-width:.6;fill:none}
+.nb-ocean{fill:var(--color-surface-2)}
+.nb-clabel{font-family:var(--font-display);font-style:italic;fill:var(--color-text-faint);font-size:14px}
+.nb-dot{fill:var(--color-primary);fill-opacity:.42;stroke:var(--color-primary);stroke-width:1;cursor:pointer;transition:fill-opacity .15s}
+.nb-dot:hover{fill-opacity:.78}
+.nb-maptip{position:absolute;pointer-events:none;background:var(--color-text);color:var(--color-bg);font-size:13px;padding:5px 9px;border-radius:4px;opacity:0;transform:translate(-50%,-130%);white-space:nowrap;transition:opacity .12s}
+.nb-legend{display:flex;gap:18px;align-items:center;justify-content:center;margin-top:12px;color:var(--color-text-muted);font-style:italic;font-size:13px;flex-wrap:wrap}
+.nb-legend .dotleg{display:inline-block;border-radius:50%;background:var(--color-primary);opacity:.5;border:1px solid var(--color-primary);vertical-align:middle;margin-right:6px}
+#nb-mapDetail{margin-top:16px;min-height:24px}
+#nb-mapDetail h4{font-family:var(--font-display);color:var(--color-primary);font-size:var(--text-lg);margin:0 0 6px}
+#nb-mapDetail .ll{font-size:var(--text-sm);line-height:1.7;color:var(--color-text)}
 </style>
 </head>
 <body>
@@ -376,6 +389,7 @@ footer .brand a:hover{text-decoration:underline}
 <nav class="section-nav">
   <div class="section-nav-inner">
     <a href="#laureados">Laureados</a>
+    <a href="#mapa">Mapa</a>
     <a href="#estatisticas">Estatísticas</a>
     <a href="#curiosidades">Curiosidades</a>
     <a href="#historia">História</a>
@@ -440,6 +454,22 @@ footer .brand a:hover{text-decoration:underline}
       Sincronização
     </div>
     <div class="sync-body" id="sync-body"></div>
+  </section>
+
+  <section class="nb-section" id="mapa">
+    <h2 class="nb-h">O Mapa do Prêmio</h2>
+    <p class="nb-note">Cada ponto é um país; o tamanho conta quantos laureados ele já teve. A Europa salta aos olhos — uma das grandes discussões sobre o Nobel.</p>
+    <div class="nb-mapbox">
+      <svg class="nb-map" viewBox="0 0 1000 500" id="nb-svgmap" aria-label="Mapa de laureados por país"></svg>
+      <div class="nb-maptip" id="nb-maptip"></div>
+    </div>
+    <div class="nb-legend">
+      <span><span class="dotleg" style="width:10px;height:10px"></span>1–2</span>
+      <span><span class="dotleg" style="width:18px;height:18px"></span>3–6</span>
+      <span><span class="dotleg" style="width:28px;height:28px"></span>7+</span>
+      <span style="font-style:normal">— toque num ponto para ver os nomes</span>
+    </div>
+    <div id="nb-mapDetail"></div>
   </section>
 
   <section class="nb-section" id="estatisticas">
@@ -1432,6 +1462,41 @@ function renderNbHist(){
   host.innerHTML = NOBEL_HIST.map(function(h){ return '<details class="nb-acc"><summary>' + h[0] + (h[1] ? '<span class="y">' + h[1] + '</span>' : '') + '</summary><div class="body">' + h[2] + '</div></details>'; }).join('');
 }
 
+/* ---------- MAPA DO PRÊMIO ---------- */
+var GEO_NB = {
+  'França':[46.6,2.2],'Alemanha':[51,10],'Reino Unido':[54,-2.5],'EUA':[39.5,-98],'Suécia':[62,15],
+  'Itália':[42.8,12.8],'Espanha':[40,-3.7],'Polônia':[52,19],'Noruega':[61,8.5],'Irlanda':[53.2,-8],
+  'Suíça':[46.8,8.2],'Dinamarca':[56,9.5],'Grécia':[39,22],'Rússia':[56,40],'URSS':[60,52],'Chile':[-35,-71],
+  'Japão':[36.5,138],'China':[35,105],'Índia':[22,79],'Egito':[26.8,30.8],'Nigéria':[9,8],
+  'África do Sul':[-29,24],'México':[23.6,-102.5],'Colômbia':[4,-72],'Peru':[-9.2,-75],'Guatemala':[15.5,-90.3],
+  'Santa Lúcia':[13.9,-61],'Portugal':[39.5,-8],'Áustria':[47.5,14.5],'Turquia':[39,35],'Hungria':[47,19.5],
+  'Bélgica':[50.6,4.7],'Finlândia':[64,26],'Islândia':[65,-18],'Iugoslávia':[44,20.5],'Tcheco-Eslováquia':[49.8,15.5],
+  'Canadá':[56,-100],'Austrália':[-25,134],'Bielorrússia':[53.7,27.9],'Coreia do Sul':[36.5,127.8],'Tanzânia':[-6.4,35],
+  'Israel':[31.5,34.8],'Romênia':[46,25],'Quênia':[1,38],'Bulgária':[42.7,25.5],'Trinidad':[10.5,-61.3],
+  'Ruanda':[-2,30],'Antígua e Barbuda':[17.1,-61.8],'Moçambique':[-18,35],'Argentina':[-38,-63],'Brasil':[-10,-52]
+};
+function projNb(lat, lon){ return [(lon + 180) / 360 * 1000, (90 - lat) / 180 * 500]; }
+var nbMapDrawn = false;
+function drawMapNb(){
+  var svg = document.getElementById('nb-svgmap'); if (!svg || nbMapDrawn) return;
+  var laur = laureates.filter(isLaureate); if (!laur.length) return;
+  nbMapDrawn = true;
+  var s = '<rect class="nb-ocean" x="0" y="0" width="1000" height="500"/>';
+  for (var lon = -150; lon <= 150; lon += 30) { var x = (lon + 180) / 360 * 1000; s += '<line class="nb-grat" x1="' + x + '" y1="0" x2="' + x + '" y2="500"/>'; }
+  for (var lat = -60; lat <= 60; lat += 30) { var y = (90 - lat) / 180 * 500; s += '<line class="nb-grat" x1="0" y1="' + y + '" x2="1000" y2="' + y + '"/>'; }
+  [['Europa',54,15],['América do Norte',45,-100],['América do Sul',-15,-60],['África',2,20],['Ásia',45,90],['Oceania',-25,134]].forEach(function(c){ var p = projNb(c[1], c[2]); s += '<text class="nb-clabel" x="' + p[0] + '" y="' + p[1] + '" text-anchor="middle">' + c[0] + '</text>'; });
+  var cnt = {}, byC = {};
+  laur.forEach(function(l){ var ct = (l.country || '').split('/')[0].trim(); if (!ct) return; cnt[ct] = (cnt[ct] || 0) + 1; (byC[ct] = byC[ct] || []).push([nobelYear(l), l.author]); });
+  Object.keys(cnt).forEach(function(ct){ var g = GEO_NB[ct]; if (!g) return; var p = projNb(g[0], g[1]); var n = cnt[ct]; var r = Math.max(5, Math.sqrt(n) * 5.2); s += '<circle class="nb-dot" cx="' + p[0] + '" cy="' + p[1] + '" r="' + r + '" data-ct="' + escHtml(ct) + '" data-n="' + n + '"/>'; });
+  svg.innerHTML = s;
+  var tip = document.getElementById('nb-maptip'); var box = svg.parentElement;
+  svg.querySelectorAll('circle.nb-dot').forEach(function(c){
+    c.addEventListener('mousemove', function(ev){ var rect = box.getBoundingClientRect(); tip.style.left = (ev.clientX - rect.left) + 'px'; tip.style.top = (ev.clientY - rect.top) + 'px'; tip.style.opacity = 1; tip.textContent = (countryFlag(c.dataset.ct) || '') + ' ' + c.dataset.ct + ' — ' + c.dataset.n; });
+    c.addEventListener('mouseleave', function(){ tip.style.opacity = 0; });
+    c.addEventListener('click', function(){ var ct = c.dataset.ct; var list = byC[ct].slice().sort(function(a, b){ return a[0] - b[0]; }); document.getElementById('nb-mapDetail').innerHTML = '<h4>' + (countryFlag(ct) || '') + ' ' + escHtml(ct) + ' · ' + list.length + ' ' + (list.length > 1 ? 'laureados' : 'laureado') + '</h4><div class="ll">' + list.map(function(x){ return '<b>' + x[0] + '</b> ' + escHtml(x[1]); }).join(' · ') + '</div>'; });
+  });
+}
+
 /* ---------- INIT ---------- */
 initTheme();
 load();
@@ -1440,6 +1505,7 @@ render();
 renderNbStats();
 renderNbCur();
 renderNbHist();
+drawMapNb();
 
 })();
 </script>
