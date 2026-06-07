@@ -76,6 +76,11 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
               <div><span style={{ color: T.ink, fontWeight: 600 }}>{bookNotes.length}</span> notas</div>
               <div><span style={{ color: T.ink, fontWeight: 600 }}>{b.started || '—'}</span> início</div>
             </div>
+            {b.rating > 0 && (
+              <div style={{ marginTop: 8 }}>
+                <StarRating value={b.rating} size={15}/>
+              </div>
+            )}
           </div>
         </div>
 
@@ -117,8 +122,14 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
               </div>
             )}
 
+            {/* nos livros lidos, a avaliação vem primeiro (protagonista) */}
+            {!isDemo && b.status === 'read' && <MinhaAvaliacao book={b}/>}
+
             {/* plano de leitura real — atualizar página + cronograma por data-alvo */}
             <PlanoLeitura book={b}/>
+
+            {/* nos demais (lendo/tbr/pausado), a avaliação vem depois do plano */}
+            {!isDemo && b.status !== 'read' && <MinhaAvaliacao book={b}/>}
 
             {/* quick actions */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 22 }}>
@@ -256,6 +267,101 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
 
 // PlanoLeitura — "onde estou" (atualizar página) + cronograma por data-alvo.
 // O ritmo sugerido se recalcula sozinho conforme a página avança.
+// StarRating — fileira de 5 estrelas. Interativa quando recebe onChange; só exibe quando não.
+function StarRating({ value = 0, onChange = null, size = 26, color }) {
+  const [hover, setHover] = React.useState(0);
+  const active = hover || value;
+  const c = color || T.terra;
+  return (
+    <div style={{ display: 'inline-flex', gap: 4 }} onMouseLeave={onChange ? () => setHover(0) : undefined}>
+      {[1, 2, 3, 4, 5].map(n => (
+        <button key={n} type="button"
+          onClick={onChange ? () => onChange(n === value ? 0 : n) : undefined}
+          onMouseEnter={onChange ? () => setHover(n) : undefined}
+          aria-label={`${n} ${n === 1 ? 'estrela' : 'estrelas'}`}
+          style={{
+            background: 'transparent', border: 0, padding: 0, lineHeight: 1,
+            cursor: onChange ? 'pointer' : 'default',
+            color: n <= active ? c : 'rgba(176,83,58,0.25)',
+            fontSize: size, transition: 'color .12s',
+          }}>★</button>
+      ))}
+    </div>
+  );
+}
+
+// MinhaAvaliacao — estrelas + texto de recomendação no detalhe do livro.
+// Grava rating/recommendation no livro (sincroniza) e abre o cartão compartilhável.
+function MinhaAvaliacao({ book }) {
+  const b = book || {};
+  const [rating, setRating] = React.useState(b.rating || 0);
+  const [rec, setRec] = React.useState(b.recommendation || '');
+  const [editing, setEditing] = React.useState(false);
+  const isRead = b.status === 'read';
+
+  React.useEffect(() => { setRating(b.rating || 0); setRec(b.recommendation || ''); }, [b.id]);
+
+  const setStars = (n) => {
+    setRating(n);
+    if (typeof MG !== 'undefined' && MG.updateBook) MG.updateBook(b.id, { rating: n });
+  };
+  const salvarRec = () => {
+    const v = rec.trim();
+    if (typeof MG !== 'undefined' && MG.updateBook) MG.updateBook(b.id, { recommendation: v || null });
+    setEditing(false);
+  };
+  const abrirCartao = () => {
+    if (typeof window.__shareRecommendation === 'function') {
+      window.__shareRecommendation({ ...b, rating, recommendation: rec.trim() });
+    }
+  };
+
+  return (
+    <>
+      <SectionTitle>Sua avaliação</SectionTitle>
+      <div style={{ background: T.cream, borderRadius: 12, padding: '16px 18px', border: `1px solid ${T.hairline}`, marginBottom: 22 }}>
+        {/* estrelas */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 11, color: T.muted }}>{isRead ? 'O que você achou?' : 'Já vai avaliando'}</div>
+          <StarRating value={rating} onChange={setStars} size={28}/>
+        </div>
+
+        {/* recomendação */}
+        <div style={{ marginTop: 14, borderTop: `1px solid ${T.hairline}`, paddingTop: 14 }}>
+          <div style={{ fontSize: 11, color: T.muted, marginBottom: 6 }}>Por que vale a pena</div>
+          {editing ? (
+            <div>
+              <textarea value={rec} onChange={e => setRec(e.target.value)} autoFocus rows={4}
+                placeholder="Em poucas linhas: para quem você recomenda este livro e por quê…"
+                style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', border: `1px solid ${T.hairline}`, borderRadius: 10, background: T.bone, color: T.ink, fontFamily: T.serif, fontSize: 15, lineHeight: 1.5, resize: 'vertical', outline: 'none' }}/>
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <button onClick={salvarRec} style={{ background: T.terra, color: T.cream, border: 0, borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Salvar</button>
+                <button onClick={() => { setRec(b.recommendation || ''); setEditing(false); }} style={{ background: 'transparent', color: T.brown, border: `1px solid ${T.hairline}`, borderRadius: 8, padding: '8px 16px', fontSize: 12, cursor: 'pointer' }}>Cancelar</button>
+              </div>
+            </div>
+          ) : rec ? (
+            <div onClick={() => setEditing(true)} style={{ cursor: 'pointer' }}>
+              <div style={{ fontFamily: T.serif, fontSize: 15, lineHeight: 1.5, color: T.ink, fontStyle: 'italic' }}>“{rec}”</div>
+              <div style={{ fontSize: 11, color: T.terra, fontWeight: 600, marginTop: 4 }}>tocar para editar</div>
+            </div>
+          ) : (
+            <button onClick={() => setEditing(true)} style={{ background: 'transparent', color: T.brown, border: `1px dashed ${T.hairline}`, borderRadius: 8, padding: '10px 12px', fontSize: 13, fontFamily: T.serif, fontStyle: 'italic', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+              Escrever uma recomendação…
+            </button>
+          )}
+        </div>
+
+        {/* cartão compartilhável */}
+        {(rating > 0 || rec.trim()) && (
+          <button onClick={abrirCartao} style={{ marginTop: 16, width: '100%', padding: '12px', borderRadius: 10, background: T.ink, color: T.cream, border: 0, cursor: 'pointer', fontFamily: T.sans, fontSize: 13, fontWeight: 600, letterSpacing: 0.3, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <Icon name="share" size={15} color={T.cream}/> Criar cartão de recomendação
+          </button>
+        )}
+      </div>
+    </>
+  );
+}
+
 function PlanoLeitura({ book }) {
   const b = book || {};
   const pages = b.pages || 0;
@@ -3840,11 +3946,125 @@ function FeedbackButton({ variant = 'block' }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────
+// ShareRecommendationSheet — cartão de recomendação (livro + estrelas + texto)
+// ─────────────────────────────────────────────────────────────
+function ShareRecommendationSheet({ book, onClose = () => {} }) {
+  const [canvas, setCanvas] = React.useState(null);
+  const [copied, setCopied] = React.useState(false);
+  const previewRef = React.useRef(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (typeof Share === 'undefined' || !Share.renderRecommendationCard) return;
+      await Share.preloadSymbol();
+      if (cancelled) return;
+      const c = await Share.renderRecommendationCard({ book });
+      if (cancelled) return;
+      setCanvas(c);
+    })();
+    return () => { cancelled = true; };
+  }, [book]);
+
+  React.useEffect(() => {
+    if (!canvas || !previewRef.current) return;
+    previewRef.current.innerHTML = '';
+    const display = canvas.cloneNode(true);
+    display.getContext('2d').drawImage(canvas, 0, 0);
+    display.style.width = '100%';
+    display.style.height = 'auto';
+    display.style.display = 'block';
+    display.style.borderRadius = '12px';
+    display.style.border = `1px solid ${T.hairline}`;
+    previewRef.current.appendChild(display);
+  }, [canvas]);
+
+  const loading = !canvas;
+  const note = { text: (book.recommendation || '').trim() || book.title };
+
+  const handleDownload = () => {
+    if (!canvas) return;
+    const safeTitle = (book.title || 'recomendacao').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30);
+    Share.download(canvas, `marginalia-recomendacao-${safeTitle}.png`);
+  };
+  const handleCopy = async () => {
+    if (!canvas) return;
+    const ok = await Share.copyToClipboard(canvas);
+    if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000); }
+  };
+  const handleShare = async () => {
+    if (!canvas) return;
+    const ok = await Share.share(canvas, note, book);
+    if (!ok) handleDownload();
+  };
+
+  return (
+    <div onClick={onClose} style={{
+      position: 'absolute', inset: 0, background: 'rgba(42,38,32,0.55)',
+      display: 'flex', alignItems: 'flex-end', zIndex: 80,
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: '100%', background: T.paper, borderRadius: '24px 24px 0 0',
+        padding: '14px 20px 28px', maxHeight: '92%', overflow: 'auto',
+        fontFamily: T.sans, color: T.ink,
+      }}>
+        <div style={{ width: 36, height: 4, background: T.hairline, borderRadius: 4, margin: '0 auto 14px' }}/>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <button onClick={onClose} style={{ background: 'transparent', border: 0, cursor: 'pointer', fontSize: 13, color: T.brown }}>Fechar</button>
+          <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 500 }}>Cartão de recomendação</div>
+          <div style={{ width: 50 }}/>
+        </div>
+
+        <div style={{ marginBottom: 18, position: 'relative' }}>
+          <div ref={previewRef}/>
+          {loading && (
+            <div style={{
+              position: 'absolute', inset: 0, width: '100%', aspectRatio: 1,
+              background: T.cream, borderRadius: 12, display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              color: T.muted, fontFamily: T.serif, fontStyle: 'italic',
+            }}>gerando…</div>
+          )}
+        </div>
+
+        <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', textAlign: 'center', marginBottom: 18, lineHeight: 1.5 }}>
+          1080×1080 · pronto para Instagram, WhatsApp, e-mail
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <button onClick={handleShare} style={{
+            padding: '14px', borderRadius: 12, background: T.ink, color: T.cream,
+            border: 0, cursor: 'pointer', fontFamily: T.sans, fontSize: 14, fontWeight: 600,
+            letterSpacing: 0.4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}>
+            <Icon name="share" size={16} color={T.cream}/> Compartilhar
+          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={handleDownload} style={{
+              flex: 1, padding: '12px', borderRadius: 12, background: T.cream, color: T.ink,
+              border: `1px solid ${T.hairline}`, cursor: 'pointer', fontFamily: T.sans, fontSize: 13, fontWeight: 500,
+            }}>Baixar PNG</button>
+            <button onClick={handleCopy} style={{
+              flex: 1, padding: '12px', borderRadius: 12,
+              background: copied ? T.olive : T.cream, color: copied ? T.cream : T.ink,
+              border: `1px solid ${copied ? T.olive : T.hairline}`, cursor: 'pointer',
+              fontFamily: T.sans, fontSize: 13, fontWeight: 500,
+            }}>{copied ? 'Copiado ✓' : 'Copiar'}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 Object.assign(window, {
   ScreenBookDetail, ScreenNoteEditor,
   ScreenAddBook, ScreenLibrary, ScreenFoco,
   ScreenMetas, ChallengeCard, ChallengeSuggestion, ChallengeEditorSheet, FieldLabel,
   BookEditorSheet, LibrarySection, Stat, BrandMark, ShareNoteSheet,
+  ShareRecommendationSheet, StarRating, MinhaAvaliacao,
   PonteCard, SectionLabel, FeedbackButton, buildNotesMarkdown,
   NOTE_KINDS, noteKind, noteKindColor, noteKindLabel,
 });
