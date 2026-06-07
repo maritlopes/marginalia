@@ -227,8 +227,8 @@ function HomeVariantA({ onNav = () => {} }) {
       <StatusBar/>
 
       <div style={{ padding: '6px 24px 0', position: 'relative' }}>
-        {/* brand + greeting + idioma toggle */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 22 }}>
+        {/* brand + greeting + idioma toggle — escondido no frame de site (WebNav já é o topo) */}
+        <div className="home-brandbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 22 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <img src="symbol.png" alt="Marginália" width="44" height="44"
                  style={{ display: 'block', objectFit: 'contain' }}/>

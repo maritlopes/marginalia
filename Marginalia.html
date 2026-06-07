@@ -124,6 +124,7 @@
     html.web-mode .device-inner { display: flex; flex-direction: column; }
     html.web-mode .app-scroll { flex: 1; min-height: 0; height: auto; overflow: auto; position: relative; }
     html.web-mode .app-statusbar { display: none !important; }  /* o topo agora é o WebNav */
+    html.web-mode .home-brandbar { display: none !important; }  /* não repetir o logo da home */
   }
 
   ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -146,7 +147,7 @@
 <!-- scripts injetados com cache-bust por URL versionada -->
 <script>
 (function () {
-  const APP_VERSION = '0.93.0'; // bump quando alterar JSX
+  const APP_VERSION = '0.93.1'; // bump quando alterar JSX
   window.APP_VERSION = APP_VERSION;
   const files = [
     'lib/sources.jsx',
