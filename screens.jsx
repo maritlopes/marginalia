@@ -2493,6 +2493,7 @@ function ShareNoteSheet({ note, book, onClose = () => {} }) {
   const [canvas, setCanvas] = React.useState(null);
   const [copied, setCopied] = React.useState(false);
   const previewRef = React.useRef(null);
+  const fileRef = React.useRef(null); // PNG pronto p/ navigator.share (iOS exige chamar no gesto do toque)
 
   // Gera o canvas
   React.useEffect(() => {
@@ -2539,10 +2540,28 @@ function ShareNoteSheet({ note, book, onClose = () => {} }) {
     }
   };
 
-  const handleShare = async () => {
+  // pré-gera o PNG quando o card fica pronto — toque em "Compartilhar" chama navigator.share
+  // na hora (iOS standalone não abre o menu se houver um await antes da chamada).
+  React.useEffect(() => {
+    fileRef.current = null;
     if (!canvas) return;
-    const ok = await Share.share(canvas, note, book);
-    if (!ok) handleDownload();
+    const safe = (book.title || 'citacao').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30);
+    canvas.toBlob((blob) => {
+      if (blob) fileRef.current = new File([blob], `marginalia-${safe}.png`, { type: 'image/png' });
+    }, 'image/png');
+  }, [canvas]);
+
+  const handleShare = async () => {
+    const file = fileRef.current;
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: `${book.title} — ${book.author}`, text: note.text });
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+      }
+    }
+    handleDownload();
   };
 
   return (
@@ -3953,6 +3972,7 @@ function ShareRecommendationSheet({ book, onClose = () => {} }) {
   const [canvas, setCanvas] = React.useState(null);
   const [copied, setCopied] = React.useState(false);
   const previewRef = React.useRef(null);
+  const fileRef = React.useRef(null); // PNG pronto p/ navigator.share (iOS exige chamar no gesto do toque)
 
   React.useEffect(() => {
     let cancelled = false;
@@ -3993,10 +4013,29 @@ function ShareRecommendationSheet({ book, onClose = () => {} }) {
     const ok = await Share.copyToClipboard(canvas);
     if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000); }
   };
-  const handleShare = async () => {
+
+  // pré-gera o PNG assim que o card fica pronto, para que o toque em "Compartilhar"
+  // chame navigator.share IMEDIATAMENTE — no iOS standalone o gesto não pode esperar um await.
+  React.useEffect(() => {
+    fileRef.current = null;
     if (!canvas) return;
-    const ok = await Share.share(canvas, note, book);
-    if (!ok) handleDownload();
+    const safe = (book.title || 'recomendacao').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30);
+    canvas.toBlob((blob) => {
+      if (blob) fileRef.current = new File([blob], `marginalia-recomendacao-${safe}.png`, { type: 'image/png' });
+    }, 'image/png');
+  }, [canvas]);
+
+  const handleShare = async () => {
+    const file = fileRef.current;
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: `${book.title} — ${book.author}`, text: note.text });
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return; // a leitora fechou o menu — tudo certo
+      }
+    }
+    handleDownload(); // sem Web Share: cai para baixar o PNG
   };
 
   return (

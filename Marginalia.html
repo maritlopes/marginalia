@@ -99,7 +99,7 @@
 <!-- scripts injetados com cache-bust por URL versionada -->
 <script>
 (function () {
-  const APP_VERSION = '0.80.0'; // bump quando alterar JSX
+  const APP_VERSION = '0.91.0'; // bump quando alterar JSX
   window.APP_VERSION = APP_VERSION;
   const files = [
     'lib/sources.jsx',
@@ -199,7 +199,9 @@ function MarginaliaApp() {
   const [detailBook, setDetailBook] = React.useState(null);
   const [openGrupo, setOpenGrupo] = React.useState(null);
   const [sharingNote, setSharingNote] = React.useState(null);
+  const [sharingRec, setSharingRec] = React.useState(null);
   const [editingChallenge, setEditingChallenge] = React.useState(null);
+  const [showAccount, setShowAccount] = React.useState(false);
   const [, forceRender] = React.useReducer(x => x + 1, 0);
 
   // expõe re-render global para que Storage.add* possa propagar mudanças à UI
@@ -212,12 +214,14 @@ function MarginaliaApp() {
     window.__openBook = (book) => { window.__viewBook = book; setDetailBook(book); setRoute('book'); };
     window.__openGrupo = (g) => setOpenGrupo(g);
     window.__shareNote = (note, book) => setSharingNote({ note, book });
+    window.__shareRecommendation = (book) => setSharingRec(book);
     window.__editChallenge = (c) => setEditingChallenge(c);
+    window.__openAccount = () => setShowAccount(true);
     window.__setRoute = setRoute; // útil para deep-linking e debug
     return () => {
       delete window.__rerender; delete window.__editBook; delete window.__openBook;
-      delete window.__openGrupo; delete window.__shareNote;
-      delete window.__editChallenge; delete window.__setRoute;
+      delete window.__openGrupo; delete window.__shareNote; delete window.__shareRecommendation;
+      delete window.__editChallenge; delete window.__openAccount; delete window.__setRoute;
     };
   }, []);
 
@@ -326,11 +330,20 @@ function MarginaliaApp() {
           onClose={() => setSharingNote(null)}
         />
       )}
+      {sharingRec !== null && typeof ShareRecommendationSheet !== 'undefined' && (
+        <ShareRecommendationSheet
+          book={sharingRec}
+          onClose={() => setSharingRec(null)}
+        />
+      )}
       {editingChallenge !== null && (
         <ChallengeEditorSheet
           challenge={editingChallenge.id ? editingChallenge : null}
           onClose={() => setEditingChallenge(null)}
         />
+      )}
+      {showAccount && typeof AccountSheet !== 'undefined' && (
+        <AccountSheet onClose={() => setShowAccount(false)}/>
       )}
       <Splash visible={showSplash}/>
     </DeviceShell>

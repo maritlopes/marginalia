@@ -2,6 +2,28 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"/>
+<!-- Porta de entrada: no NAVEGADOR (não instalado), a raiz mostra o site /clube/
+     (página web de apresentação). O APP abre quando: instalado (standalone),
+     link de convite (?join=...), pedido explícito (?app=1) ou sessão de app já aberta.
+     Roda cedo, antes dos scripts pesados, para não piscar o app. -->
+<script>
+(function () {
+  try {
+    var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+      || window.navigator.standalone === true;
+    var params = new URLSearchParams(window.location.search);
+    var wantsApp = params.has('app') || params.has('join');
+    var sessionApp = false;
+    try {
+      if (wantsApp) sessionStorage.setItem('mg_app', '1');
+      sessionApp = sessionStorage.getItem('mg_app') === '1';
+    } catch (e) {}
+    if (!standalone && !wantsApp && !sessionApp) {
+      window.location.replace('clube/');
+    }
+  } catch (e) { /* em dúvida, segue para o app */ }
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"/>
 <title>Marginália — clube de leitura</title>
 <meta name="description" content="Um clube pessoal de leitura profunda. Notas à margem, pontes entre obras e círculos de leitura com amigos."/>
@@ -99,7 +121,7 @@
 <!-- scripts injetados com cache-bust por URL versionada -->
 <script>
 (function () {
-  const APP_VERSION = '0.90.1'; // bump quando alterar JSX
+  const APP_VERSION = '0.91.0'; // bump quando alterar JSX
   window.APP_VERSION = APP_VERSION;
   const files = [
     'lib/sources.jsx',
