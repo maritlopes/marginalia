@@ -3431,7 +3431,7 @@ function LibrarySection({ section, view }) {
                  onClick={() => { if (typeof window.__openBook === 'function') window.__openBook(b); }}
                  style={{ display: 'flex', flexDirection: 'column', gap: 6, cursor: 'pointer' }}>
               <BookCover title={b.title} author={b.author} tone={b.tone}
-                         cover={b.cover} isbn={b.isbn} w={94} book={b}/>
+                         cover={b.cover} isbn={b.isbn} w={94}/>
               <div style={{ fontFamily: T.serif, fontSize: 11, fontWeight: 500, lineHeight: 1.15, color: T.ink }}>
                 {b.title}
               </div>
@@ -3454,7 +3454,7 @@ function LibrarySection({ section, view }) {
                 borderBottom: `1px solid ${T.hairlineSoft}`, alignItems: 'center', cursor: 'pointer',
               }}>
               <BookCover title={b.title} author={b.author} tone={b.tone}
-                         cover={b.cover} isbn={b.isbn} w={42} book={b}/>
+                         cover={b.cover} isbn={b.isbn} w={42}/>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: T.serif, fontSize: 14, fontWeight: 500, lineHeight: 1.15 }}>
                   {b.title}
