@@ -101,7 +101,10 @@
   html.web-mode .app-statusbar { padding: 12px 0 0 !important; min-height: 0 !important; }
   html.web-mode .app-statusbar > * { display: none !important; }
 
-  /* desktop em modo web: coluna de página, cheia de altura, sem caixa de aparelho */
+  /* wrapper de rolagem do conteúdo (transparente no celular; vira flex no desktop) */
+  .app-scroll { height: 100%; }
+
+  /* tablet em modo web: coluna de página, cheia de altura, sem caixa de aparelho */
   @media (min-width: 481px) {
     html.web-mode, html.web-mode body { background: #E7DECB; }
     html.web-mode #root { padding: 0; align-items: stretch; }
@@ -112,6 +115,15 @@
       border-radius: 0;
       box-shadow: 0 0 0 1px rgba(42,38,32,0.06);
     }
+  }
+
+  /* desktop largo em modo web: FRAME DE SITE — menu no topo (WebNav), coluna mais
+     larga, sem a barra de baixo. O React mostra o WebNav e esconde a TabBar. */
+  @media (min-width: 768px) {
+    html.web-mode .device-shell { max-width: 780px; }
+    html.web-mode .device-inner { display: flex; flex-direction: column; }
+    html.web-mode .app-scroll { flex: 1; min-height: 0; height: auto; overflow: auto; position: relative; }
+    html.web-mode .app-statusbar { display: none !important; }  /* o topo agora é o WebNav */
   }
 
   ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -134,7 +146,7 @@
 <!-- scripts injetados com cache-bust por URL versionada -->
 <script>
 (function () {
-  const APP_VERSION = '0.92.0'; // bump quando alterar JSX
+  const APP_VERSION = '0.93.0'; // bump quando alterar JSX
   window.APP_VERSION = APP_VERSION;
   const files = [
     'lib/sources.jsx',
@@ -184,7 +196,7 @@ function DeviceShell({ children, dark = false }) {
         position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
         width: 126, height: 37, borderRadius: 24, background: '#000', zIndex: 50,
       }}/>
-      <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <div className="device-inner" style={{ width: '100%', height: '100%', position: 'relative' }}>
         {children}
       </div>
       {/* home indicator — escondido no mobile via CSS */}
@@ -216,6 +228,58 @@ function Splash({ visible }) {
   );
 }
 
+// WebNav — cabeçalho de SITE (logo + menu no topo), só no navegador desktop (modo web).
+// Substitui a barra de baixo (cara de app) para o Marginália parecer uma página web.
+function WebNav({ active = 'home', onClick = () => {}, dark = false }) {
+  const items = [
+    { id: 'home', label: 'Hoje' },
+    { id: 'library', label: 'Biblioteca' },
+    { id: 'desafios', label: 'Desafios' },
+    { id: 'grupos', label: 'Grupos' },
+  ];
+  const bg = dark ? '#1A1612' : '#F7F1E4';
+  const border = dark ? 'rgba(255,255,255,0.08)' : '#E3D9C4';
+  const ink = dark ? '#F7E7D6' : '#2A2620';
+  const muted = dark ? 'rgba(247,231,214,0.55)' : '#9A8E7B';
+  const terra = '#B0533A';
+  return (
+    <div className="web-nav" style={{
+      flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '0 24px', height: 62, background: bg, borderBottom: `1px solid ${border}`,
+      position: 'relative', zIndex: 30,
+    }}>
+      <button onClick={() => onClick('home')} style={{
+        display: 'flex', alignItems: 'center', gap: 10, background: 'transparent', border: 0, cursor: 'pointer',
+      }}>
+        <img src="symbol.png" alt="" style={{ width: 26, height: 26, objectFit: 'contain' }}/>
+        <span style={{ fontFamily: '"Fraunces", Georgia, serif', fontSize: 20, fontWeight: 600, color: terra, letterSpacing: -0.2 }}>Marginália</span>
+      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        {items.map(it => (
+          <button key={it.id} onClick={() => onClick(it.id)} style={{
+            background: 'transparent', border: 0, cursor: 'pointer',
+            padding: '8px 14px', margin: 0,
+            fontFamily: 'Inter, sans-serif', fontSize: 14.5,
+            fontWeight: active === it.id ? 600 : 500,
+            color: active === it.id ? ink : muted,
+            borderBottom: `2px solid ${active === it.id ? terra : 'transparent'}`,
+          }}>{it.label}</button>
+        ))}
+        <button onClick={() => { if (typeof window.__openAccount === 'function') window.__openAccount(); }}
+          aria-label="Sua conta" title="Sua conta" style={{
+          marginLeft: 12, width: 34, height: 34, borderRadius: '50%', cursor: 'pointer',
+          background: dark ? '#2A2620' : '#EFE6D4', border: `1px solid ${border}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', color: terra,
+        }}>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={terra} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // Roteador interno do app
 function MarginaliaApp() {
   // hidrata dados live a partir do MG (mescla com seeds)
@@ -238,6 +302,18 @@ function MarginaliaApp() {
   const [editingChallenge, setEditingChallenge] = React.useState(null);
   const [showAccount, setShowAccount] = React.useState(false);
   const [, forceRender] = React.useReducer(x => x + 1, 0);
+
+  // modo web desktop: navegador (não instalado) em tela larga → frame de site (nav no topo)
+  const calcWebDesktop = () => {
+    try { return document.documentElement.classList.contains('web-mode') && window.innerWidth >= 768; }
+    catch (e) { return false; }
+  };
+  const [webDesktop, setWebDesktop] = React.useState(calcWebDesktop);
+  React.useEffect(() => {
+    const onR = () => setWebDesktop(calcWebDesktop());
+    window.addEventListener('resize', onR);
+    return () => window.removeEventListener('resize', onR);
+  }, []);
 
   // expõe re-render global para que Storage.add* possa propagar mudanças à UI
   React.useEffect(() => {
@@ -324,8 +400,15 @@ function MarginaliaApp() {
 
   return (
     <DeviceShell dark={prefs.mode === 'dark'}>
-      {body}
-      {showTabs && typeof TabBar !== 'undefined' && (
+      {webDesktop && showTabs && typeof WebNav !== 'undefined' && (
+        <WebNav
+          active={tabForRoute[route] || 'home'}
+          onClick={(id) => setRoute(id)}
+          dark={prefs.mode === 'dark'}
+        />
+      )}
+      <div className="app-scroll">{body}</div>
+      {showTabs && !webDesktop && typeof TabBar !== 'undefined' && (
         <TabBar
           active={tabForRoute[route] || 'home'}
           onClick={(id) => setRoute(id)}
