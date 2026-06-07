@@ -2,6 +2,18 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"/>
+<!-- Modo de exibição: instalado (standalone) mantém a cara de app; no navegador
+     vira PÁGINA WEB (sem moldura de celular nem barra "9:41"). Fica FORA do bloco
+     de desvio acima de propósito — assim sobrevive ao gerar o Marginalia.html. -->
+<script>
+(function () {
+  try {
+    var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+      || window.navigator.standalone === true;
+    document.documentElement.classList.add(standalone ? 'standalone-mode' : 'web-mode');
+  } catch (e) {}
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"/>
 <title>Marginália — clube de leitura</title>
 <meta name="description" content="Um clube pessoal de leitura profunda. Notas à margem, pontes entre obras e círculos de leitura com amigos."/>
@@ -79,6 +91,29 @@
     }
   }
 
+  /* ───────────────────────────────────────────────────────────
+     MODO WEB (navegador, não instalado): o Marginália vira PÁGINA WEB.
+     Sem moldura de celular, sem a barra falsa "9:41" — usável direto no
+     Safari como um site (igual à página da Maratona Nobel). O app instalado
+     (standalone-mode) NÃO é afetado: mantém a cara de app que ela gosta.
+     ─────────────────────────────────────────────────────────── */
+  /* esconde a barra "9:41"/ícones no navegador, mantendo um respiro no topo */
+  html.web-mode .app-statusbar { padding: 12px 0 0 !important; min-height: 0 !important; }
+  html.web-mode .app-statusbar > * { display: none !important; }
+
+  /* desktop em modo web: coluna de página, cheia de altura, sem caixa de aparelho */
+  @media (min-width: 481px) {
+    html.web-mode, html.web-mode body { background: #E7DECB; }
+    html.web-mode #root { padding: 0; align-items: stretch; }
+    html.web-mode .device-shell {
+      width: 100%; max-width: 460px; margin: 0 auto;
+      height: 100dvh; min-height: 100dvh;
+      background: #EFE8DA;
+      border-radius: 0;
+      box-shadow: 0 0 0 1px rgba(42,38,32,0.06);
+    }
+  }
+
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-thumb { background: rgba(42,38,32,0.15); border-radius: 999px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -99,7 +134,7 @@
 <!-- scripts injetados com cache-bust por URL versionada -->
 <script>
 (function () {
-  const APP_VERSION = '0.91.0'; // bump quando alterar JSX
+  const APP_VERSION = '0.92.0'; // bump quando alterar JSX
   window.APP_VERSION = APP_VERSION;
   const files = [
     'lib/sources.jsx',

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Marginália</title>
+<!-- Endereço limpo para abrir o app em modo web (igual a /maratona-nobel/).
+     Redireciona para a raiz com ?app=1 — assim os caminhos relativos dos
+     scripts (screens.jsx etc.) resolvem certo. Preserva ?join se houver. -->
+<script>
+(function () {
+  var s = window.location.search || '';
+  var sep = s ? (s.indexOf('app=') === -1 ? s + '&app=1' : s) : '?app=1';
+  window.location.replace('../' + sep);
+})();
+</script>
+</head>
+<body></body>
+</html>

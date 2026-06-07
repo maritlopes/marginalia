@@ -6,7 +6,7 @@
 function StatusBar({ dark = false }) {
   const c = dark ? '#fff' : T.ink;
   return (
-    <div style={{
+    <div className="app-statusbar" style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       padding: '18px 28px 8px', fontFamily: T.sans,
       fontSize: 15, fontWeight: 600, color: c, letterSpacing: -0.2,
