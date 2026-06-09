@@ -238,6 +238,60 @@ function curatedEcos(book) {
   return null;
 }
 
+// ─────────────────────────────────────────────────────────────
+// PONTES ENTRE OBRAS — liga os livros DA SUA ESTANTE entre si
+// ─────────────────────────────────────────────────────────────
+// O diferencial da leitora: enquanto os ECOS apontam para FORA (música, arte,
+// cinema), as PONTES ligam dois livros SEUS. Duas fontes:
+//   1. curadas à mão (pares canônicos abaixo) — `a`/`b` = miolos de título
+//      normalizados que casam os dois livros; `motif` = rótulo curto; `why` =
+//      por que conversam. Só aparece se AMBOS estão na estante.
+//   2. automática por MESMO AUTOR (rótulo "Mesma pena").
+const PONTES_OBRAS = [
+  { a: 'doutor fausto', b: 'fausto goethe', motif: 'O pacto',
+    why: 'O "Fausto" de Goethe é a fonte do mito — o sábio que vende a alma ao diabo. Mann reescreve a lenda no século XX e faz dela a alegoria de uma Alemanha que pactua com a própria ruína.' },
+  { a: 'doutor fausto', b: 'grande sertao', motif: 'O pacto e a travessia',
+    why: 'Riobaldo crê ter vendido a alma nas Veredas-Mortas; o compositor de Mann assina o seu pacto pela música. Dois homens à beira do abismo — só que no sertão "o diabo existe é que não existe".' },
+  { a: 'grande sertao', b: 'cabeca do santo', motif: 'O Brasil profundo',
+    why: 'O sertão mítico de Rosa e a cidadezinha de milagres de Socorro Acioli pisam o mesmo chão: o Nordeste onde o sagrado popular, o sonho e a violência se misturam sem fronteira.' },
+  { a: 'montanha magica', b: 'graca infinita', motif: 'O romance-mundo',
+    why: 'Um sanatório nos Alpes, uma clínica na América: dois romances-enciclopédia que prendem o leitor num lugar fechado e o transformam num mundo inteiro — o tempo, a doença e o tédio como matéria de arte.' },
+  { a: 'intermitencias da morte', b: 'mattia pascal', motif: 'A morte que falha',
+    why: 'Em Saramago a morte simplesmente para de agir; em Pirandello um homem é dado por morto e ganha uma vida nova. Duas fábulas sobre o que acontece quando a morte erra a página.' },
+  { a: 'grande sertao', b: 'guimaraes rosa biografia', motif: 'A obra e a vida',
+    why: 'O romance e a biografia de quem o escreveu — atravesse a ficção e depois o sertão real de João Guimarães Rosa: diplomata, médico e ouvinte incansável da fala do interior.' },
+];
+const _PONTE_AUTOR_IGNORA = ['', 'anonimo', 'anonymous', 'varios', 'vario', 'desconhecido', 'contexto historico'];
+// Pontes para o livro aberto, dentro da estante `allBooks` (default window.BOOKS).
+function pontesNaEstante(book, allBooks) {
+  if (!book) return [];
+  const me = _normTitle(book.title);
+  const mine = allBooks || (typeof window !== 'undefined' ? window.BOOKS : []) || [];
+  const out = [];
+  const usados = new Set([book.id]);
+  // 1) curadas — casa o título aberto com um dos lados do par e busca o outro
+  for (const p of PONTES_OBRAS) {
+    let alvo = null;
+    if (me.indexOf(p.a) !== -1) alvo = p.b;
+    else if (me.indexOf(p.b) !== -1) alvo = p.a;
+    if (!alvo) continue;
+    const outro = mine.find((x) => !usados.has(x.id) && _normTitle(x.title).indexOf(alvo) !== -1);
+    if (outro) { out.push({ book: outro, motif: p.motif, why: p.why, kind: 'curada' }); usados.add(outro.id); }
+  }
+  // 2) mesmo autor (ignora autorias genéricas)
+  const myA = _normTitle(book.author);
+  if (myA && _PONTE_AUTOR_IGNORA.indexOf(myA) === -1) {
+    for (const x of mine) {
+      if (usados.has(x.id)) continue;
+      if (_normTitle(x.author) === myA) {
+        out.push({ book: x, motif: 'Mesma pena', why: 'Outra obra de ' + (book.author || 'mesmo autor') + ' na sua estante.', kind: 'autor' });
+        usados.add(x.id);
+      }
+    }
+  }
+  return out;
+}
+
 const PONTE_CATS = [
   { id: 'todos', label: 'Todos', color: 'terra' },
   { id: 'filosofia', label: 'Filosofia', color: 'plum' },
@@ -530,6 +584,8 @@ window.HOJE_BANNER = HOJE_BANNER;
 window.CURADORIA = CURADORIA;
 window.FRASES_MARCANTES = FRASES_MARCANTES;
 window.ECOS_CURADOS = ECOS_CURADOS;
+window.PONTES_OBRAS = PONTES_OBRAS;
+window.pontesNaEstante = pontesNaEstante;
 
 // ─────────────────────────────────────────────────────────────
 // PARA VOCÊ — sugestões personalizadas por livro lido
@@ -696,6 +752,7 @@ function computeMemorias({ books, notes, today = new Date() } = {}) {
 Object.assign(window, {
   BOOK_CURRENT, NOTES_SEED, BOOKS_SEED, THEMES_STUDY, ACTIVITY,
   PONTES, PONTE_CATS, GLOSSARIO, ECOS_CURADOS, curatedEcos,
+  PONTES_OBRAS, pontesNaEstante,
   BOOK_STATUS, HOJE_BANNER, FRASES_MARCANTES, CURADORIA, SUGESTOES_POR_LIVRO,
   CHALLENGE_TYPES, CHALLENGE_PERIODS, CHALLENGE_SUGESTOES, periodWindow,
   computeMemorias,

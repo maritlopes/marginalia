@@ -3,7 +3,7 @@
 // para que novas versões publicadas cheguem sempre que houver internet; o cache
 // serve apenas como reserva offline. Network-first também para as APIs externas.
 
-const CACHE = 'marginalia-v12';
+const CACHE = 'marginalia-v13';
 const ASSETS = [
   './',
   './Marginalia.html',

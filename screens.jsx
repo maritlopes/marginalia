@@ -165,6 +165,9 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
               </>
             )}
 
+            {/* pontes entre obras da sua estante (curadas + mesmo autor) */}
+            {!isDemo && <PontesEstante book={b}/>}
+
             {/* leituras cruzadas (exemplo) / outros na estante (real) */}
             {isDemo ? (
               <>
@@ -629,6 +632,47 @@ function PonteCard({ p, onClick, book }) {
       )}
       {err && <div style={{ marginTop: 8, fontSize: 11, color: '#8E3E2A', lineHeight: 1.4 }}>{err}</div>}
     </div>
+  );
+}
+
+// PontesEstante — livros DA SUA ESTANTE que conversam com o livro aberto.
+// Curadas (pares canônicos) + mesmo autor; cada uma diz POR QUE conversam.
+// Tocar abre o outro livro. Só renderiza se houver alguma ponte real.
+function PontesEstante({ book }) {
+  const b = book || {};
+  const pontes = (typeof pontesNaEstante === 'function')
+    ? pontesNaEstante(b, (typeof window !== 'undefined' && window.BOOKS) || [])
+    : [];
+  if (!pontes.length) return null;
+  return (
+    <>
+      <SectionTitle>Pontes na sua estante</SectionTitle>
+      <div style={{ fontSize: 11, color: T.muted, fontStyle: 'italic', fontFamily: T.serif, marginTop: -6, marginBottom: 12 }}>
+        Livros seus que conversam com este.
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 22 }}>
+        {pontes.map((p, i) => (
+          <div key={(p.book && p.book.id) || i}
+               onClick={() => { if (typeof window.__openBook === 'function') window.__openBook(p.book); }}
+               style={{
+                 display: 'flex', gap: 12, alignItems: 'flex-start', background: T.cream,
+                 borderRadius: 12, padding: '12px 14px', border: `1px solid ${T.hairline}`,
+                 cursor: 'pointer', position: 'relative', overflow: 'hidden',
+               }}>
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: T.terra }}/>
+            <div style={{ flexShrink: 0 }}>
+              <BookCover title={p.book.title} author={p.book.author} tone={p.book.tone} cover={p.book.cover} isbn={p.book.isbn} w={46}/>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 9, letterSpacing: 1.3, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 3 }}>{p.motif}</div>
+              <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 500, lineHeight: 1.15 }}>{p.book.title}</div>
+              <div style={{ fontSize: 10, color: T.muted, fontStyle: 'italic', marginBottom: p.why ? 5 : 0 }}>{p.book.author}</div>
+              {p.why && <div style={{ fontSize: 12, color: T.brown, lineHeight: 1.45, fontFamily: T.serif }}>{p.why}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -4146,6 +4190,6 @@ Object.assign(window, {
   ScreenMetas, ChallengeCard, ChallengeSuggestion, ChallengeEditorSheet, FieldLabel,
   BookEditorSheet, LibrarySection, Stat, BrandMark, ShareNoteSheet,
   ShareRecommendationSheet, StarRating, MinhaAvaliacao,
-  PonteCard, SectionLabel, FeedbackButton, buildNotesMarkdown,
+  PonteCard, PontesEstante, SectionLabel, FeedbackButton, buildNotesMarkdown,
   NOTE_KINDS, noteKind, noteKindColor, noteKindLabel,
 });
