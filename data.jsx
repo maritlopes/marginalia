@@ -487,6 +487,41 @@ const CURADORIA = [
     desc_en: '"One Hundred Years of Solitude" (1967), by García Márquez, opened the way for Cortázar, Vargas Llosa and Fuentes.' },
 ];
 
+// ─────────────────────────────────────────────────────────────
+// SAZONALIDADE — efeméride só aparece no MÊS dela
+// ─────────────────────────────────────────────────────────────
+// Regra (Radar e Curadoria): um card com `kind:'efemeride'` só entra na
+// rotação do dia DENTRO do seu mês (em junho, só efemérides de junho). Todo o
+// resto — você sabia?, conexão, contexto, no radar, citação, lançamento — é
+// ATEMPORAL e aparece em qualquer mês (a data ali, quando há, é curiosidade,
+// não o argumento do card). O mês da efeméride vem de, nesta ordem:
+//   1. `item.month` (1–12, override explícito — opcional, à prova de futuro);
+//   2. `item.date` no formato 'DD mmm' (ex.: '21 jun') — usado na Curadoria;
+//   3. "DD de <mês>" no texto (headline/título) — usado no Radar (sem `date`).
+// Efeméride sem mês legível nunca é escondida (fallback seguro).
+const _CUR_MAB = { jan: 1, fev: 2, mar: 3, abr: 4, mai: 5, jun: 6, jul: 7, ago: 8, set: 9, out: 10, nov: 11, dez: 12 };
+const _CUR_MFULL = { janeiro: 1, fevereiro: 2, 'março': 3, marco: 3, abril: 4, maio: 5, junho: 6, julho: 7, agosto: 8, setembro: 9, outubro: 10, novembro: 11, dezembro: 12 };
+function _curEfemerideMonth(item) {
+  if (!item) return null;
+  if (item.month >= 1 && item.month <= 12) return item.month;
+  if (item.date) {
+    const m = String(item.date).toLowerCase().match(/\b(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\b/);
+    if (m) return _CUR_MAB[m[1]];
+  }
+  const txt = (item.headline_pt || item.title_pt || '').toLowerCase();
+  const t = txt.match(/\b\d{1,2}\s+de\s+(janeiro|fevereiro|mar[çc]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\b/);
+  if (t) return _CUR_MFULL[t[1].replace('marco', 'março')] || _CUR_MFULL[t[1]] || null;
+  return null;
+}
+// true = pode aparecer agora. Atemporal sempre; efeméride só no mês corrente.
+function curInSeason(item, now) {
+  if (!item || item.kind !== 'efemeride') return true;
+  const m = _curEfemerideMonth(item);
+  if (m == null) return true;
+  return m === ((now || new Date()).getMonth() + 1);
+}
+window.curInSeason = curInSeason;
+
 // Expõe os blocos editoriais (sementes) no window para que a rotina/nuvem
 // possa FUNDIR itens validados da tabela curadoria_items nos mesmos arrays
 // que a home renderiza (ver loadCuradoria em lib/cloud.jsx). Mesma referência:

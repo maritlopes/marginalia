@@ -161,7 +161,10 @@ function HomeVariantA({ onNav = () => {} }) {
   }, [nameTick]);
 
   // banner rotativo — troca a cada 7 segundos
-  const banner = window.HOJE_BANNER || [];
+  // sazonal: efemérides só entram no mês delas (junho mostra efemérides de junho);
+  // o resto (citação, prêmio, lançamento…) é atemporal e aparece sempre.
+  const _bannerAll = window.HOJE_BANNER || [];
+  const banner = window.curInSeason ? _bannerAll.filter((it) => window.curInSeason(it)) : _bannerAll;
   // começa por um item diferente a cada dia, para o Radar parecer sempre atualizado
   const [bannerIdx, setBannerIdx] = React.useState(() =>
     banner.length ? Math.floor(Date.now() / 86400000) % banner.length : 0);
@@ -203,11 +206,25 @@ function HomeVariantA({ onNav = () => {} }) {
   // curadoria — mostra 3 na home; "ver mais" abre o banco completo (todas)
   const [showAllCuradoria, setShowAllCuradoria] = React.useState(false);
   const curadoriaAll = (window.CURADORIA || []);
-  // mostra 3 por vez, girando a cada dia para passear por toda a curadoria
-  // (atemporal: só muda QUAIS 3 aparecem; cada card segue verdadeiro sempre)
-  const _curStart = curadoriaAll.length ? (Math.floor(Date.now() / 86400000) % curadoriaAll.length) : 0;
-  const _curRot = [...curadoriaAll.slice(_curStart), ...curadoriaAll.slice(0, _curStart)];
-  const curadoria = showAllCuradoria ? curadoriaAll : _curRot.slice(0, 3);
+  // Mostra 3 por vez. Sazonal: as EFEMÉRIDES só do mês corrente entram na rotação
+  // (em junho, só efemérides de junho); o resto — você sabia?, conexão, contexto,
+  // novidade — é atemporal e gira sempre. Os 3 cards são uma MISTURA: até 2
+  // efemérides do mês + curiosidades/conexões preenchendo. "Ver todas" mostra o
+  // banco inteiro (inclusive efemérides de outros meses, para navegar).
+  const _curInSeason = window.curInSeason
+    ? curadoriaAll.filter((c) => window.curInSeason(c))
+    : curadoriaAll;
+  const _curRotate = (arr) => {
+    const s = arr.length ? (Math.floor(Date.now() / 86400000) % arr.length) : 0;
+    return [...arr.slice(s), ...arr.slice(0, s)];
+  };
+  const _curEf = _curRotate(_curInSeason.filter((c) => c.kind === 'efemeride'));
+  const _curAt = _curRotate(_curInSeason.filter((c) => c.kind !== 'efemeride'));
+  const _curPick = [];
+  for (let i = 0; i < Math.min(2, _curEf.length); i++) _curPick.push(_curEf[i]);
+  for (const a of _curAt) { if (_curPick.length >= 3) break; _curPick.push(a); }
+  for (const e of _curEf) { if (_curPick.length >= 3) break; if (!_curPick.includes(e)) _curPick.push(e); }
+  const curadoria = showAllCuradoria ? curadoriaAll : _curPick.slice(0, 3);
 
   // sugestões para o livro atual
   const sugestoes = (window.SUGESTOES_POR_LIVRO || {})[b.id] || [];
