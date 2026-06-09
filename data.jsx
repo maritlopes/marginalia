@@ -487,6 +487,15 @@ const CURADORIA = [
     desc_en: '"One Hundred Years of Solitude" (1967), by García Márquez, opened the way for Cortázar, Vargas Llosa and Fuentes.' },
 ];
 
+// Expõe os blocos editoriais (sementes) no window para que a rotina/nuvem
+// possa FUNDIR itens validados da tabela curadoria_items nos mesmos arrays
+// que a home renderiza (ver loadCuradoria em lib/cloud.jsx). Mesma referência:
+// dar push aqui faz a home enxergar o conteúdo novo após um re-render.
+window.HOJE_BANNER = HOJE_BANNER;
+window.CURADORIA = CURADORIA;
+window.FRASES_MARCANTES = FRASES_MARCANTES;
+window.ECOS_CURADOS = ECOS_CURADOS;
+
 // ─────────────────────────────────────────────────────────────
 // PARA VOCÊ — sugestões personalizadas por livro lido
 // chave: id do livro → array de sugestões

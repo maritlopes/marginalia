@@ -349,6 +349,73 @@
     }
   };
 
+  // ─── Curadoria do clube (conteúdo editorial: rascunho → validado) ───
+  // Lê os itens VALIDADOS da tabela curadoria_items e os funde nas sementes
+  // (HOJE_BANNER / CURADORIA / FRASES_MARCANTES / ECOS_CURADOS). Conteúdo
+  // validado é público (RLS), então roda mesmo deslogada. Pendentes nunca
+  // entram aqui — só aparecem no painel da admin.
+  let _curadoriaMerged = false;
+  async function loadCuradoria() {
+    if (_curadoriaMerged) return;
+    try {
+      const { data, error } = await sb
+        .from('curadoria_items')
+        .select('id, block, data, book_key')
+        .eq('status', 'validated')
+        .order('created_at', { ascending: true });
+      if (error) { console.warn('[curadoria] load:', error.message); return; }
+      if (!data || !data.length) { _curadoriaMerged = true; return; }
+      _curadoriaMerged = true;
+      let merged = 0;
+      for (const row of data) {
+        const d = row.data || {};
+        if (row.block === 'radar' && Array.isArray(window.HOJE_BANNER)) {
+          if (!d.id) d.id = 'db-' + row.id;
+          window.HOJE_BANNER.push(d); merged++;
+        } else if (row.block === 'curadoria' && Array.isArray(window.CURADORIA)) {
+          if (!d.id) d.id = 'db-' + row.id;
+          window.CURADORIA.push(d); merged++;
+        } else if (row.block === 'para_guardar' && Array.isArray(window.FRASES_MARCANTES)) {
+          window.FRASES_MARCANTES.push(d); merged++;
+        } else if (row.block === 'ecos' && row.book_key && window.ECOS_CURADOS) {
+          const k = row.book_key;
+          window.ECOS_CURADOS[k] = window.ECOS_CURADOS[k] || [];
+          if (!d.id) d.id = 'db-' + row.id;
+          window.ECOS_CURADOS[k].push(d); merged++;
+        }
+      }
+      if (merged && typeof window.__rerender === 'function') window.__rerender();
+    } catch (e) { console.warn('[curadoria] load:', e); }
+  }
+  window.MGCloud.loadCuradoria = loadCuradoria;
+  loadCuradoria();
+
+  // métodos de aprovação (só admin — RLS exige is_app_admin)
+  window.MGCloud.curadoria = {
+    pending: async function () {
+      const { data, error } = await sb
+        .from('curadoria_items')
+        .select('id, block, data, book_key, created_by, source, created_at')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true });
+      if (error) { console.warn('[curadoria] pending:', error.message); return []; }
+      return data || [];
+    },
+    validate: async function (id) {
+      const { error } = await sb
+        .from('curadoria_items')
+        .update({ status: 'validated', validated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) { console.warn('[curadoria] validate:', error.message); return { error }; }
+      return {};
+    },
+    discard: async function (id) {
+      const { error } = await sb.from('curadoria_items').delete().eq('id', id);
+      if (error) { console.warn('[curadoria] discard:', error.message); return { error }; }
+      return {};
+    },
+  };
+
   // sempre que o app salva localmente, agenda um envio à nuvem (se logada)
   window.__onLocalSave = schedulePush;
 

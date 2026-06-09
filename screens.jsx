@@ -1009,9 +1009,11 @@ function AppAdminPanel() {
   const [pending, setPending] = React.useState([]);
   const [grupos, setGrupos] = React.useState([]);
   const [copied, setCopied] = React.useState(false);
+  const [curPending, setCurPending] = React.useState([]);
   const load = async () => {
     if (cloud && cloud.appPending) setPending(await cloud.appPending());
     if (cloud && cloud.groups) setGrupos(await cloud.groups.list());
+    if (cloud && cloud.curadoria) setCurPending(await cloud.curadoria.pending());
   };
   React.useEffect(() => { load(); }, []);
   if (!cloud || !cloud.available || !(typeof window !== 'undefined' && window.__isAppAdmin)) return null;
@@ -1025,6 +1027,19 @@ function AppAdminPanel() {
   const ini = (m) => { const n = nome(m).replace(/[^A-Za-zÀ-ÿ ]/g, ' ').trim().split(/\s+/).filter(Boolean); return ((n.length >= 2 ? n[0][0] + n[n.length - 1][0] : nome(m).slice(0, 2)) || '?').toUpperCase(); };
   const aprovar = async (id) => { setPending((p) => p.filter((x) => x.user_id !== id)); await cloud.appApprove(id); await load(); };
   const recusar = async (id) => { setPending((p) => p.filter((x) => x.user_id !== id)); await cloud.appReject(id); await load(); };
+
+  // curadoria do clube — aprovação de conteúdo editorial (rascunho → validado)
+  const CUR_BLOCKS = { radar: 'Radar', curadoria: 'Curadoria', para_guardar: 'Para guardar', ecos: 'Ecos' };
+  const curPreview = (it) => {
+    const d = it.data || {};
+    if (it.block === 'para_guardar') return '“' + (d.pt || '') + '” — ' + [d.autor, d.obra].filter(Boolean).join(', ');
+    if (it.block === 'radar') return d.headline_pt || '(sem título)';
+    if (it.block === 'curadoria') return d.title_pt || '(sem título)';
+    if (it.block === 'ecos') return (it.book_key ? it.book_key + ' · ' : '') + (d.title || '') + (d.author ? ' (' + d.author + ')' : '');
+    return '(item)';
+  };
+  const validarCur = async (id) => { setCurPending((p) => p.filter((x) => x.id !== id)); await cloud.curadoria.validate(id); };
+  const descartarCur = async (id) => { setCurPending((p) => p.filter((x) => x.id !== id)); await cloud.curadoria.discard(id); };
 
   return (
     <div style={{ marginBottom: 22, borderBottom: `1px solid ${T.hairline}`, paddingBottom: 20 }}>
@@ -1058,6 +1073,33 @@ function AppAdminPanel() {
           ))}
         </div>
       )}
+
+      {/* curadoria do clube — conteúdo editorial a aprovar (rotina semanal) */}
+      <div style={{ marginTop: 20, paddingTop: 18, borderTop: `1px solid ${T.hairline}` }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 700 }}>Curadoria do clube · a aprovar</div>
+          <button onClick={load} style={{ background: 'transparent', border: 0, color: T.terra, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>↻ atualizar</button>
+        </div>
+        <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, lineHeight: 1.45, marginBottom: 10 }}>
+          Conteúdo novo (Radar, Curadoria, Para guardar, Ecos) proposto pela rotina. <strong>Validar</strong> publica para todos; <strong>Descartar</strong> remove.
+        </div>
+        {curPending.length === 0 ? (
+          <div style={{ fontSize: 12, color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>Nada para aprovar agora. Itens novos da rotina aparecem aqui.</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {curPending.map((it) => (
+              <div key={it.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 10, padding: '10px 12px' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 3 }}>{CUR_BLOCKS[it.block] || it.block}</div>
+                  <div style={{ fontSize: 12.5, color: T.ink, fontFamily: T.serif, lineHeight: 1.4, overflowWrap: 'anywhere' }}>{curPreview(it)}</div>
+                </div>
+                <button onClick={() => validarCur(it.id)} style={{ padding: '6px 12px', borderRadius: 8, border: 0, background: T.olive, color: T.cream, fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>Validar</button>
+                <button onClick={() => descartarCur(it.id)} style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${T.hairline}`, background: 'transparent', color: T.brown, fontSize: 12, cursor: 'pointer', flexShrink: 0 }}>Descartar</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
