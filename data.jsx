@@ -242,41 +242,79 @@ function curatedEcos(book) {
 // PONTES ENTRE OBRAS — liga os livros DA SUA ESTANTE entre si
 // ─────────────────────────────────────────────────────────────
 // O diferencial da leitora: enquanto os ECOS apontam para FORA (música, arte,
-// cinema), as PONTES ligam dois livros SEUS. Duas fontes:
+// cinema), as PONTES ligam DOIS LIVROS. Duas fontes:
 //   1. curadas à mão (pares canônicos abaixo) — `a`/`b` = miolos de título
-//      normalizados que casam os dois livros; `motif` = rótulo curto; `why` =
-//      por que conversam. Só aparece se AMBOS estão na estante.
-//   2. automática por MESMO AUTOR (rótulo "Mesma pena").
+//      normalizados que casam o livro aberto; `aT/aA` e `bT/bA` = título/autor
+//      de exibição de cada lado; `motif` = rótulo curto; `why` = por que
+//      conversam. Se o OUTRO livro está na estante → vira link pra ele; se NÃO
+//      está → vira SUGESTÃO com "+ quero ler" (estantes crescem devagar — a
+//      ponte é também um convite de leitura).
+//   2. automática por MESMO AUTOR (rótulo "Mesma pena", só dentro da estante).
 const PONTES_OBRAS = [
-  { a: 'doutor fausto', b: 'fausto goethe', motif: 'O pacto',
+  { a: 'doutor fausto', aT: 'Doutor Fausto', aA: 'Thomas Mann',
+    b: 'fausto', bX: 'doutor fausto', bT: 'Fausto', bA: 'Goethe', motif: 'O pacto',
     why: 'O "Fausto" de Goethe é a fonte do mito — o sábio que vende a alma ao diabo. Mann reescreve a lenda no século XX e faz dela a alegoria de uma Alemanha que pactua com a própria ruína.' },
-  { a: 'doutor fausto', b: 'grande sertao', motif: 'O pacto e a travessia',
+  { a: 'doutor fausto', aT: 'Doutor Fausto', aA: 'Thomas Mann',
+    b: 'grande sertao', bT: 'Grande Sertão: Veredas', bA: 'João Guimarães Rosa', motif: 'O pacto e a travessia',
     why: 'Riobaldo crê ter vendido a alma nas Veredas-Mortas; o compositor de Mann assina o seu pacto pela música. Dois homens à beira do abismo — só que no sertão "o diabo existe é que não existe".' },
-  { a: 'grande sertao', b: 'cabeca do santo', motif: 'O Brasil profundo',
+  { a: 'grande sertao', aT: 'Grande Sertão: Veredas', aA: 'João Guimarães Rosa',
+    b: 'cabeca do santo', bT: 'A Cabeça do Santo', bA: 'Socorro Acioli', motif: 'O Brasil profundo',
     why: 'O sertão mítico de Rosa e a cidadezinha de milagres de Socorro Acioli pisam o mesmo chão: o Nordeste onde o sagrado popular, o sonho e a violência se misturam sem fronteira.' },
-  { a: 'montanha magica', b: 'graca infinita', motif: 'O romance-mundo',
+  { a: 'montanha magica', aT: 'A Montanha Mágica', aA: 'Thomas Mann',
+    b: 'graca infinita', bT: 'Graça Infinita', bA: 'David Foster Wallace', motif: 'O romance-mundo',
     why: 'Um sanatório nos Alpes, uma clínica na América: dois romances-enciclopédia que prendem o leitor num lugar fechado e o transformam num mundo inteiro — o tempo, a doença e o tédio como matéria de arte.' },
-  { a: 'intermitencias da morte', b: 'mattia pascal', motif: 'A morte que falha',
+  { a: 'intermitencias da morte', aT: 'As Intermitências da Morte', aA: 'José Saramago',
+    b: 'mattia pascal', bT: 'O Falecido Mattia Pascal', bA: 'Luigi Pirandello', motif: 'A morte que falha',
     why: 'Em Saramago a morte simplesmente para de agir; em Pirandello um homem é dado por morto e ganha uma vida nova. Duas fábulas sobre o que acontece quando a morte erra a página.' },
-  { a: 'grande sertao', b: 'guimaraes rosa biografia', motif: 'A obra e a vida',
+  { a: 'grande sertao', aT: 'Grande Sertão: Veredas', aA: 'João Guimarães Rosa',
+    b: 'guimaraes rosa biografia', bT: 'João Guimarães Rosa — Biografia', bA: 'Leonencio Nossa', motif: 'A obra e a vida',
     why: 'O romance e a biografia de quem o escreveu — atravesse a ficção e depois o sertão real de João Guimarães Rosa: diplomata, médico e ouvinte incansável da fala do interior.' },
+  // pares canônicos universais — para estantes que ainda estão começando
+  { a: 'dom casmurro', aT: 'Dom Casmurro', aA: 'Machado de Assis',
+    b: 'otelo', bT: 'Otelo', bA: 'Shakespeare', motif: 'O ciúme',
+    why: 'O ciúme que corrói Bentinho ecoa o mouro de Veneza — e Machado cita a peça dentro do próprio romance. Ler os dois é ver a mesma dúvida com trezentos anos de distância.' },
+  { a: 'cem anos de solidao', aT: 'Cem Anos de Solidão', aA: 'Gabriel García Márquez',
+    b: 'pedro paramo', bT: 'Pedro Páramo', bA: 'Juan Rulfo', motif: 'A semente do realismo mágico',
+    why: 'García Márquez dizia saber "Pedro Páramo" de cor — a cidade de mortos de Rulfo abriu a porta por onde Macondo entrou na literatura.' },
+  { a: 'ensaio sobre a cegueira', aT: 'Ensaio sobre a Cegueira', aA: 'José Saramago',
+    b: 'a peste', bT: 'A Peste', bA: 'Albert Camus', motif: 'A epidemia como espelho',
+    why: 'Uma cidade posta em quarentena, uma cegueira branca que se alastra: duas alegorias em que a doença revela o que as pessoas são quando a ordem cai.' },
+  { a: 'crime e castigo', aT: 'Crime e Castigo', aA: 'Dostoiévski',
+    b: 'o estrangeiro', bT: 'O Estrangeiro', bA: 'Albert Camus', motif: 'O crime e a consciência',
+    why: 'Raskólnikov mata por ideia e é devorado pela culpa; Meursault mata por sol e indiferença. Dois assassinos diante do tribunal — um por dentro, outro por fora.' },
+  { a: '1984', aT: '1984', aA: 'George Orwell',
+    b: 'admiravel mundo novo', bT: 'Admirável Mundo Novo', bA: 'Aldous Huxley', motif: 'Duas distopias',
+    why: 'Orwell temia os que proibiriam livros; Huxley, um mundo em que ninguém quereria lê-los. As duas profecias conversam — e cada época decide qual acertou mais.' },
+  { a: 'a hora da estrela', aT: 'A Hora da Estrela', aA: 'Clarice Lispector',
+    b: 'vidas secas', bT: 'Vidas Secas', bA: 'Graciliano Ramos', motif: 'Os esquecidos',
+    why: 'Macabéa e a família de Fabiano: retirantes nordestinos diante de um país que não os vê. Graciliano os narra por fora, com a secura do chão; Clarice, por dentro, até o último suspiro.' },
 ];
 const _PONTE_AUTOR_IGNORA = ['', 'anonimo', 'anonymous', 'varios', 'vario', 'desconhecido', 'contexto historico'];
-// Pontes para o livro aberto, dentro da estante `allBooks` (default window.BOOKS).
+// Pontes para o livro aberto. Curadas: na estante → {book}; fora → {suggest}.
 function pontesNaEstante(book, allBooks) {
   if (!book) return [];
   const me = _normTitle(book.title);
   const mine = allBooks || (typeof window !== 'undefined' ? window.BOOKS : []) || [];
   const out = [];
   const usados = new Set([book.id]);
+  const sugeridos = new Set();
   // 1) curadas — casa o título aberto com um dos lados do par e busca o outro
+  // (`aX`/`bX` = exclusão: 'fausto' casa Goethe mas NÃO 'doutor fausto' de Mann)
+  const _hit = (t, inc, exc) => t.indexOf(inc) !== -1 && (!exc || t.indexOf(exc) === -1);
   for (const p of PONTES_OBRAS) {
-    let alvo = null;
-    if (me.indexOf(p.a) !== -1) alvo = p.b;
-    else if (me.indexOf(p.b) !== -1) alvo = p.a;
+    let alvo = null, alvoX = null, alvoT = null, alvoA = null;
+    if (_hit(me, p.a, p.aX)) { alvo = p.b; alvoX = p.bX; alvoT = p.bT; alvoA = p.bA; }
+    else if (_hit(me, p.b, p.bX)) { alvo = p.a; alvoX = p.aX; alvoT = p.aT; alvoA = p.aA; }
     if (!alvo) continue;
-    const outro = mine.find((x) => !usados.has(x.id) && _normTitle(x.title).indexOf(alvo) !== -1);
-    if (outro) { out.push({ book: outro, motif: p.motif, why: p.why, kind: 'curada' }); usados.add(outro.id); }
+    const outro = mine.find((x) => !usados.has(x.id) && _hit(_normTitle(x.title), alvo, alvoX));
+    if (outro) {
+      out.push({ book: outro, motif: p.motif, why: p.why, kind: 'curada' });
+      usados.add(outro.id);
+    } else if (!sugeridos.has(alvo)) {
+      // o outro lado não está na estante → ponte vira convite de leitura
+      out.push({ suggest: { title: alvoT, author: alvoA }, motif: p.motif, why: p.why, kind: 'sugestao' });
+      sugeridos.add(alvo);
+    }
   }
   // 2) mesmo autor (ignora autorias genéricas)
   const myA = _normTitle(book.author);

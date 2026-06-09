@@ -635,42 +635,62 @@ function PonteCard({ p, onClick, book }) {
   );
 }
 
-// PontesEstante — livros DA SUA ESTANTE que conversam com o livro aberto.
+// PontesEstante — livros que conversam com o livro aberto.
 // Curadas (pares canônicos) + mesmo autor; cada uma diz POR QUE conversam.
-// Tocar abre o outro livro. Só renderiza se houver alguma ponte real.
+// Ponte com livro DA estante → tocar abre o livro. Ponte com livro FORA da
+// estante → vira convite de leitura com "+ quero ler" (adiciona como tbr) —
+// estantes crescem devagar, a ponte chega antes do livro.
 function PontesEstante({ book }) {
   const b = book || {};
   const pontes = (typeof pontesNaEstante === 'function')
     ? pontesNaEstante(b, (typeof window !== 'undefined' && window.BOOKS) || [])
     : [];
   if (!pontes.length) return null;
+  const quererLer = (e, s) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (typeof MG === 'undefined' || !MG.addBook) return;
+    const id = (s.title || 'livro').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30) + '-' + Date.now().toString(36).slice(-4);
+    MG.addBook({ id, title: s.title, author: s.author, pages: null, pct: 0, currentPage: 0, status: 'tbr' });
+  };
   return (
     <>
-      <SectionTitle>Pontes na sua estante</SectionTitle>
+      <SectionTitle>Pontes</SectionTitle>
       <div style={{ fontSize: 11, color: T.muted, fontStyle: 'italic', fontFamily: T.serif, marginTop: -6, marginBottom: 12 }}>
-        Livros seus que conversam com este.
+        Livros que conversam com este.
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 22 }}>
-        {pontes.map((p, i) => (
-          <div key={(p.book && p.book.id) || i}
-               onClick={() => { if (typeof window.__openBook === 'function') window.__openBook(p.book); }}
-               style={{
-                 display: 'flex', gap: 12, alignItems: 'flex-start', background: T.cream,
-                 borderRadius: 12, padding: '12px 14px', border: `1px solid ${T.hairline}`,
-                 cursor: 'pointer', position: 'relative', overflow: 'hidden',
-               }}>
-            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: T.terra }}/>
-            <div style={{ flexShrink: 0 }}>
-              <BookCover title={p.book.title} author={p.book.author} tone={p.book.tone} cover={p.book.cover} isbn={p.book.isbn} w={46}/>
+        {pontes.map((p, i) => {
+          const ehSugestao = p.kind === 'sugestao';
+          const alvo = ehSugestao ? p.suggest : p.book;
+          return (
+            <div key={(p.book && p.book.id) || (alvo && alvo.title) || i}
+                 onClick={ehSugestao ? undefined : () => { if (typeof window.__openBook === 'function') window.__openBook(p.book); }}
+                 style={{
+                   display: 'flex', gap: 12, alignItems: 'flex-start', background: T.cream,
+                   borderRadius: 12, padding: '12px 14px', border: `1px solid ${T.hairline}`,
+                   cursor: ehSugestao ? 'default' : 'pointer', position: 'relative', overflow: 'hidden',
+                 }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: ehSugestao ? T.ochre : T.terra }}/>
+              <div style={{ flexShrink: 0 }}>
+                <BookCover title={alvo.title} author={alvo.author} tone={alvo.tone} cover={alvo.cover} isbn={alvo.isbn} w={46}/>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 9, letterSpacing: 1.3, textTransform: 'uppercase', color: ehSugestao ? T.ochre : T.terra, fontWeight: 700, marginBottom: 3 }}>{p.motif}</div>
+                <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 500, lineHeight: 1.15 }}>{alvo.title}</div>
+                <div style={{ fontSize: 10, color: T.muted, fontStyle: 'italic', marginBottom: p.why ? 5 : 0 }}>{alvo.author}</div>
+                {p.why && <div style={{ fontSize: 12, color: T.brown, lineHeight: 1.45, fontFamily: T.serif }}>{p.why}</div>}
+                {ehSugestao && (
+                  <button type="button" onClick={(e) => quererLer(e, alvo)} style={{
+                    marginTop: 8, background: 'transparent', border: `1px solid ${T.hairline}`,
+                    borderRadius: 999, padding: '5px 12px', color: T.brown, cursor: 'pointer',
+                    fontFamily: T.sans, fontSize: 11, fontWeight: 600, letterSpacing: 0.3,
+                    WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent',
+                  }}>＋ quero ler</button>
+                )}
+              </div>
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 9, letterSpacing: 1.3, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 3 }}>{p.motif}</div>
-              <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 500, lineHeight: 1.15 }}>{p.book.title}</div>
-              <div style={{ fontSize: 10, color: T.muted, fontStyle: 'italic', marginBottom: p.why ? 5 : 0 }}>{p.book.author}</div>
-              {p.why && <div style={{ fontSize: 12, color: T.brown, lineHeight: 1.45, fontFamily: T.serif }}>{p.why}</div>}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </>
   );
