@@ -1035,7 +1035,7 @@ function AppAdminPanel() {
     if (it.block === 'para_guardar') return '“' + (d.pt || '') + '” — ' + [d.autor, d.obra].filter(Boolean).join(', ');
     if (it.block === 'radar') return d.headline_pt || '(sem título)';
     if (it.block === 'curadoria') return d.title_pt || '(sem título)';
-    if (it.block === 'ecos') return (it.book_key ? it.book_key + ' · ' : '') + (d.title || '') + (d.author ? ' (' + d.author + ')' : '');
+    if (it.block === 'ecos') { const bk = it.book_key ? it.book_key.replace(/\b\w/g, (c) => c.toUpperCase()) : ''; return (bk ? bk + ' · ' : '') + (d.title || '') + (d.author ? ' (' + d.author + ')' : ''); }
     return '(item)';
   };
   const validarCur = async (id) => { setCurPending((p) => p.filter((x) => x.id !== id)); await cloud.curadoria.validate(id); };
