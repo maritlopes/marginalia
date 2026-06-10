@@ -6736,9 +6736,52 @@ if(typeof lucide!=='undefined')lucide.createIcons();
     if(nota) result.appendChild(el('p','situar-note',nota));
     if(lookupTentado) mostrarTempos(true);
   });
+  /* Contexto além da lista — a edge function 'periodo-contexto' (Gemini,
+     mesma chave da timeline-suggest) compõe o período em cinco eixos.
+     Cliente próprio sem sessão: só precisa da chave publicável. */
+  let sbCtx=null;
+  function sbClient(){
+    if(sbCtx) return sbCtx;
+    if(typeof supabase==='undefined') return null;
+    sbCtx=supabase.createClient('https://rpsiewnsvqpeadwaqsib.supabase.co','sb_publishable_QyDwy0ZCCRYzSFfTXCXQYQ_h3vEAL3I',{auth:{persistSession:false,autoRefreshToken:false}});
+    return sbCtx;
+  }
+  function ctxButton(container,raw){
+    const wrap=el('p','hoje-note');
+    const btn=el('button','situar-go','✦ Trazer contexto além da lista');btn.type='button';
+    btn.addEventListener('click',async()=>{
+      const sb=sbClient();
+      if(!sb){ wrap.textContent='Contexto indisponível agora.'; return; }
+      btn.disabled=true;btn.textContent='✦ Compondo o período…';
+      try{
+        const {data,error}=await sb.functions.invoke('periodo-contexto',{body:{periodo:raw}});
+        if(error||!data||!data.contexto||!data.contexto.length) throw 0;
+        const box=el('div','hoje-ctx');
+        if(data.epigrafe) box.appendChild(el('p','situar-ponte',data.epigrafe));
+        data.contexto.forEach(c=>{
+          if(!CAT_LABEL[c.cat]) return;
+          const row=el('div','situar-row');row.dataset.cat=c.cat;
+          row.appendChild(el('span','situar-cat',CAT_LABEL[c.cat]));
+          row.appendChild(el('span','situar-year',c.ano||''));
+          const what=el('span','situar-what',c.titulo||'');
+          if(c.nota) what.appendChild(el('span','situar-author',' — '+c.nota));
+          row.appendChild(what);
+          box.appendChild(row);
+        });
+        box.appendChild(el('p','hoje-note','Contexto composto por IA a partir do período — confira antes de citar.'));
+        wrap.replaceWith(box);
+      }catch(err){
+        btn.disabled=false;btn.textContent='✦ Trazer contexto além da lista';
+        wrap.appendChild(el('span','hoje-book-meta',' não consegui agora — tente de novo.'));
+      }
+    });
+    wrap.appendChild(btn);
+    container.appendChild(wrap);
+  }
   /* Caixa "Para onde você quer viajar?" — dado um ano, século ou tema,
-     mostra o que a linha guarda do período e sugere livros de fora da
-     lista (Google Books), com a opção de saltar até o ponto da linha. */
+     mostra o que a linha guarda do período, traz contexto de fora (IA)
+     e sugere livros de fora da lista (Google Books / Open Library),
+     com a opção de saltar até o ponto da linha. */
   const hojeForm=document.getElementById('hojeForm');
   if(hojeForm){
     const hojeRes=document.getElementById('hojeResult');
@@ -6765,8 +6808,9 @@ if(typeof lucide!=='undefined')lucide.createIcons();
         goLine.appendChild(go);
         hojeRes.appendChild(goLine);
       } else {
-        hojeRes.appendChild(el('p','hoje-note','Para navegar pela linha, use um ano ou século — enquanto isso, busco livros sobre "'+raw+'".'));
+        hojeRes.appendChild(el('p','hoje-note','Para navegar pela linha, use um ano ou século — enquanto isso, busco contexto e livros sobre "'+raw+'".'));
       }
+      ctxButton(hojeRes,raw);
       hojeRes.appendChild(el('p','hoje-sec','Livros para viajar até lá'));
       const loading=el('p','hoje-note','buscando no Google Books…');
       hojeRes.appendChild(loading);
