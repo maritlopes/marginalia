@@ -6694,10 +6694,16 @@ if(typeof lucide!=='undefined')lucide.createIcons();
   const toggleBtn=document.getElementById('situarToggle');
   function mostrarTempos(show){ tempoBox.hidden=!show; toggleBtn.textContent='ajustar os três tempos '+(show?'▴':'▾'); }
   toggleBtn.addEventListener('click',()=>mostrarTempos(tempoBox.hidden));
+  let lastSituarTitle='';
   form.addEventListener('submit',async e=>{
     e.preventDefault();
     result.hidden=false;result.innerHTML='';
     const titulo=document.getElementById('situarTitulo').value.trim();
+    /* livro diferente do último situado → descarta os anos auto-preenchidos antes */
+    if(titulo&&titulo!==lastSituarTitle){
+      document.getElementById('situarNarrador').value='';
+      document.getElementById('situarNarrativa').value='';
+    }
     const tempos=[];
     TEMPOS.forEach(t=>{
       if(t.key==='leitor') return; /* o tempo do leitor não é destacado aqui */
@@ -6734,6 +6740,7 @@ if(typeof lucide!=='undefined')lucide.createIcons();
       result.innerHTML='';
       obra.sort((a,b)=>(a.tempo.key==='narrador'?0:1)-(b.tempo.key==='narrador'?0:1));
       tempos.unshift.apply(tempos,obra);
+      lastSituarTitle=titulo;
     }
     if(titulo){
       const head=el('p','situar-result-title');
