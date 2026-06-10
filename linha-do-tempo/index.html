@@ -206,11 +206,12 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .situar-go{margin-left:auto;background:none;border:0;color:var(--color-primary);font-size:var(--text-xs);font-weight:600;font-family:var(--font-body);cursor:pointer;padding:var(--space-1) 0;white-space:nowrap;transition:opacity var(--transition-interactive)}
 .situar-go:hover{opacity:.75}
 .tl-item.situar-flash .tl-card{border-color:var(--color-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--color-primary) 28%,transparent)}
-.hoje{max-width:780px;margin:calc(-1*var(--space-8)) auto var(--space-12);padding:0 var(--space-6)}
-.hoje-box{background:var(--color-surface-2);border:1px dashed var(--color-border);border-radius:var(--radius-lg);padding:var(--space-3) var(--space-4)}
+.hoje{max-width:780px;margin:0 auto var(--space-6);padding:0 var(--space-6)}
 .hoje-inner{display:flex;align-items:center;justify-content:center;gap:var(--space-3);flex-wrap:wrap}
-.hoje-label{font-family:var(--font-display);font-style:italic;font-size:var(--text-base);color:var(--color-text-muted);white-space:nowrap}
 .hoje-input{flex:1 1 280px;max-width:460px;width:auto}
+.situar-reveal{display:block;margin:0 auto;background:none;border:0;color:var(--color-text-muted);font-family:var(--font-display);font-size:var(--text-base);font-style:italic;cursor:pointer;padding:var(--space-2);transition:color var(--transition-interactive)}
+.situar-reveal:hover{color:var(--color-primary)}
+.situar-card[hidden]{display:none}
 .hoje-result{margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--color-border);text-align:left}
 .hoje-sec{font-family:var(--font-display);font-size:var(--text-base);font-weight:600;color:var(--color-text);margin:var(--space-3) 0 var(--space-1)}
 .hoje-result .hoje-sec:first-child{margin-top:0}
@@ -289,8 +290,20 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
   </div>
   <p class="counter" id="counter"></p>
 </section>
-<section class="situar" id="situar">
+<section class="hoje" id="hoje">
   <div class="situar-card">
+    <h2 class="situar-title">Para onde você quer viajar?</h2>
+    <p class="situar-hint">Um ano, um século, um tema — a linha mostra o que guarda do período, traz contexto de fora e sugere livros para a viagem.</p>
+    <form class="hoje-inner" id="hojeForm">
+      <input class="situar-input hoje-input" id="hojeAno" type="text" placeholder="1968 · século XII · 44 a.C. · Revolução Francesa" autocomplete="off">
+      <button class="situar-btn" type="submit">Viajar</button>
+    </form>
+    <div class="hoje-result" id="hojeResult" hidden></div>
+  </div>
+</section>
+<section class="situar" id="situar">
+  <button type="button" class="situar-reveal" id="situarReveal">📖 Onde o seu livro vive no tempo? <span class="situar-reveal-arrow">▾</span></button>
+  <div class="situar-card" id="situarCard" hidden>
     <h2 class="situar-title">Onde o seu livro vive no tempo?</h2>
     <p class="situar-hint">Toda leitura cruza <b>três tempos</b>: o do <b>narrador</b> — quando a voz conta; o da <b>narrativa</b> — quando a história se passa; e o do <b>leitor</b> — quando você lê. Diga o livro e eu procuro quando ele nasceu; ou ajuste você mesma os tempos.</p>
     <form class="situar-form" id="situarForm">
@@ -316,16 +329,6 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
       </div>
     </form>
     <div class="situar-result" id="situarResult" hidden></div>
-  </div>
-</section>
-<section class="hoje" id="hoje">
-  <div class="hoje-box">
-    <form class="hoje-inner" id="hojeForm">
-      <span class="hoje-label">Para onde você quer viajar?</span>
-      <input class="situar-input hoje-input" id="hojeAno" type="text" placeholder="um ano, um século, um tema — 1968, século XII, Revolução Francesa" autocomplete="off">
-      <button class="situar-btn" type="submit">Viajar</button>
-    </form>
-    <div class="hoje-result" id="hojeResult" hidden></div>
   </div>
 </section>
 <main class="timeline-wrapper" id="main-content">
@@ -6689,6 +6692,15 @@ if(typeof lucide!=='undefined')lucide.createIcons();
         .then(j=>(j.docs||[]).map(d=>({titulo:d.title||'',autores:(d.author_name||[]).slice(0,2).join(', '),ano:d.first_publish_year?String(d.first_publish_year):'',link:d.key?'https://openlibrary.org'+d.key:''})).filter(b=>b.titulo))
         .catch(()=>[]));
   }
+  const reveal=document.getElementById('situarReveal');
+  const situarCard=document.getElementById('situarCard');
+  if(reveal&&situarCard){
+    reveal.addEventListener('click',()=>{
+      situarCard.hidden=!situarCard.hidden;
+      const seta=reveal.querySelector('.situar-reveal-arrow');
+      if(seta) seta.textContent=situarCard.hidden?'▾':'▴';
+    });
+  }
   const tempoBox=document.getElementById('situarTempos');
   const toggleBtn=document.getElementById('situarToggle');
   function mostrarTempos(show){ tempoBox.hidden=!show; toggleBtn.textContent='ajustar os três tempos '+(show?'▴':'▾'); }
@@ -6746,37 +6758,30 @@ if(typeof lucide!=='undefined')lucide.createIcons();
     sbCtx=supabase.createClient('https://rpsiewnsvqpeadwaqsib.supabase.co','sb_publishable_QyDwy0ZCCRYzSFfTXCXQYQ_h3vEAL3I',{auth:{persistSession:false,autoRefreshToken:false}});
     return sbCtx;
   }
-  function ctxButton(container,raw){
-    const wrap=el('p','hoje-note');
-    const btn=el('button','situar-go','✦ Trazer contexto além da lista');btn.type='button';
-    btn.addEventListener('click',async()=>{
-      const sb=sbClient();
-      if(!sb){ wrap.textContent='Contexto indisponível agora.'; return; }
-      btn.disabled=true;btn.textContent='✦ Compondo o período…';
-      try{
-        const {data,error}=await sb.functions.invoke('periodo-contexto',{body:{periodo:raw}});
-        if(error||!data||!data.contexto||!data.contexto.length) throw 0;
-        const box=el('div','hoje-ctx');
-        if(data.epigrafe) box.appendChild(el('p','situar-ponte',data.epigrafe));
-        data.contexto.forEach(c=>{
-          if(!CAT_LABEL[c.cat]) return;
-          const row=el('div','situar-row');row.dataset.cat=c.cat;
-          row.appendChild(el('span','situar-cat',CAT_LABEL[c.cat]));
-          row.appendChild(el('span','situar-year',c.ano||''));
-          const what=el('span','situar-what',c.titulo||'');
-          if(c.nota) what.appendChild(el('span','situar-author',' — '+c.nota));
-          row.appendChild(what);
-          box.appendChild(row);
-        });
-        box.appendChild(el('p','hoje-note','Contexto composto por IA a partir do período — confira antes de citar.'));
-        wrap.replaceWith(box);
-      }catch(err){
-        btn.disabled=false;btn.textContent='✦ Trazer contexto além da lista';
-        wrap.appendChild(el('span','hoje-book-meta',' não consegui agora — tente de novo.'));
-      }
-    });
-    wrap.appendChild(btn);
+  async function loadContexto(container,raw){
+    const sb=sbClient();
+    if(!sb) return;
+    const wrap=el('div','hoje-ctx');
+    wrap.appendChild(el('p','hoje-note','✦ compondo o período além da lista…'));
     container.appendChild(wrap);
+    try{
+      const {data,error}=await sb.functions.invoke('periodo-contexto',{body:{periodo:raw}});
+      if(error||!data||!data.contexto||!data.contexto.length) throw 0;
+      wrap.innerHTML='';
+      wrap.appendChild(el('p','hoje-sec','Além da nossa lista'));
+      if(data.epigrafe) wrap.appendChild(el('p','situar-ponte',data.epigrafe));
+      data.contexto.forEach(c=>{
+        if(!CAT_LABEL[c.cat]) return;
+        const row=el('div','situar-row');row.dataset.cat=c.cat;
+        row.appendChild(el('span','situar-cat',CAT_LABEL[c.cat]));
+        row.appendChild(el('span','situar-year',c.ano||''));
+        const what=el('span','situar-what',c.titulo||'');
+        if(c.nota) what.appendChild(el('span','situar-author',' — '+c.nota));
+        row.appendChild(what);
+        wrap.appendChild(row);
+      });
+      wrap.appendChild(el('p','hoje-note','Contexto composto por IA a partir do período — confira antes de citar.'));
+    }catch(err){ wrap.remove(); }
   }
   /* Caixa "Para onde você quer viajar?" — dado um ano, século ou tema,
      mostra o que a linha guarda do período, traz contexto de fora (IA)
@@ -6810,7 +6815,7 @@ if(typeof lucide!=='undefined')lucide.createIcons();
       } else {
         hojeRes.appendChild(el('p','hoje-note','Para navegar pela linha, use um ano ou século — enquanto isso, busco contexto e livros sobre "'+raw+'".'));
       }
-      ctxButton(hojeRes,raw);
+      loadContexto(hojeRes,raw);
       hojeRes.appendChild(el('p','hoje-sec','Livros para viajar até lá'));
       const loading=el('p','hoje-note','buscando no Google Books…');
       hojeRes.appendChild(loading);
