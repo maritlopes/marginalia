@@ -172,7 +172,6 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 }
 .situar{max-width:780px;margin:0 auto var(--space-6);padding:0 var(--space-6)}
 .situar-title svg,.situar-title i{width:22px;height:22px;color:var(--color-primary);vertical-align:-4px;margin-right:2px}
-.situar-reveal svg,.situar-reveal i{width:17px;height:17px;color:var(--color-primary);vertical-align:-3px;margin-right:4px}
 .situar-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-6) var(--space-6) var(--space-5);text-align:center;position:relative;overflow:hidden}
 .situar-card::before{content:'';position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,var(--cat-hist),var(--cat-phi),var(--cat-lit),var(--cat-art),var(--cat-music))}
 .situar-title{font-family:var(--font-display);font-size:var(--text-xl);font-weight:600;color:var(--color-text);margin-bottom:var(--space-1);letter-spacing:-.01em}
@@ -211,8 +210,6 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .hoje{max-width:780px;margin:0 auto var(--space-12);padding:0 var(--space-6)}
 .hoje-inner{display:flex;align-items:center;justify-content:center;gap:var(--space-3);flex-wrap:wrap}
 .hoje-input{flex:1 1 280px;max-width:460px;width:auto}
-.situar-reveal{display:block;margin:0 auto;background:none;border:0;color:var(--color-text-muted);font-family:var(--font-display);font-size:var(--text-base);font-style:italic;cursor:pointer;padding:var(--space-2);transition:color var(--transition-interactive)}
-.situar-reveal:hover{color:var(--color-primary)}
 .situar-card[hidden]{display:none}
 .hoje-result{margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--color-border);text-align:left}
 .hoje-sec{font-family:var(--font-display);font-size:var(--text-base);font-weight:600;color:var(--color-text);margin:var(--space-3) 0 var(--space-1)}
@@ -322,8 +319,7 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
   </div>
 </section>
 <section class="hoje" id="hoje">
-  <button type="button" class="situar-reveal" id="hojeReveal"><i data-lucide="plane"></i> Para onde você quer viajar? <span class="situar-reveal-arrow">▾</span></button>
-  <div class="situar-card" id="hojeCard" hidden>
+  <div class="situar-card" id="hojeCard">
     <h2 class="situar-title"><i data-lucide="plane"></i> Para onde você quer viajar?</h2>
     <p class="situar-hint">Um ano, um século, um tema — a linha mostra o que guarda do período, traz contexto de fora e sugere livros para a viagem.</p>
     <form class="hoje-inner" id="hojeForm">
@@ -6693,15 +6689,6 @@ if(typeof lucide!=='undefined')lucide.createIcons();
         .then(r=>r.json())
         .then(j=>(j.docs||[]).map(d=>({titulo:d.title||'',autores:(d.author_name||[]).slice(0,2).join(', '),ano:d.first_publish_year?String(d.first_publish_year):'',link:d.key?'https://openlibrary.org'+d.key:''})).filter(b=>b.titulo))
         .catch(()=>[]));
-  }
-  const reveal=document.getElementById('hojeReveal');
-  const hojeCard=document.getElementById('hojeCard');
-  if(reveal&&hojeCard){
-    reveal.addEventListener('click',()=>{
-      hojeCard.hidden=!hojeCard.hidden;
-      const seta=reveal.querySelector('.situar-reveal-arrow');
-      if(seta) seta.textContent=hojeCard.hidden?'▾':'▴';
-    });
   }
   const tempoBox=document.getElementById('situarTempos');
   const toggleBtn=document.getElementById('situarToggle');
