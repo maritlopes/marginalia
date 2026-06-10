@@ -170,6 +170,74 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .timeline-wrapper{padding:0 var(--space-4) var(--space-16)}
 .search-input{width:140px}.search-input:focus{width:180px}
 }
+.situar{max-width:780px;margin:0 auto var(--space-12);padding:0 var(--space-6)}
+.situar-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-6) var(--space-6) var(--space-5);text-align:center;position:relative;overflow:hidden}
+.situar-card::before{content:'';position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,var(--cat-hist),var(--cat-phi),var(--cat-lit),var(--cat-art),var(--cat-music))}
+.situar-title{font-family:var(--font-display);font-size:var(--text-xl);font-weight:600;color:var(--color-text);margin-bottom:var(--space-1);letter-spacing:-.01em}
+.situar-hint{font-size:var(--text-sm);color:var(--color-text-muted);margin-bottom:var(--space-5)}
+.situar-form{display:flex;gap:var(--space-3);justify-content:center;flex-wrap:wrap;align-items:flex-end}
+.situar-field{display:flex;flex-direction:column;gap:4px;text-align:left;flex:1 1 150px;min-width:140px}
+.situar-field-titulo{flex:1.4 1 200px}
+.situar-label{font-size:.62rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-faint)}
+.situar-input{width:100%;box-sizing:border-box;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-2) var(--space-3);font-size:var(--text-sm);color:var(--color-text);font-family:var(--font-body);outline:none;transition:border-color var(--transition-interactive)}
+.situar-input:focus{border-color:var(--color-primary)}
+.situar-input::placeholder{color:var(--color-text-faint)}
+.situar-btn{background:var(--color-primary);color:var(--color-bg);border:0;border-radius:var(--radius-md);padding:var(--space-2) var(--space-4);font-size:var(--text-sm);font-weight:600;font-family:var(--font-body);cursor:pointer;transition:all var(--transition-interactive);white-space:nowrap}
+.situar-btn:hover{opacity:.88;transform:translateY(-1px)}
+.situar-result{margin-top:var(--space-5);text-align:left}
+.situar-result-title{font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;color:var(--color-text);margin-bottom:var(--space-2)}
+.situar-result-title em{color:var(--color-primary);font-style:italic}
+.situar-ponte{font-size:var(--text-sm);color:var(--color-text-muted);font-style:italic;line-height:1.6;margin:0 0 var(--space-2)}
+.situar-tempo{display:flex;align-items:baseline;gap:var(--space-2);flex-wrap:wrap;margin:var(--space-5) 0 var(--space-1);font-family:var(--font-display);font-size:var(--text-base);font-weight:600;color:var(--color-text)}
+.situar-tempo-ano{color:var(--color-primary)}
+.situar-tempo-nota{font-family:var(--font-body);font-size:var(--text-xs);font-weight:400;color:var(--color-text-faint);font-style:italic}
+.situar-empty{font-size:var(--text-sm);color:var(--color-text-muted);font-style:italic}
+.situar-row{display:flex;align-items:baseline;gap:var(--space-3);padding:var(--space-3) 0;border-top:1px solid var(--color-border);flex-wrap:wrap}
+.situar-cat{display:inline-flex;align-items:center;gap:var(--space-2);font-size:.65rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;flex:0 0 92px}
+.situar-cat::before{content:'';width:8px;height:8px;border-radius:var(--radius-full);background:currentColor;flex-shrink:0}
+.situar-row[data-cat="hist"] .situar-cat{color:var(--cat-hist)}
+.situar-row[data-cat="phi"] .situar-cat{color:var(--cat-phi)}
+.situar-row[data-cat="lit"] .situar-cat{color:var(--cat-lit)}
+.situar-row[data-cat="art"] .situar-cat{color:var(--cat-art)}
+.situar-row[data-cat="music"] .situar-cat{color:var(--cat-music)}
+.situar-year{font-family:var(--font-display);font-size:var(--text-sm);font-weight:600;color:var(--color-text-faint);letter-spacing:.04em;flex:0 0 84px}
+.situar-what{font-size:var(--text-sm);color:var(--color-text);flex:1 1 240px;line-height:1.5}
+.situar-what .situar-author{color:var(--color-text-muted);font-style:italic}
+.situar-go{margin-left:auto;background:none;border:0;color:var(--color-primary);font-size:var(--text-xs);font-weight:600;font-family:var(--font-body);cursor:pointer;padding:var(--space-1) 0;white-space:nowrap;transition:opacity var(--transition-interactive)}
+.situar-go:hover{opacity:.75}
+.tl-item.situar-flash .tl-card{border-color:var(--color-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--color-primary) 28%,transparent)}
+.hoje{max-width:780px;margin:0 auto var(--space-6);padding:0 var(--space-6)}
+.hoje-inner{display:flex;align-items:center;justify-content:center;gap:var(--space-3);flex-wrap:wrap}
+.hoje-input{flex:1 1 280px;max-width:460px;width:auto}
+.situar-reveal{display:block;margin:0 auto;background:none;border:0;color:var(--color-text-muted);font-family:var(--font-display);font-size:var(--text-base);font-style:italic;cursor:pointer;padding:var(--space-2);transition:color var(--transition-interactive)}
+.situar-reveal:hover{color:var(--color-primary)}
+.situar-card[hidden]{display:none}
+.hoje-result{margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--color-border);text-align:left}
+.hoje-sec{font-family:var(--font-display);font-size:var(--text-base);font-weight:600;color:var(--color-text);margin:var(--space-3) 0 var(--space-1)}
+.hoje-result .hoje-sec:first-child{margin-top:0}
+.hoje-book{font-size:var(--text-sm);padding:var(--space-1) 0;color:var(--color-text)}
+.hoje-book a{color:var(--color-primary);text-decoration:none;font-weight:600}
+.hoje-book a:hover{text-decoration:underline}
+.hoje-book-meta{color:var(--color-text-muted);font-style:italic}
+.hoje-note{font-size:var(--text-xs);color:var(--color-text-faint);font-style:italic;margin-top:var(--space-2)}
+.situar-toggle{flex-basis:100%;background:none;border:0;color:var(--color-primary);font-size:var(--text-xs);font-weight:600;font-family:var(--font-body);cursor:pointer;padding:0;text-align:center;transition:opacity var(--transition-interactive)}
+.situar-toggle:hover{opacity:.75}
+.situar-tempos{flex-basis:100%;display:flex;gap:var(--space-3);align-items:flex-end;flex-wrap:wrap}
+.situar-tempos[hidden]{display:none}
+.situar-tempos .situar-field{flex:1 1 150px}
+.situar-note{font-size:var(--text-xs);color:var(--color-text-faint);font-style:italic;margin-top:var(--space-3);text-align:left}
+@media(max-width:640px){
+.situar{padding:0 var(--space-4)}
+.hoje{padding:0 var(--space-4)}
+.hoje-inner{flex-direction:column;align-items:stretch}
+.hoje-label{text-align:center}
+.hoje-input{max-width:none}
+.situar-form{flex-direction:column;align-items:stretch}
+.situar-tempos{flex-direction:column;align-items:stretch}
+.situar-field,.situar-field-titulo{flex:1 1 auto;min-width:0}
+.situar-cat{flex-basis:80px}.situar-year{flex-basis:auto}
+.situar-go{margin-left:0;flex-basis:100%;text-align:left}
+}
 </style>
 </head>
 <body>
@@ -212,7 +280,7 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 <section class="hero">
   <p class="hero-eyebrow">Uma Jornada de 5.500 Anos</p>
   <h1 class="hero-title">Linha do Tempo da<br><em>Civilização</em></h1>
-  <p class="hero-sub">Da invenção da escrita cuneiforme à inteligência artificial — história, filosofia, literatura, arte e música em diálogo contínuo.</p>
+  <p class="hero-sub">Ler é viajar no tempo sem sair da poltrona. Cada obra nasce cercada de outras vozes — uma sinfonia sendo composta, uma guerra terminando, uma ideia filosófica nascendo. A linha do tempo da Marginália devolve o livro ao seu século, e o seu século ao livro.</p>
   <div class="legend">
     <div class="legend-item"><span style="color:var(--cat-hist);display:inline-flex"><i data-lucide="landmark"></i></span> História</div>
     <div class="legend-item"><span style="color:var(--cat-phi);display:inline-flex"><i data-lucide="brain"></i></span> Filosofia</div>
@@ -221,6 +289,47 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
     <div class="legend-item"><span style="color:var(--cat-music);display:inline-flex"><i data-lucide="music"></i></span> Música</div>
   </div>
   <p class="counter" id="counter"></p>
+</section>
+<section class="hoje" id="hoje">
+  <div class="situar-card">
+    <h2 class="situar-title">Para onde você quer viajar?</h2>
+    <p class="situar-hint">Um ano, um século, um tema — a linha mostra o que guarda do período, traz contexto de fora e sugere livros para a viagem.</p>
+    <form class="hoje-inner" id="hojeForm">
+      <input class="situar-input hoje-input" id="hojeAno" type="text" placeholder="1968 · século XII · 44 a.C. · Revolução Francesa" autocomplete="off">
+      <button class="situar-btn" type="submit">Viajar</button>
+    </form>
+    <div class="hoje-result" id="hojeResult" hidden></div>
+  </div>
+</section>
+<section class="situar" id="situar">
+  <button type="button" class="situar-reveal" id="situarReveal">📖 Onde o seu livro vive no tempo? <span class="situar-reveal-arrow">▾</span></button>
+  <div class="situar-card" id="situarCard" hidden>
+    <h2 class="situar-title">Onde o seu livro vive no tempo?</h2>
+    <p class="situar-hint">Toda leitura cruza <b>três tempos</b>: o do <b>narrador</b> — quando a voz conta; o da <b>narrativa</b> — quando a história se passa; e o do <b>leitor</b> — quando você lê. Diga o livro e eu procuro quando ele nasceu; ou ajuste você mesma os tempos.</p>
+    <form class="situar-form" id="situarForm">
+      <div class="situar-field situar-field-titulo">
+        <label class="situar-label" for="situarTitulo">Livro</label>
+        <input class="situar-input" id="situarTitulo" type="text" placeholder="Qual livro você quer situar?" autocomplete="off">
+      </div>
+      <button class="situar-btn" type="submit">Situar no tempo</button>
+      <button type="button" class="situar-toggle" id="situarToggle">ajustar os três tempos ▾</button>
+      <div class="situar-tempos" id="situarTempos" hidden>
+        <div class="situar-field">
+          <label class="situar-label" for="situarNarrador">Tempo do narrador</label>
+          <input class="situar-input" id="situarNarrador" type="text" placeholder="publicação — ex.: 1869" autocomplete="off">
+        </div>
+        <div class="situar-field">
+          <label class="situar-label" for="situarNarrativa">Tempo da narrativa</label>
+          <input class="situar-input" id="situarNarrativa" type="text" placeholder="ex.: 1805–1812 ou 380 a.C." autocomplete="off">
+        </div>
+        <div class="situar-field">
+          <label class="situar-label" for="situarLeitor">Tempo do leitor</label>
+          <input class="situar-input" id="situarLeitor" type="text" placeholder="seu ano de leitura" autocomplete="off">
+        </div>
+      </div>
+    </form>
+    <div class="situar-result" id="situarResult" hidden></div>
+  </div>
 </section>
 <main class="timeline-wrapper" id="main-content">
 
@@ -6344,6 +6453,26 @@ const EXTRA_EVENTS = [
     desc:`Mário e Oswald de Andrade, Anita Malfatti e Villa-Lobos rompem com o academicismo e fundam o Modernismo brasileiro — a busca de uma arte com sotaque próprio.` },
   { y:1928, ano:'1928', cat:'lit', titulo:'Macunaíma', local:'Mário de Andrade · Brasil',
     desc:`O "herói sem nenhum caráter" tecido a partir de mitos indígenas, folclore e sátira — uma rapsódia que procura a alma plural do Brasil.` },
+  { y:2012, ano:'2012', cat:'art', titulo:'Yayoi Kusama — retrospectivas globais', local:'Tate Modern · Londres / Mundo',
+    desc:`As salas infinitas de espelhos e as bolinhas obsessivas de Kusama percorrem os grandes museus do mundo — a arte como repetição que acalma, e a fila do museu como fenômeno de massa.` },
+  { y:2018, ano:'2018', cat:'music', titulo:'Kendrick Lamar — Pulitzer por DAMN.', local:'EUA',
+    desc:`Pela primeira vez o Pulitzer de Música sai do círculo erudito e do jazz: o rap de Kendrick Lamar é reconhecido como retrato literário da vida afro-americana — a fronteira entre canção e poesia se move.` },
+  { y:2019, ano:'2019', cat:'phi', titulo:'Krenak — Ideias para Adiar o Fim do Mundo', local:'Ailton Krenak · Brasil',
+    desc:`O pensador indígena propõe outra relação com a Terra: não somos donos da natureza, somos parte dela. Filosofia nascida da floresta que conversa de igual para igual com a crise climática.` },
+  { y:2019, ano:'2019', cat:'lit', titulo:'Itamar Vieira Junior — Torto Arado', local:'Brasil',
+    desc:`As irmãs Bibiana e Belonísia e a herança da escravidão no sertão da Chapada Diamantina. O romance que devolveu o grande público à literatura brasileira contemporânea.` },
+  { y:2021, ano:'2021', cat:'art', titulo:'Beeple — Everydays (arte NFT)', local:'Christie’s · mundo digital',
+    desc:`Uma colagem digital é leiloada por US$ 69 milhões e inaugura a era dos NFTs — a pergunta "o que faz uma obra ser única?" volta ao centro, agora em código.` },
+  { y:2022, ano:'2022', cat:'hist', titulo:'Telescópio James Webb — primeiras imagens', local:'NASA / ESA · espaço',
+    desc:`As primeiras imagens do James Webb mostram galáxias do universo-bebê, a 13 bilhões de anos-luz. A humanidade passa a enxergar mais longe — no espaço e no tempo — do que jamais enxergou.` },
+  { y:2022, ano:'2022', cat:'lit', titulo:'Annie Ernaux — Nobel', local:'França',
+    desc:`A "autobiografia coletiva" de Ernaux — memória pessoal escrita como história social — leva o Nobel e consagra a autoficção como forma maior do século XXI.` },
+  { y:2023, ano:'2023', cat:'music', titulo:'Beatles — Now and Then', local:'Londres',
+    desc:`Sessenta anos depois de Love Me Do, a última canção dos Beatles: a voz de Lennon, recuperada de uma fita caseira por inteligência artificial, reúne a banda uma última vez.` },
+  { y:2026, ano:'2026', cat:'hist', titulo:'Guerra no Irã', local:'Irã / Israel / EUA · Oriente Médio',
+    desc:`Em fevereiro de 2026, Estados Unidos e Israel iniciam uma guerra contra o Irã que mata o líder supremo Ali Khamenei e provoca retaliações com mísseis e drones por toda a região. Milhares de mortos, milhões de deslocados e um cessar-fogo frágil — história ainda em aberto.` },
+  { y:2026, ano:'2026', cat:'hist', titulo:'Artemis II — a humanidade volta à Lua', local:'NASA · Cabo Canaveral / Lua',
+    desc:`Cinquenta e quatro anos depois da Apollo 17, quatro astronautas contornam a Lua na missão Artemis II (1–11 de abril de 2026) — entre eles a primeira mulher, o primeiro astronauta negro e o primeiro não americano a deixar a órbita baixa da Terra. O caminho para o pouso da Artemis III está aberto.` },
 ];
 const CAT_LABEL = { hist:'História', phi:'Filosofia', lit:'Literatura', art:'Arte', music:'Música' };
 const ERAS = [
@@ -6401,6 +6530,315 @@ const backTop=document.getElementById('backTop');
 window.addEventListener('scroll',()=>{backTop.classList.toggle('visible',window.scrollY>400);},{passive:true});
 document.getElementById('counter').textContent=TOTAL+' eventos';
 if(typeof lucide!=='undefined')lucide.createIcons();
+
+/* ─────────────────────────────────────────────────────────────
+   ONDE O SEU LIVRO VIVE NO TEMPO? — situa a obra pelos seus TRÊS
+   TEMPOS (Genette / teorias da enunciação): tempo do narrador
+   (enunciação ≈ publicação), tempo da narrativa (a história
+   narrada — aceita intervalos, ex.: 1805–1812) e tempo do leitor
+   (a leitura, pré-preenchido com o ano atual). Para cada tempo
+   informado, acha o evento mais próximo em cada eixo e leva até
+   ele na linha. Indexa os .tl-item na hora do clique, então
+   inclui também os eventos extras e os carregados do Supabase.
+   ───────────────────────────────────────────────────────────── */
+(function(){
+  const form=document.getElementById('situarForm');
+  const result=document.getElementById('situarResult');
+  if(!form||!result) return;
+  const ORDER=['hist','phi','lit','art','music'];
+  const TEMPOS=[
+    {id:'situarNarrador', key:'narrador', nome:'Tempo do narrador', nota:'o que acontecia enquanto a voz narrava'},
+    {id:'situarNarrativa', key:'narrativa', nome:'Tempo da narrativa', nota:'o que acontecia no mundo da história'},
+    {id:'situarLeitor', key:'leitor', nome:'Tempo do leitor', nota:'os influxos do seu agora'},
+  ];
+  const leitorInput=document.getElementById('situarLeitor');
+  if(leitorInput&&!leitorInput.value) leitorInput.value=String(new Date().getFullYear());
+  function romanToInt(s){
+    const v={i:1,v:5,x:10,l:50,c:100,d:500,m:1000};let t=0;s=s.toLowerCase();
+    for(let i=0;i<s.length;i++){const a=v[s[i]],b=v[s[i+1]]||0;if(!a)return 0;t+=a<b?-a:a;}
+    return t;
+  }
+  function parseAlvo(str){
+    const s=String(str||'');
+    const ac=/a\.?\s*c/i.test(s);
+    const sec=s.match(/s[ée]c(?:ulo)?\.?\s*([IVXLCDMivxlcdm]+|\d+)/);
+    if(sec){
+      const n=/^\d+$/.test(sec[1])?parseInt(sec[1],10):romanToInt(sec[1]);
+      if(n>0){ const meio=(n-1)*100+50; return ac?-meio:meio; }
+    }
+    const nums=s.match(/\d+/g);
+    if(!nums) return null;
+    let ys=nums.map(n=>parseInt(n,10));
+    if(ac) ys=ys.map(n=>-n);
+    return ys.length>1?Math.round((ys[0]+ys[ys.length-1])/2):ys[0];
+  }
+  function nearestByCat(target){
+    const best={};
+    document.querySelectorAll('.tl-item').forEach(it=>{
+      const cat=it.dataset.cat; if(!CAT_LABEL[cat]) return;
+      if(it.dataset.ynum===undefined){ const yt=it.querySelector('.tl-year'); it.dataset.ynum=parseYear(yt?yt.textContent:''); }
+      const d=Math.abs(Number(it.dataset.ynum)-target);
+      if(!(cat in best)||d<best[cat].d) best[cat]={d,it};
+    });
+    return best;
+  }
+  function revealItem(it){
+    if(it.classList.contains('hidden')){
+      searchInput.value='';
+      chips.forEach(c=>c.classList.toggle('active',c.dataset.cat==='all'));
+      activeFilter='all';applyFilters();
+    }
+    it.classList.add('visible');
+    it.scrollIntoView({behavior:'smooth',block:'center'});
+    it.classList.add('situar-flash');
+    setTimeout(()=>it.classList.remove('situar-flash'),2600);
+  }
+  function fmtAnos(n){ n=Math.round(Math.abs(n)); return n===1?'um ano':n+' anos'; }
+  function pontesEntreTempos(tempos){
+    const m={};
+    tempos.forEach(x=>{ m[x.tempo.key]=x; });
+    const parts=[];
+    if(m.narrador&&m.narrativa){
+      const d=m.narrador.alvo-m.narrativa.alvo;
+      if(d>0) parts.push('a voz narra olhando '+fmtAnos(d)+' para trás');
+      else if(d<0) parts.push('a voz imagina '+fmtAnos(d)+' à frente do seu tempo');
+      else parts.push('a voz narra o seu próprio presente');
+    }
+    if(m.leitor&&(m.narrador||m.narrativa)){
+      const ref=m.narrador||m.narrativa;
+      const d=m.leitor.alvo-ref.alvo;
+      if(d>0) parts.push('você lê '+fmtAnos(d)+' depois '+(m.narrador?'da narração':'da história'));
+      else if(d===0) parts.push('você lê no calor da hora');
+    }
+    if(!parts.length) return '';
+    const alvos=tempos.map(x=>x.alvo);
+    const span=Math.max.apply(null,alvos)-Math.min.apply(null,alvos);
+    let txt=parts.join('; ');
+    if(tempos.length>2&&span>0) txt+=' — esta leitura atravessa '+fmtAnos(span);
+    return txt.charAt(0).toUpperCase()+txt.slice(1)+'.';
+  }
+  function el(tag,cls,txt){const n=document.createElement(tag);if(cls)n.className=cls;if(txt!==undefined)n.textContent=txt;return n;}
+  function appendAxisRows(container,best){
+    ORDER.forEach(cat=>{
+      const hit=best[cat]; if(!hit) return;
+      const g=s=>{const n=hit.it.querySelector(s);return n?n.textContent.trim():'';};
+      const row=el('div','situar-row');row.dataset.cat=cat;
+      row.appendChild(el('span','situar-cat',CAT_LABEL[cat]));
+      row.appendChild(el('span','situar-year',g('.tl-year')));
+      const what=el('span','situar-what',g('.tl-title'));
+      const author=g('.tl-author');
+      if(author) what.appendChild(el('span','situar-author',' — '+author));
+      const go=el('button','situar-go','Ver na linha →');go.type='button';
+      go.addEventListener('click',()=>revealItem(hit.it));
+      row.appendChild(what);row.appendChild(go);
+      container.appendChild(row);
+    });
+  }
+  function renderTempo(tempo,anoStr,alvo){
+    const head=el('p','situar-tempo');
+    head.appendChild(el('span','',tempo.nome));
+    head.appendChild(el('span','situar-tempo-ano',anoStr));
+    head.appendChild(el('span','situar-tempo-nota',tempo.nota));
+    result.appendChild(head);
+    appendAxisRows(result,nearestByCat(alvo));
+  }
+  /* Ano de publicação: Open Library primeiro (first_publish_year = data
+     original), Google Books como reserva (edição mais antiga encontrada).
+     Ambas sem chave, direto do navegador; a cota anônima do Google oscila. */
+  function lookupLivro(titulo){
+    return fetch('https://openlibrary.org/search.json?title='+encodeURIComponent(titulo)+'&limit=5&fields=title,author_name,first_publish_year')
+      .then(r=>r.json())
+      .then(j=>{
+        const doc=(j.docs||[]).find(d=>d.first_publish_year);
+        if(!doc) throw 0;
+        return {ano:doc.first_publish_year,autores:(doc.author_name||[]).slice(0,2).join(', '),fonte:'Open Library',original:true};
+      })
+      .catch(()=>fetch('https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent('intitle:"'+titulo+'"')+'&printType=books&maxResults=20&country=BR')
+        .then(r=>r.json())
+        .then(j=>{
+          let best=null;
+          const max=new Date().getFullYear();
+          (j.items||[]).forEach(it=>{
+            const vi=it.volumeInfo||{};
+            const m=String(vi.publishedDate||'').match(/\d{4}/);
+            if(!m) return;
+            const y=parseInt(m[0],10);
+            if(y<1450||y>max) return;
+            if(!best||y<best.ano) best={ano:y,autores:(vi.authors||[]).join(', '),fonte:'Google Books',original:false};
+          });
+          return best;
+        }).catch(()=>null));
+  }
+  const ERA_LABEL={'era-antigo':'Antiguidade','era-grecia-roma':'Grécia antiga e Roma','era-medieval':'Idade Média','era-renascimento':'Renascimento','era-barroco':'século XVII','era-iluminismo':'século XVIII','era-seculo19':'século XIX','era-modernismo':'século XX','era-contemporaneo':'mundo contemporâneo'};
+  function buscarLivros(raw,alvo){
+    const limpo=raw.replace(/s[ée]c(?:ulo)?\.?\s*([IVXLCDMivxlcdm]+|\d+)/g,'').replace(/a\.?\s*c\.?/gi,'').trim();
+    const temPalavras=/[a-zà-úA-ZÀ-Ú]{4,}/.test(limpo);
+    const era=alvo!==null?(ERA_LABEL[eraForYear(alvo)]||''):'';
+    const q=temPalavras?raw+' história':(era?'romance histórico '+era:raw);
+    /* Open Library prefere consultas curtas: só o tema ou só a época. */
+    const qOL=temPalavras?raw:(era||raw);
+    return fetch('https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent(q)+'&langRestrict=pt&printType=books&orderBy=relevance&maxResults=6&country=BR')
+      .then(r=>r.json())
+      .then(j=>{
+        const out=(j.items||[]).map(it=>{
+          const vi=it.volumeInfo||{};
+          return {titulo:vi.title||'',autores:(vi.authors||[]).join(', '),ano:(String(vi.publishedDate||'').match(/\d{4}/)||[''])[0],link:vi.infoLink||vi.canonicalVolumeLink||''};
+        }).filter(b=>b.titulo);
+        if(!out.length) throw 0;
+        return out;
+      })
+      .catch(()=>fetch('https://openlibrary.org/search.json?q='+encodeURIComponent(qOL)+'&limit=6&fields=title,author_name,first_publish_year,key')
+        .then(r=>r.json())
+        .then(j=>(j.docs||[]).map(d=>({titulo:d.title||'',autores:(d.author_name||[]).slice(0,2).join(', '),ano:d.first_publish_year?String(d.first_publish_year):'',link:d.key?'https://openlibrary.org'+d.key:''})).filter(b=>b.titulo))
+        .catch(()=>[]));
+  }
+  const reveal=document.getElementById('situarReveal');
+  const situarCard=document.getElementById('situarCard');
+  if(reveal&&situarCard){
+    reveal.addEventListener('click',()=>{
+      situarCard.hidden=!situarCard.hidden;
+      const seta=reveal.querySelector('.situar-reveal-arrow');
+      if(seta) seta.textContent=situarCard.hidden?'▾':'▴';
+    });
+  }
+  const tempoBox=document.getElementById('situarTempos');
+  const toggleBtn=document.getElementById('situarToggle');
+  function mostrarTempos(show){ tempoBox.hidden=!show; toggleBtn.textContent='ajustar os três tempos '+(show?'▴':'▾'); }
+  toggleBtn.addEventListener('click',()=>mostrarTempos(tempoBox.hidden));
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();
+    result.hidden=false;result.innerHTML='';
+    const titulo=document.getElementById('situarTitulo').value.trim();
+    const tempos=[];
+    TEMPOS.forEach(t=>{
+      const anoStr=document.getElementById(t.id).value.trim();
+      const alvo=parseAlvo(anoStr);
+      if(alvo!==null) tempos.push({tempo:t,anoStr,alvo});
+    });
+    const temObra=tempos.some(x=>x.tempo.key!=='leitor');
+    let nota='',lookupTentado=false;
+    if(titulo&&!temObra){
+      lookupTentado=true;
+      result.appendChild(el('p','situar-empty','Procurando "'+titulo+'" no Google Books…'));
+      const found=await lookupLivro(titulo);
+      result.innerHTML='';
+      if(found){
+        document.getElementById('situarNarrador').value=String(found.ano);
+        tempos.unshift({tempo:TEMPOS[0],anoStr:String(found.ano),alvo:found.ano});
+        nota='Ano de '+(found.original?'primeira publicação':'edição mais antiga encontrada')+' segundo a fonte '+found.fonte+(found.autores?' ('+found.autores+')':'')+'. Se souber a data original ou quando a história se passa, ajuste nos três tempos.';
+      } else {
+        nota='Não achei a data de publicação nas fontes — abra os três tempos e me diga você.';
+      }
+    }
+    if(!tempos.length){
+      result.appendChild(el('p','situar-empty',titulo?nota:'Diga ao menos o livro — ou abra os três tempos e escolha um ano (1869, século XII, 44 a.C.).'));
+      if(titulo) mostrarTempos(true);
+      return;
+    }
+    if(!titulo&&!temObra) nota='Sem o livro, mostro só o seu agora — digite um título acima ou abra os três tempos.';
+    if(titulo){
+      const head=el('p','situar-result-title');
+      head.appendChild(el('em','',titulo));
+      head.appendChild(document.createTextNode(' na linha do tempo:'));
+      result.appendChild(head);
+    }
+    const ponte=pontesEntreTempos(tempos);
+    if(ponte) result.appendChild(el('p','situar-ponte',ponte));
+    tempos.forEach(x=>renderTempo(x.tempo,x.anoStr,x.alvo));
+    if(nota) result.appendChild(el('p','situar-note',nota));
+    if(lookupTentado) mostrarTempos(true);
+  });
+  /* Contexto além da lista — a edge function 'periodo-contexto' (Gemini,
+     mesma chave da timeline-suggest) compõe o período em cinco eixos.
+     Cliente próprio sem sessão: só precisa da chave publicável. */
+  let sbCtx=null;
+  function sbClient(){
+    if(sbCtx) return sbCtx;
+    if(typeof supabase==='undefined') return null;
+    sbCtx=supabase.createClient('https://rpsiewnsvqpeadwaqsib.supabase.co','sb_publishable_QyDwy0ZCCRYzSFfTXCXQYQ_h3vEAL3I',{auth:{persistSession:false,autoRefreshToken:false}});
+    return sbCtx;
+  }
+  async function loadContexto(container,raw){
+    const sb=sbClient();
+    if(!sb) return;
+    const wrap=el('div','hoje-ctx');
+    wrap.appendChild(el('p','hoje-note','✦ compondo o período além da lista…'));
+    container.appendChild(wrap);
+    try{
+      const {data,error}=await sb.functions.invoke('periodo-contexto',{body:{periodo:raw}});
+      if(error||!data||!data.contexto||!data.contexto.length) throw 0;
+      wrap.innerHTML='';
+      wrap.appendChild(el('p','hoje-sec','Além da nossa lista'));
+      if(data.epigrafe) wrap.appendChild(el('p','situar-ponte',data.epigrafe));
+      data.contexto.forEach(c=>{
+        if(!CAT_LABEL[c.cat]) return;
+        const row=el('div','situar-row');row.dataset.cat=c.cat;
+        row.appendChild(el('span','situar-cat',CAT_LABEL[c.cat]));
+        row.appendChild(el('span','situar-year',c.ano||''));
+        const what=el('span','situar-what',c.titulo||'');
+        if(c.nota) what.appendChild(el('span','situar-author',' — '+c.nota));
+        row.appendChild(what);
+        wrap.appendChild(row);
+      });
+      wrap.appendChild(el('p','hoje-note','Contexto composto por IA a partir do período — confira antes de citar.'));
+    }catch(err){ wrap.remove(); }
+  }
+  /* Caixa "Para onde você quer viajar?" — dado um ano, século ou tema,
+     mostra o que a linha guarda do período, traz contexto de fora (IA)
+     e sugere livros de fora da lista (Google Books / Open Library),
+     com a opção de saltar até o ponto da linha. */
+  const hojeForm=document.getElementById('hojeForm');
+  if(hojeForm){
+    const hojeRes=document.getElementById('hojeResult');
+    hojeForm.addEventListener('submit',async e=>{
+      e.preventDefault();
+      const raw=document.getElementById('hojeAno').value.trim();
+      if(!raw){ hojeRes.hidden=true; return; }
+      const alvo=parseAlvo(raw);
+      hojeRes.hidden=false;hojeRes.innerHTML='';
+      if(alvo!==null){
+        hojeRes.appendChild(el('p','hoje-sec','No período, a linha guarda:'));
+        appendAxisRows(hojeRes,nearestByCat(alvo));
+        const goLine=el('p','hoje-note');
+        const go=el('button','situar-go','Levar-me até lá →');go.type='button';
+        go.addEventListener('click',()=>{
+          let best=null,bd=Infinity;
+          document.querySelectorAll('.tl-item').forEach(it=>{
+            if(it.dataset.ynum===undefined){ const yt=it.querySelector('.tl-year'); it.dataset.ynum=parseYear(yt?yt.textContent:''); }
+            const d=Math.abs(Number(it.dataset.ynum)-alvo);
+            if(d<bd){bd=d;best=it;}
+          });
+          if(best) revealItem(best);
+        });
+        goLine.appendChild(go);
+        hojeRes.appendChild(goLine);
+      } else {
+        hojeRes.appendChild(el('p','hoje-note','Para navegar pela linha, use um ano ou século — enquanto isso, busco contexto e livros sobre "'+raw+'".'));
+      }
+      loadContexto(hojeRes,raw);
+      hojeRes.appendChild(el('p','hoje-sec','Livros para viajar até lá'));
+      const loading=el('p','hoje-note','buscando no Google Books…');
+      hojeRes.appendChild(loading);
+      const livros=await buscarLivros(raw,alvo);
+      loading.remove();
+      if(!livros.length){
+        hojeRes.appendChild(el('p','hoje-note','Não encontrei sugestões agora — tente outro termo.'));
+        return;
+      }
+      livros.forEach(b=>{
+        const row=el('div','hoje-book');
+        if(b.link){
+          const a=document.createElement('a');a.href=b.link;a.target='_blank';a.rel='noopener';a.textContent=b.titulo;
+          row.appendChild(a);
+        } else row.appendChild(el('span','',b.titulo));
+        const meta=[b.autores,b.ano].filter(Boolean).join(', ');
+        if(meta) row.appendChild(el('span','hoje-book-meta',' — '+meta));
+        hojeRes.appendChild(row);
+      });
+      hojeRes.appendChild(el('p','hoje-note','Sugestões de fora da nossa lista (Google Books · Open Library) — vale conferir antes de adotar.'));
+    });
+  }
+})();
 
 /* ─────────────────────────────────────────────────────────────
    CURADORIA VIVA (Supabase) — entradas sugeridas/validadas.
