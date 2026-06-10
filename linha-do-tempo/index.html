@@ -207,10 +207,24 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .situar-go:hover{opacity:.75}
 .tl-item.situar-flash .tl-card{border-color:var(--color-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--color-primary) 28%,transparent)}
 .hoje{max-width:780px;margin:calc(-1*var(--space-8)) auto var(--space-12);padding:0 var(--space-6)}
-.hoje-inner{display:flex;align-items:center;justify-content:center;gap:var(--space-3);flex-wrap:wrap;background:var(--color-surface-2);border:1px dashed var(--color-border);border-radius:var(--radius-lg);padding:var(--space-3) var(--space-4)}
+.hoje-box{background:var(--color-surface-2);border:1px dashed var(--color-border);border-radius:var(--radius-lg);padding:var(--space-3) var(--space-4)}
+.hoje-inner{display:flex;align-items:center;justify-content:center;gap:var(--space-3);flex-wrap:wrap}
 .hoje-label{font-family:var(--font-display);font-style:italic;font-size:var(--text-base);color:var(--color-text-muted);white-space:nowrap}
 .hoje-input{flex:1 1 280px;max-width:460px;width:auto}
-.hoje-msg{flex-basis:100%;text-align:center;font-size:var(--text-xs);color:var(--color-text-faint);font-style:italic}
+.hoje-result{margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--color-border);text-align:left}
+.hoje-sec{font-family:var(--font-display);font-size:var(--text-base);font-weight:600;color:var(--color-text);margin:var(--space-3) 0 var(--space-1)}
+.hoje-result .hoje-sec:first-child{margin-top:0}
+.hoje-book{font-size:var(--text-sm);padding:var(--space-1) 0;color:var(--color-text)}
+.hoje-book a{color:var(--color-primary);text-decoration:none;font-weight:600}
+.hoje-book a:hover{text-decoration:underline}
+.hoje-book-meta{color:var(--color-text-muted);font-style:italic}
+.hoje-note{font-size:var(--text-xs);color:var(--color-text-faint);font-style:italic;margin-top:var(--space-2)}
+.situar-toggle{flex-basis:100%;background:none;border:0;color:var(--color-primary);font-size:var(--text-xs);font-weight:600;font-family:var(--font-body);cursor:pointer;padding:0;text-align:center;transition:opacity var(--transition-interactive)}
+.situar-toggle:hover{opacity:.75}
+.situar-tempos{flex-basis:100%;display:flex;gap:var(--space-3);align-items:flex-end;flex-wrap:wrap}
+.situar-tempos[hidden]{display:none}
+.situar-tempos .situar-field{flex:1 1 150px}
+.situar-note{font-size:var(--text-xs);color:var(--color-text-faint);font-style:italic;margin-top:var(--space-3);text-align:left}
 @media(max-width:640px){
 .situar{padding:0 var(--space-4)}
 .hoje{padding:0 var(--space-4)}
@@ -218,6 +232,7 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .hoje-label{text-align:center}
 .hoje-input{max-width:none}
 .situar-form{flex-direction:column;align-items:stretch}
+.situar-tempos{flex-direction:column;align-items:stretch}
 .situar-field,.situar-field-titulo{flex:1 1 auto;min-width:0}
 .situar-cat{flex-basis:80px}.situar-year{flex-basis:auto}
 .situar-go{margin-left:0;flex-basis:100%;text-align:left}
@@ -277,36 +292,41 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 <section class="situar" id="situar">
   <div class="situar-card">
     <h2 class="situar-title">Onde o seu livro vive no tempo?</h2>
-    <p class="situar-hint">Toda leitura cruza <b>três tempos</b>: o do <b>narrador</b> — quando a voz conta; o da <b>narrativa</b> — quando a história se passa; e o do <b>leitor</b> — quando você lê. Preencha os que tiver e veja os vizinhos de cada um na linha.</p>
+    <p class="situar-hint">Toda leitura cruza <b>três tempos</b>: o do <b>narrador</b> — quando a voz conta; o da <b>narrativa</b> — quando a história se passa; e o do <b>leitor</b> — quando você lê. Diga o livro e eu procuro quando ele nasceu; ou ajuste você mesma os tempos.</p>
     <form class="situar-form" id="situarForm">
       <div class="situar-field situar-field-titulo">
         <label class="situar-label" for="situarTitulo">Livro</label>
-        <input class="situar-input" id="situarTitulo" type="text" placeholder="Título (opcional)" autocomplete="off">
-      </div>
-      <div class="situar-field">
-        <label class="situar-label" for="situarNarrador">Tempo do narrador</label>
-        <input class="situar-input" id="situarNarrador" type="text" placeholder="publicação — ex.: 1869" autocomplete="off">
-      </div>
-      <div class="situar-field">
-        <label class="situar-label" for="situarNarrativa">Tempo da narrativa</label>
-        <input class="situar-input" id="situarNarrativa" type="text" placeholder="ex.: 1805–1812 ou 380 a.C." autocomplete="off">
-      </div>
-      <div class="situar-field">
-        <label class="situar-label" for="situarLeitor">Tempo do leitor</label>
-        <input class="situar-input" id="situarLeitor" type="text" placeholder="seu ano de leitura" autocomplete="off">
+        <input class="situar-input" id="situarTitulo" type="text" placeholder="Qual livro você quer situar?" autocomplete="off">
       </div>
       <button class="situar-btn" type="submit">Situar no tempo</button>
+      <button type="button" class="situar-toggle" id="situarToggle">ajustar os três tempos ▾</button>
+      <div class="situar-tempos" id="situarTempos" hidden>
+        <div class="situar-field">
+          <label class="situar-label" for="situarNarrador">Tempo do narrador</label>
+          <input class="situar-input" id="situarNarrador" type="text" placeholder="publicação — ex.: 1869" autocomplete="off">
+        </div>
+        <div class="situar-field">
+          <label class="situar-label" for="situarNarrativa">Tempo da narrativa</label>
+          <input class="situar-input" id="situarNarrativa" type="text" placeholder="ex.: 1805–1812 ou 380 a.C." autocomplete="off">
+        </div>
+        <div class="situar-field">
+          <label class="situar-label" for="situarLeitor">Tempo do leitor</label>
+          <input class="situar-input" id="situarLeitor" type="text" placeholder="seu ano de leitura" autocomplete="off">
+        </div>
+      </div>
     </form>
     <div class="situar-result" id="situarResult" hidden></div>
   </div>
 </section>
 <section class="hoje" id="hoje">
-  <form class="hoje-inner" id="hojeForm">
-    <span class="hoje-label">Hoje, com você —</span>
-    <input class="situar-input hoje-input" id="hojeAno" type="text" placeholder="que ano ou período lhe interessa? ex.: 1968, século XII, 44 a.C." autocomplete="off">
-    <button class="situar-btn" type="submit">Levar-me até lá</button>
-    <span class="hoje-msg" id="hojeMsg" hidden>Tente um ano (1968), um século (século XII) ou uma data antiga (44 a.C.).</span>
-  </form>
+  <div class="hoje-box">
+    <form class="hoje-inner" id="hojeForm">
+      <span class="hoje-label">Para onde você quer viajar?</span>
+      <input class="situar-input hoje-input" id="hojeAno" type="text" placeholder="um ano, um século, um tema — 1968, século XII, Revolução Francesa" autocomplete="off">
+      <button class="situar-btn" type="submit">Viajar</button>
+    </form>
+    <div class="hoje-result" id="hojeResult" hidden></div>
+  </div>
 </section>
 <main class="timeline-wrapper" id="main-content">
 
@@ -6594,31 +6614,86 @@ if(typeof lucide!=='undefined')lucide.createIcons();
     if(tempos.length>2&&span>0) txt+=' — esta leitura atravessa '+fmtAnos(span);
     return txt.charAt(0).toUpperCase()+txt.slice(1)+'.';
   }
-  function renderTempo(tempo,anoStr,alvo){
-    const head=document.createElement('p');head.className='situar-tempo';
-    const nome=document.createElement('span');nome.textContent=tempo.nome;
-    const ano=document.createElement('span');ano.className='situar-tempo-ano';ano.textContent=anoStr;
-    const nota=document.createElement('span');nota.className='situar-tempo-nota';nota.textContent=tempo.nota;
-    head.appendChild(nome);head.appendChild(ano);head.appendChild(nota);
-    result.appendChild(head);
-    const best=nearestByCat(alvo);
+  function el(tag,cls,txt){const n=document.createElement(tag);if(cls)n.className=cls;if(txt!==undefined)n.textContent=txt;return n;}
+  function appendAxisRows(container,best){
     ORDER.forEach(cat=>{
       const hit=best[cat]; if(!hit) return;
-      const g=s=>{const el=hit.it.querySelector(s);return el?el.textContent.trim():'';};
-      const row=document.createElement('div');row.className='situar-row';row.dataset.cat=cat;
-      const lab=document.createElement('span');lab.className='situar-cat';lab.textContent=CAT_LABEL[cat];
-      const yr=document.createElement('span');yr.className='situar-year';yr.textContent=g('.tl-year');
-      const what=document.createElement('span');what.className='situar-what';
-      what.appendChild(document.createTextNode(g('.tl-title')));
+      const g=s=>{const n=hit.it.querySelector(s);return n?n.textContent.trim():'';};
+      const row=el('div','situar-row');row.dataset.cat=cat;
+      row.appendChild(el('span','situar-cat',CAT_LABEL[cat]));
+      row.appendChild(el('span','situar-year',g('.tl-year')));
+      const what=el('span','situar-what',g('.tl-title'));
       const author=g('.tl-author');
-      if(author){const a=document.createElement('span');a.className='situar-author';a.textContent=' — '+author;what.appendChild(a);}
-      const go=document.createElement('button');go.type='button';go.className='situar-go';go.textContent='Ver na linha →';
+      if(author) what.appendChild(el('span','situar-author',' — '+author));
+      const go=el('button','situar-go','Ver na linha →');go.type='button';
       go.addEventListener('click',()=>revealItem(hit.it));
-      row.appendChild(lab);row.appendChild(yr);row.appendChild(what);row.appendChild(go);
-      result.appendChild(row);
+      row.appendChild(what);row.appendChild(go);
+      container.appendChild(row);
     });
   }
-  form.addEventListener('submit',e=>{
+  function renderTempo(tempo,anoStr,alvo){
+    const head=el('p','situar-tempo');
+    head.appendChild(el('span','',tempo.nome));
+    head.appendChild(el('span','situar-tempo-ano',anoStr));
+    head.appendChild(el('span','situar-tempo-nota',tempo.nota));
+    result.appendChild(head);
+    appendAxisRows(result,nearestByCat(alvo));
+  }
+  /* Ano de publicação: Open Library primeiro (first_publish_year = data
+     original), Google Books como reserva (edição mais antiga encontrada).
+     Ambas sem chave, direto do navegador; a cota anônima do Google oscila. */
+  function lookupLivro(titulo){
+    return fetch('https://openlibrary.org/search.json?title='+encodeURIComponent(titulo)+'&limit=5&fields=title,author_name,first_publish_year')
+      .then(r=>r.json())
+      .then(j=>{
+        const doc=(j.docs||[]).find(d=>d.first_publish_year);
+        if(!doc) throw 0;
+        return {ano:doc.first_publish_year,autores:(doc.author_name||[]).slice(0,2).join(', '),fonte:'Open Library',original:true};
+      })
+      .catch(()=>fetch('https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent('intitle:"'+titulo+'"')+'&printType=books&maxResults=20&country=BR')
+        .then(r=>r.json())
+        .then(j=>{
+          let best=null;
+          const max=new Date().getFullYear();
+          (j.items||[]).forEach(it=>{
+            const vi=it.volumeInfo||{};
+            const m=String(vi.publishedDate||'').match(/\d{4}/);
+            if(!m) return;
+            const y=parseInt(m[0],10);
+            if(y<1450||y>max) return;
+            if(!best||y<best.ano) best={ano:y,autores:(vi.authors||[]).join(', '),fonte:'Google Books',original:false};
+          });
+          return best;
+        }).catch(()=>null));
+  }
+  const ERA_LABEL={'era-antigo':'Antiguidade','era-grecia-roma':'Grécia antiga e Roma','era-medieval':'Idade Média','era-renascimento':'Renascimento','era-barroco':'século XVII','era-iluminismo':'século XVIII','era-seculo19':'século XIX','era-modernismo':'século XX','era-contemporaneo':'mundo contemporâneo'};
+  function buscarLivros(raw,alvo){
+    const limpo=raw.replace(/s[ée]c(?:ulo)?\.?\s*([IVXLCDMivxlcdm]+|\d+)/g,'').replace(/a\.?\s*c\.?/gi,'').trim();
+    const temPalavras=/[a-zà-úA-ZÀ-Ú]{4,}/.test(limpo);
+    const era=alvo!==null?(ERA_LABEL[eraForYear(alvo)]||''):'';
+    const q=temPalavras?raw+' história':(era?'romance histórico '+era:raw);
+    /* Open Library prefere consultas curtas: só o tema ou só a época. */
+    const qOL=temPalavras?raw:(era||raw);
+    return fetch('https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent(q)+'&langRestrict=pt&printType=books&orderBy=relevance&maxResults=6&country=BR')
+      .then(r=>r.json())
+      .then(j=>{
+        const out=(j.items||[]).map(it=>{
+          const vi=it.volumeInfo||{};
+          return {titulo:vi.title||'',autores:(vi.authors||[]).join(', '),ano:(String(vi.publishedDate||'').match(/\d{4}/)||[''])[0],link:vi.infoLink||vi.canonicalVolumeLink||''};
+        }).filter(b=>b.titulo);
+        if(!out.length) throw 0;
+        return out;
+      })
+      .catch(()=>fetch('https://openlibrary.org/search.json?q='+encodeURIComponent(qOL)+'&limit=6&fields=title,author_name,first_publish_year,key')
+        .then(r=>r.json())
+        .then(j=>(j.docs||[]).map(d=>({titulo:d.title||'',autores:(d.author_name||[]).slice(0,2).join(', '),ano:d.first_publish_year?String(d.first_publish_year):'',link:d.key?'https://openlibrary.org'+d.key:''})).filter(b=>b.titulo))
+        .catch(()=>[]));
+  }
+  const tempoBox=document.getElementById('situarTempos');
+  const toggleBtn=document.getElementById('situarToggle');
+  function mostrarTempos(show){ tempoBox.hidden=!show; toggleBtn.textContent='ajustar os três tempos '+(show?'▴':'▾'); }
+  toggleBtn.addEventListener('click',()=>mostrarTempos(tempoBox.hidden));
+  form.addEventListener('submit',async e=>{
     e.preventDefault();
     result.hidden=false;result.innerHTML='';
     const titulo=document.getElementById('situarTitulo').value.trim();
@@ -6628,41 +6703,90 @@ if(typeof lucide!=='undefined')lucide.createIcons();
       const alvo=parseAlvo(anoStr);
       if(alvo!==null) tempos.push({tempo:t,anoStr,alvo});
     });
-    if(!tempos.length){
-      const p=document.createElement('p');p.className='situar-empty';
-      p.textContent='Preencha ao menos um dos tempos — por exemplo 1869, 1805–1812 ou 380 a.C.';
-      result.appendChild(p);return;
+    const temObra=tempos.some(x=>x.tempo.key!=='leitor');
+    let nota='',lookupTentado=false;
+    if(titulo&&!temObra){
+      lookupTentado=true;
+      result.appendChild(el('p','situar-empty','Procurando "'+titulo+'" no Google Books…'));
+      const found=await lookupLivro(titulo);
+      result.innerHTML='';
+      if(found){
+        document.getElementById('situarNarrador').value=String(found.ano);
+        tempos.unshift({tempo:TEMPOS[0],anoStr:String(found.ano),alvo:found.ano});
+        nota='Ano de '+(found.original?'primeira publicação':'edição mais antiga encontrada')+' segundo a fonte '+found.fonte+(found.autores?' ('+found.autores+')':'')+'. Se souber a data original ou quando a história se passa, ajuste nos três tempos.';
+      } else {
+        nota='Não achei a data de publicação nas fontes — abra os três tempos e me diga você.';
+      }
     }
+    if(!tempos.length){
+      result.appendChild(el('p','situar-empty',titulo?nota:'Diga ao menos o livro — ou abra os três tempos e escolha um ano (1869, século XII, 44 a.C.).'));
+      if(titulo) mostrarTempos(true);
+      return;
+    }
+    if(!titulo&&!temObra) nota='Sem o livro, mostro só o seu agora — digite um título acima ou abra os três tempos.';
     if(titulo){
-      const head=document.createElement('p');head.className='situar-result-title';
-      const em=document.createElement('em');em.textContent=titulo;
-      head.appendChild(em);head.appendChild(document.createTextNode(' na linha do tempo:'));
+      const head=el('p','situar-result-title');
+      head.appendChild(el('em','',titulo));
+      head.appendChild(document.createTextNode(' na linha do tempo:'));
       result.appendChild(head);
     }
     const ponte=pontesEntreTempos(tempos);
-    if(ponte){
-      const p=document.createElement('p');p.className='situar-ponte';p.textContent=ponte;
-      result.appendChild(p);
-    }
+    if(ponte) result.appendChild(el('p','situar-ponte',ponte));
     tempos.forEach(x=>renderTempo(x.tempo,x.anoStr,x.alvo));
+    if(nota) result.appendChild(el('p','situar-note',nota));
+    if(lookupTentado) mostrarTempos(true);
   });
-  /* Caixa "Hoje, com você" — leva direto ao ponto da linha mais
-     próximo do ano/período digitado (qualquer eixo). */
+  /* Caixa "Para onde você quer viajar?" — dado um ano, século ou tema,
+     mostra o que a linha guarda do período e sugere livros de fora da
+     lista (Google Books), com a opção de saltar até o ponto da linha. */
   const hojeForm=document.getElementById('hojeForm');
   if(hojeForm){
-    const hojeMsg=document.getElementById('hojeMsg');
-    hojeForm.addEventListener('submit',e=>{
+    const hojeRes=document.getElementById('hojeResult');
+    hojeForm.addEventListener('submit',async e=>{
       e.preventDefault();
-      const alvo=parseAlvo(document.getElementById('hojeAno').value.trim());
-      if(alvo===null){ hojeMsg.hidden=false; return; }
-      hojeMsg.hidden=true;
-      let best=null,bd=Infinity;
-      document.querySelectorAll('.tl-item').forEach(it=>{
-        if(it.dataset.ynum===undefined){ const yt=it.querySelector('.tl-year'); it.dataset.ynum=parseYear(yt?yt.textContent:''); }
-        const d=Math.abs(Number(it.dataset.ynum)-alvo);
-        if(d<bd){bd=d;best=it;}
+      const raw=document.getElementById('hojeAno').value.trim();
+      if(!raw){ hojeRes.hidden=true; return; }
+      const alvo=parseAlvo(raw);
+      hojeRes.hidden=false;hojeRes.innerHTML='';
+      if(alvo!==null){
+        hojeRes.appendChild(el('p','hoje-sec','No período, a linha guarda:'));
+        appendAxisRows(hojeRes,nearestByCat(alvo));
+        const goLine=el('p','hoje-note');
+        const go=el('button','situar-go','Levar-me até lá →');go.type='button';
+        go.addEventListener('click',()=>{
+          let best=null,bd=Infinity;
+          document.querySelectorAll('.tl-item').forEach(it=>{
+            if(it.dataset.ynum===undefined){ const yt=it.querySelector('.tl-year'); it.dataset.ynum=parseYear(yt?yt.textContent:''); }
+            const d=Math.abs(Number(it.dataset.ynum)-alvo);
+            if(d<bd){bd=d;best=it;}
+          });
+          if(best) revealItem(best);
+        });
+        goLine.appendChild(go);
+        hojeRes.appendChild(goLine);
+      } else {
+        hojeRes.appendChild(el('p','hoje-note','Para navegar pela linha, use um ano ou século — enquanto isso, busco livros sobre "'+raw+'".'));
+      }
+      hojeRes.appendChild(el('p','hoje-sec','Livros para viajar até lá'));
+      const loading=el('p','hoje-note','buscando no Google Books…');
+      hojeRes.appendChild(loading);
+      const livros=await buscarLivros(raw,alvo);
+      loading.remove();
+      if(!livros.length){
+        hojeRes.appendChild(el('p','hoje-note','Não encontrei sugestões agora — tente outro termo.'));
+        return;
+      }
+      livros.forEach(b=>{
+        const row=el('div','hoje-book');
+        if(b.link){
+          const a=document.createElement('a');a.href=b.link;a.target='_blank';a.rel='noopener';a.textContent=b.titulo;
+          row.appendChild(a);
+        } else row.appendChild(el('span','',b.titulo));
+        const meta=[b.autores,b.ano].filter(Boolean).join(', ');
+        if(meta) row.appendChild(el('span','hoje-book-meta',' — '+meta));
+        hojeRes.appendChild(row);
       });
-      if(best) revealItem(best);
+      hojeRes.appendChild(el('p','hoje-note','Sugestões de fora da nossa lista (Google Books · Open Library) — vale conferir antes de adotar.'));
     });
   }
 })();
