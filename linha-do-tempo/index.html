@@ -6700,17 +6700,17 @@ if(typeof lucide!=='undefined')lucide.createIcons();
     const titulo=document.getElementById('situarTitulo').value.trim();
     const tempos=[];
     TEMPOS.forEach(t=>{
+      if(t.key==='leitor') return; /* o tempo do leitor não é destacado aqui */
       const anoStr=document.getElementById(t.id).value.trim();
       const alvo=parseAlvo(anoStr);
       if(alvo!==null) tempos.push({tempo:t,anoStr,alvo});
     });
-    const temObra=tempos.some(x=>x.tempo.key!=='leitor');
-    let nota='',lookupTentado=false;
+    const temObra=tempos.length>0;
+    let nota='',prose=null;
     if(titulo&&!temObra){
-      lookupTentado=true;
       result.appendChild(el('p','situar-empty','Situando "'+titulo+'" no tempo…'));
-      const obra=[]; let fonte='';
-      // 1) IA: narrador (publicação) + narrativa (quando a história se passa) — robusta a erro de digitação
+      const obra=[];
+      // 1) IA: a pequena história (narrativa + narrador) + os anos — robusta a erro de digitação
       try{
         const sb=sbClient();
         if(sb){
@@ -6718,41 +6718,57 @@ if(typeof lucide!=='undefined')lucide.createIcons();
           if(!error&&data){
             if(data.narrador){ const a=parseAlvo(data.narrador); document.getElementById('situarNarrador').value=data.narrador; if(a!==null) obra.push({tempo:TEMPOS[0],anoStr:data.narrador,alvo:a}); }
             if(data.narrativa){ const a=parseAlvo(data.narrativa); document.getElementById('situarNarrativa').value=data.narrativa; if(a!==null) obra.push({tempo:TEMPOS[1],anoStr:data.narrativa,alvo:a}); }
-            if(obra.length) fonte='Tempos sugeridos por IA'+(data.autor?' ('+data.autor+')':'')+' — confira e ajuste se quiser.';
+            if(data.narrativaTxt||data.narradorTxt) prose={narrativaTxt:data.narrativaTxt||'',narradorTxt:data.narradorTxt||'',autor:data.autor||''};
           }
         }
       }catch(e){}
       // 2) reserva: Open Library / Google Books (só a publicação) se a IA não situou
-      if(!obra.length){
+      if(!obra.length&&!prose){
         const found=await lookupLivro(titulo);
         if(found){
           document.getElementById('situarNarrador').value=String(found.ano);
           obra.push({tempo:TEMPOS[0],anoStr:String(found.ano),alvo:found.ano});
-          fonte='Ano de '+(found.original?'primeira publicação':'edição mais antiga encontrada')+' segundo a fonte '+found.fonte+(found.autores?' ('+found.autores+')':'')+'. Se souber quando a história se passa, ajuste nos três tempos.';
+          nota='Ano de '+(found.original?'primeira publicação':'edição mais antiga')+' segundo '+found.fonte+'. Abra os três tempos para ajustar.';
         }
       }
       result.innerHTML='';
       obra.sort((a,b)=>(a.tempo.key==='narrador'?0:1)-(b.tempo.key==='narrador'?0:1));
       tempos.unshift.apply(tempos,obra);
-      nota=fonte||'Não consegui situar "'+titulo+'" — abra os três tempos e me diga você.';
     }
-    if(!tempos.length){
-      result.appendChild(el('p','situar-empty',titulo?nota:'Diga ao menos o livro — ou abra os três tempos e escolha um ano (1869, século XII, 44 a.C.).'));
-      if(titulo) mostrarTempos(true);
-      return;
-    }
-    if(!titulo&&!temObra) nota='Sem o livro, mostro só o seu agora — digite um título acima ou abra os três tempos.';
     if(titulo){
       const head=el('p','situar-result-title');
-      head.appendChild(el('em','',titulo));
-      head.appendChild(document.createTextNode(' na linha do tempo:'));
+      head.appendChild(el('em','',(prose&&prose.autor)?titulo+' · '+prose.autor:titulo));
       result.appendChild(head);
     }
-    const ponte=pontesEntreTempos(tempos);
-    if(ponte) result.appendChild(el('p','situar-ponte',ponte));
-    tempos.forEach(x=>renderTempo(x.tempo,x.anoStr,x.alvo));
+    /* a PROSA — a mesma pequena história do "Tempo da obra" no app (sem o tempo do leitor) */
+    if(prose&&(prose.narrativaTxt||prose.narradorTxt)){
+      const mk=(label,txt)=>{
+        if(!txt) return;
+        const l=document.createElement('p');l.textContent=label;
+        l.style.cssText='font-size:.72rem;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;color:var(--color-primary,#B0533A);margin:12px 0 2px;';
+        const p=document.createElement('p');p.textContent=txt;
+        p.style.cssText='font-family:var(--font-serif,Georgia,serif);font-size:1rem;line-height:1.55;margin:0 0 6px;';
+        result.appendChild(l);result.appendChild(p);
+      };
+      mk('A narrativa',prose.narrativaTxt);
+      mk('O narrador · a escrita',prose.narradorTxt);
+    }
+    if(!tempos.length){
+      if(!prose) result.appendChild(el('p','situar-empty',titulo?(nota||'Não consegui situar "'+titulo+'" — abra os três tempos e me diga você.'):'Diga ao menos o livro — ou abra os três tempos e escolha um ano (1869, século XII, 44 a.C.).'));
+      if(titulo&&!prose) mostrarTempos(true);
+      return;
+    }
     if(nota) result.appendChild(el('p','situar-note',nota));
-    if(lookupTentado) mostrarTempos(true);
+    /* convite: explorar na linha do tempo só quando a pessoa quiser */
+    const verBtn=el('button','situar-go','Ver na linha do tempo →');verBtn.type='button';
+    verBtn.style.cssText='margin-top:12px;';
+    verBtn.addEventListener('click',()=>{
+      verBtn.remove();
+      const ponte=pontesEntreTempos(tempos);
+      if(ponte) result.appendChild(el('p','situar-ponte',ponte));
+      tempos.forEach(x=>renderTempo(x.tempo,x.anoStr,x.alvo));
+    });
+    result.appendChild(verBtn);
   });
   /* Contexto além da lista — a edge function 'periodo-contexto' (Gemini,
      mesma chave da timeline-suggest) compõe o período em cinco eixos.
