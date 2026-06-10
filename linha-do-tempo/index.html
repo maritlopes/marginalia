@@ -170,6 +170,44 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .timeline-wrapper{padding:0 var(--space-4) var(--space-16)}
 .search-input{width:140px}.search-input:focus{width:180px}
 }
+.situar{max-width:780px;margin:0 auto var(--space-12);padding:0 var(--space-6)}
+.situar-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-6) var(--space-6) var(--space-5);text-align:center;position:relative;overflow:hidden}
+.situar-card::before{content:'';position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,var(--cat-hist),var(--cat-phi),var(--cat-lit),var(--cat-art),var(--cat-music))}
+.situar-title{font-family:var(--font-display);font-size:var(--text-xl);font-weight:600;color:var(--color-text);margin-bottom:var(--space-1);letter-spacing:-.01em}
+.situar-hint{font-size:var(--text-sm);color:var(--color-text-muted);margin-bottom:var(--space-5)}
+.situar-form{display:flex;gap:var(--space-2);justify-content:center;flex-wrap:wrap}
+.situar-input{background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-2) var(--space-3);font-size:var(--text-sm);color:var(--color-text);font-family:var(--font-body);outline:none;transition:border-color var(--transition-interactive)}
+.situar-input:focus{border-color:var(--color-primary)}
+.situar-input::placeholder{color:var(--color-text-faint)}
+.situar-input-titulo{flex:1 1 240px;min-width:180px}
+.situar-input-ano{flex:0 1 190px}
+.situar-btn{background:var(--color-primary);color:var(--color-bg);border:0;border-radius:var(--radius-md);padding:var(--space-2) var(--space-4);font-size:var(--text-sm);font-weight:600;font-family:var(--font-body);cursor:pointer;transition:all var(--transition-interactive);white-space:nowrap}
+.situar-btn:hover{opacity:.88;transform:translateY(-1px)}
+.situar-result{margin-top:var(--space-5);text-align:left}
+.situar-result-title{font-family:var(--font-display);font-size:var(--text-base);font-weight:600;color:var(--color-text);margin-bottom:var(--space-2)}
+.situar-result-title em{color:var(--color-primary);font-style:italic}
+.situar-empty{font-size:var(--text-sm);color:var(--color-text-muted);font-style:italic}
+.situar-row{display:flex;align-items:baseline;gap:var(--space-3);padding:var(--space-3) 0;border-top:1px solid var(--color-border);flex-wrap:wrap}
+.situar-cat{display:inline-flex;align-items:center;gap:var(--space-2);font-size:.65rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;flex:0 0 92px}
+.situar-cat::before{content:'';width:8px;height:8px;border-radius:var(--radius-full);background:currentColor;flex-shrink:0}
+.situar-row[data-cat="hist"] .situar-cat{color:var(--cat-hist)}
+.situar-row[data-cat="phi"] .situar-cat{color:var(--cat-phi)}
+.situar-row[data-cat="lit"] .situar-cat{color:var(--cat-lit)}
+.situar-row[data-cat="art"] .situar-cat{color:var(--cat-art)}
+.situar-row[data-cat="music"] .situar-cat{color:var(--cat-music)}
+.situar-year{font-family:var(--font-display);font-size:var(--text-sm);font-weight:600;color:var(--color-text-faint);letter-spacing:.04em;flex:0 0 84px}
+.situar-what{font-size:var(--text-sm);color:var(--color-text);flex:1 1 240px;line-height:1.5}
+.situar-what .situar-author{color:var(--color-text-muted);font-style:italic}
+.situar-go{margin-left:auto;background:none;border:0;color:var(--color-primary);font-size:var(--text-xs);font-weight:600;font-family:var(--font-body);cursor:pointer;padding:var(--space-1) 0;white-space:nowrap;transition:opacity var(--transition-interactive)}
+.situar-go:hover{opacity:.75}
+.tl-item.situar-flash .tl-card{border-color:var(--color-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--color-primary) 28%,transparent)}
+@media(max-width:640px){
+.situar{padding:0 var(--space-4)}
+.situar-form{flex-direction:column}
+.situar-input-titulo,.situar-input-ano{flex:1 1 auto;min-width:0;width:100%}
+.situar-cat{flex-basis:80px}.situar-year{flex-basis:auto}
+.situar-go{margin-left:0;flex-basis:100%;text-align:left}
+}
 </style>
 </head>
 <body>
@@ -212,7 +250,7 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 <section class="hero">
   <p class="hero-eyebrow">Uma Jornada de 5.500 Anos</p>
   <h1 class="hero-title">Linha do Tempo da<br><em>Civilização</em></h1>
-  <p class="hero-sub">Da invenção da escrita cuneiforme à inteligência artificial — história, filosofia, literatura, arte e música em diálogo contínuo.</p>
+  <p class="hero-sub">Ler é viajar no tempo sem sair da poltrona. Cada obra nasce cercada de outras vozes — uma sinfonia sendo composta, uma guerra terminando, uma ideia filosófica nascendo. A linha do tempo da Marginália devolve o livro ao seu século, e o seu século ao livro.</p>
   <div class="legend">
     <div class="legend-item"><span style="color:var(--cat-hist);display:inline-flex"><i data-lucide="landmark"></i></span> História</div>
     <div class="legend-item"><span style="color:var(--cat-phi);display:inline-flex"><i data-lucide="brain"></i></span> Filosofia</div>
@@ -221,6 +259,18 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
     <div class="legend-item"><span style="color:var(--cat-music);display:inline-flex"><i data-lucide="music"></i></span> Música</div>
   </div>
   <p class="counter" id="counter"></p>
+</section>
+<section class="situar" id="situar">
+  <div class="situar-card">
+    <h2 class="situar-title">Onde o seu livro vive no tempo?</h2>
+    <p class="situar-hint">Digite o título (se quiser) e o ano da obra — e descubra os vizinhos mais próximos em cada eixo da linha.</p>
+    <form class="situar-form" id="situarForm">
+      <input class="situar-input situar-input-titulo" id="situarTitulo" type="text" placeholder="Título do livro (opcional)" autocomplete="off">
+      <input class="situar-input situar-input-ano" id="situarAno" type="text" placeholder="Ano — ex.: 1922 ou 380 a.C." autocomplete="off">
+      <button class="situar-btn" type="submit">Situar no tempo</button>
+    </form>
+    <div class="situar-result" id="situarResult" hidden></div>
+  </div>
 </section>
 <main class="timeline-wrapper" id="main-content">
 
@@ -6401,6 +6451,72 @@ const backTop=document.getElementById('backTop');
 window.addEventListener('scroll',()=>{backTop.classList.toggle('visible',window.scrollY>400);},{passive:true});
 document.getElementById('counter').textContent=TOTAL+' eventos';
 if(typeof lucide!=='undefined')lucide.createIcons();
+
+/* ─────────────────────────────────────────────────────────────
+   ONDE O SEU LIVRO VIVE NO TEMPO? — dado um ano (e título opcional),
+   acha o evento mais próximo de cada eixo e leva até ele na linha.
+   Indexa os .tl-item na hora do clique, então inclui também os
+   eventos extras e os carregados do Supabase.
+   ───────────────────────────────────────────────────────────── */
+(function(){
+  const form=document.getElementById('situarForm');
+  const result=document.getElementById('situarResult');
+  if(!form||!result) return;
+  const ORDER=['hist','phi','lit','art','music'];
+  function nearestByCat(target){
+    const best={};
+    document.querySelectorAll('.tl-item').forEach(it=>{
+      const cat=it.dataset.cat; if(!CAT_LABEL[cat]) return;
+      if(it.dataset.ynum===undefined){ const yt=it.querySelector('.tl-year'); it.dataset.ynum=parseYear(yt?yt.textContent:''); }
+      const d=Math.abs(Number(it.dataset.ynum)-target);
+      if(!(cat in best)||d<best[cat].d) best[cat]={d,it};
+    });
+    return best;
+  }
+  function revealItem(it){
+    if(it.classList.contains('hidden')){
+      searchInput.value='';
+      chips.forEach(c=>c.classList.toggle('active',c.dataset.cat==='all'));
+      activeFilter='all';applyFilters();
+    }
+    it.classList.add('visible');
+    it.scrollIntoView({behavior:'smooth',block:'center'});
+    it.classList.add('situar-flash');
+    setTimeout(()=>it.classList.remove('situar-flash'),2600);
+  }
+  form.addEventListener('submit',e=>{
+    e.preventDefault();
+    const anoStr=document.getElementById('situarAno').value.trim();
+    const titulo=document.getElementById('situarTitulo').value.trim();
+    result.hidden=false;result.innerHTML='';
+    if(!/\d/.test(anoStr)){
+      const p=document.createElement('p');p.className='situar-empty';
+      p.textContent='Digite um ano — por exemplo 1922 ou 380 a.C.';
+      result.appendChild(p);return;
+    }
+    const alvo=parseYear(anoStr);
+    const best=nearestByCat(alvo);
+    const head=document.createElement('p');head.className='situar-result-title';
+    if(titulo){const em=document.createElement('em');em.textContent=titulo;head.appendChild(em);head.appendChild(document.createTextNode(' · '));}
+    head.appendChild(document.createTextNode(anoStr+' — o que vivia ao redor:'));
+    result.appendChild(head);
+    ORDER.forEach(cat=>{
+      const hit=best[cat]; if(!hit) return;
+      const g=s=>{const el=hit.it.querySelector(s);return el?el.textContent.trim():'';};
+      const row=document.createElement('div');row.className='situar-row';row.dataset.cat=cat;
+      const lab=document.createElement('span');lab.className='situar-cat';lab.textContent=CAT_LABEL[cat];
+      const yr=document.createElement('span');yr.className='situar-year';yr.textContent=g('.tl-year');
+      const what=document.createElement('span');what.className='situar-what';
+      what.appendChild(document.createTextNode(g('.tl-title')));
+      const author=g('.tl-author');
+      if(author){const a=document.createElement('span');a.className='situar-author';a.textContent=' — '+author;what.appendChild(a);}
+      const go=document.createElement('button');go.type='button';go.className='situar-go';go.textContent='Ver na linha →';
+      go.addEventListener('click',()=>revealItem(hit.it));
+      row.appendChild(lab);row.appendChild(yr);row.appendChild(what);row.appendChild(go);
+      result.appendChild(row);
+    });
+  });
+})();
 
 /* ─────────────────────────────────────────────────────────────
    CURADORIA VIVA (Supabase) — entradas sugeridas/validadas.
