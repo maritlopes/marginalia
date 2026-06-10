@@ -122,6 +122,9 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
               </div>
             )}
 
+            {/* abertura: o tempo da obra (narrativa + narrador), com link à Linha do Tempo */}
+            <TempoDaObra book={b}/>
+
             {/* nos livros lidos, a avaliação vem primeiro (protagonista) */}
             {!isDemo && b.status === 'read' && <MinhaAvaliacao book={b}/>}
 
@@ -362,6 +365,64 @@ function MinhaAvaliacao({ book }) {
         )}
       </div>
     </>
+  );
+}
+
+// TempoDaObra — a "abertura": situa o livro no tempo da narrativa e do narrador (IA),
+// com link para a Linha do Tempo. O tempo do leitor fica curto, no PlanoLeitura abaixo.
+function TempoDaObra({ book }) {
+  const b = book || {};
+  const [tempo, setTempo] = React.useState(b.tempo || null);
+  const [busy, setBusy] = React.useState(false);
+  const [err, setErr] = React.useState(null);
+  React.useEffect(() => { setTempo(b.tempo || null); }, [b.id]);
+  const pode = !!(b.title && typeof window !== 'undefined' && window.MGCloud
+    && window.MGCloud.available && window.MGCloud.tempoDaObra);
+  const gerar = async () => {
+    const cloud = window.MGCloud;
+    const u = cloud.currentUser ? await cloud.currentUser() : null;
+    if (!u) { setErr('Para situar no tempo, entre na sua conta em Biblioteca → Sincronização.'); return; }
+    setBusy(true); setErr(null);
+    const r = await cloud.tempoDaObra(b);
+    setBusy(false);
+    if (r.error || (!r.narrativa && !r.narrador)) { setErr('Não consegui situar agora. Tente de novo.'); return; }
+    const t = { narrativa: r.narrativa, narrador: r.narrador };
+    setTempo(t);
+    if (typeof MG !== 'undefined' && MG.updateBook && b.id) MG.updateBook(b.id, { tempo: t });
+  };
+  if (!tempo && !pode) return null;
+  const linha = (label, txt) => (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 3 }}>{label}</div>
+      <div style={{ fontFamily: T.serif, fontSize: 14, lineHeight: 1.5, color: T.ink }}>{txt}</div>
+    </div>
+  );
+  return (
+    <div style={{ marginBottom: 24, background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 14, padding: '16px 18px' }}>
+      <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 12 }}>O tempo da obra</div>
+      {tempo ? (
+        <>
+          {tempo.narrativa && linha('A narrativa', tempo.narrativa)}
+          {tempo.narrador && linha('O narrador · a escrita', tempo.narrador)}
+          <a href="/linha-do-tempo/" style={{ display: 'inline-block', marginTop: 4, color: T.terra,
+            fontFamily: T.sans, fontSize: 12, fontWeight: 700, textDecoration: 'none', letterSpacing: 0.2 }}>
+            Veja o que acontecia no mundo →
+          </a>
+        </>
+      ) : (
+        <>
+          <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, color: T.brown, lineHeight: 1.5, marginBottom: 12 }}>
+            Situe <strong>{b.title}</strong> no tempo: quando a história se passa, quando foi escrita, e o que acontecia no mundo.
+          </div>
+          <button type="button" onClick={gerar} disabled={busy} style={{
+            background: T.ink, color: T.cream, border: 0, borderRadius: 999, padding: '10px 18px',
+            fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: T.sans, letterSpacing: 0.3,
+            WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent', opacity: busy ? 0.7 : 1,
+          }}>{busy ? 'situando…' : '✦ Situar no tempo'}</button>
+        </>
+      )}
+      {err && <div style={{ marginTop: 10, fontSize: 12, color: '#8E3E2A', lineHeight: 1.4 }}>{err}</div>}
+    </div>
   );
 }
 

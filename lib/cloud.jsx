@@ -335,6 +335,20 @@
     }
   };
 
+  // situa o livro no tempo (narrativa + narrador) — modo 'tempo' da função 'ecos'
+  window.MGCloud.tempoDaObra = async function (book) {
+    try {
+      const { data, error } = await sb.functions.invoke('ecos', {
+        body: { title: book && book.title, author: book && book.author, tempo: true },
+      });
+      if (error) return { error };
+      if (data && data.error) return { error: { message: data.error } };
+      return { narrativa: (data && data.narrativa) || '', narrador: (data && data.narrador) || '' };
+    } catch (e) {
+      return { error: { message: String(e) } };
+    }
+  };
+
   // aprofunda UM eco específico (modo 'aprofundar' da função 'ecos')
   window.MGCloud.aprofundarEco = async function (book, eco) {
     try {
