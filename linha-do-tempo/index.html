@@ -6708,16 +6708,33 @@ if(typeof lucide!=='undefined')lucide.createIcons();
     let nota='',lookupTentado=false;
     if(titulo&&!temObra){
       lookupTentado=true;
-      result.appendChild(el('p','situar-empty','Procurando "'+titulo+'" no Google Books…'));
-      const found=await lookupLivro(titulo);
-      result.innerHTML='';
-      if(found){
-        document.getElementById('situarNarrador').value=String(found.ano);
-        tempos.unshift({tempo:TEMPOS[0],anoStr:String(found.ano),alvo:found.ano});
-        nota='Ano de '+(found.original?'primeira publicação':'edição mais antiga encontrada')+' segundo a fonte '+found.fonte+(found.autores?' ('+found.autores+')':'')+'. Se souber a data original ou quando a história se passa, ajuste nos três tempos.';
-      } else {
-        nota='Não achei a data de publicação nas fontes — abra os três tempos e me diga você.';
+      result.appendChild(el('p','situar-empty','Situando "'+titulo+'" no tempo…'));
+      const obra=[]; let fonte='';
+      // 1) IA: narrador (publicação) + narrativa (quando a história se passa) — robusta a erro de digitação
+      try{
+        const sb=sbClient();
+        if(sb){
+          const {data,error}=await sb.functions.invoke('situar-livro',{body:{title:titulo}});
+          if(!error&&data){
+            if(data.narrador){ const a=parseAlvo(data.narrador); document.getElementById('situarNarrador').value=data.narrador; if(a!==null) obra.push({tempo:TEMPOS[0],anoStr:data.narrador,alvo:a}); }
+            if(data.narrativa){ const a=parseAlvo(data.narrativa); document.getElementById('situarNarrativa').value=data.narrativa; if(a!==null) obra.push({tempo:TEMPOS[1],anoStr:data.narrativa,alvo:a}); }
+            if(obra.length) fonte='Tempos sugeridos por IA'+(data.autor?' ('+data.autor+')':'')+' — confira e ajuste se quiser.';
+          }
+        }
+      }catch(e){}
+      // 2) reserva: Open Library / Google Books (só a publicação) se a IA não situou
+      if(!obra.length){
+        const found=await lookupLivro(titulo);
+        if(found){
+          document.getElementById('situarNarrador').value=String(found.ano);
+          obra.push({tempo:TEMPOS[0],anoStr:String(found.ano),alvo:found.ano});
+          fonte='Ano de '+(found.original?'primeira publicação':'edição mais antiga encontrada')+' segundo a fonte '+found.fonte+(found.autores?' ('+found.autores+')':'')+'. Se souber quando a história se passa, ajuste nos três tempos.';
+        }
       }
+      result.innerHTML='';
+      obra.sort((a,b)=>(a.tempo.key==='narrador'?0:1)-(b.tempo.key==='narrador'?0:1));
+      tempos.unshift.apply(tempos,obra);
+      nota=fonte||'Não consegui situar "'+titulo+'" — abra os três tempos e me diga você.';
     }
     if(!tempos.length){
       result.appendChild(el('p','situar-empty',titulo?nota:'Diga ao menos o livro — ou abra os três tempos e escolha um ano (1869, século XII, 44 a.C.).'));
