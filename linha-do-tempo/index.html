@@ -206,8 +206,17 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .situar-go{margin-left:auto;background:none;border:0;color:var(--color-primary);font-size:var(--text-xs);font-weight:600;font-family:var(--font-body);cursor:pointer;padding:var(--space-1) 0;white-space:nowrap;transition:opacity var(--transition-interactive)}
 .situar-go:hover{opacity:.75}
 .tl-item.situar-flash .tl-card{border-color:var(--color-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--color-primary) 28%,transparent)}
+.hoje{max-width:780px;margin:calc(-1*var(--space-8)) auto var(--space-12);padding:0 var(--space-6)}
+.hoje-inner{display:flex;align-items:center;justify-content:center;gap:var(--space-3);flex-wrap:wrap;background:var(--color-surface-2);border:1px dashed var(--color-border);border-radius:var(--radius-lg);padding:var(--space-3) var(--space-4)}
+.hoje-label{font-family:var(--font-display);font-style:italic;font-size:var(--text-base);color:var(--color-text-muted);white-space:nowrap}
+.hoje-input{flex:1 1 280px;max-width:460px;width:auto}
+.hoje-msg{flex-basis:100%;text-align:center;font-size:var(--text-xs);color:var(--color-text-faint);font-style:italic}
 @media(max-width:640px){
 .situar{padding:0 var(--space-4)}
+.hoje{padding:0 var(--space-4)}
+.hoje-inner{flex-direction:column;align-items:stretch}
+.hoje-label{text-align:center}
+.hoje-input{max-width:none}
 .situar-form{flex-direction:column;align-items:stretch}
 .situar-field,.situar-field-titulo{flex:1 1 auto;min-width:0}
 .situar-cat{flex-basis:80px}.situar-year{flex-basis:auto}
@@ -290,6 +299,14 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
     </form>
     <div class="situar-result" id="situarResult" hidden></div>
   </div>
+</section>
+<section class="hoje" id="hoje">
+  <form class="hoje-inner" id="hojeForm">
+    <span class="hoje-label">Hoje, com você —</span>
+    <input class="situar-input hoje-input" id="hojeAno" type="text" placeholder="que ano ou período lhe interessa? ex.: 1968, século XII, 44 a.C." autocomplete="off">
+    <button class="situar-btn" type="submit">Levar-me até lá</button>
+    <span class="hoje-msg" id="hojeMsg" hidden>Tente um ano (1968), um século (século XII) ou uma data antiga (44 a.C.).</span>
+  </form>
 </section>
 <main class="timeline-wrapper" id="main-content">
 
@@ -6413,6 +6430,22 @@ const EXTRA_EVENTS = [
     desc:`Mário e Oswald de Andrade, Anita Malfatti e Villa-Lobos rompem com o academicismo e fundam o Modernismo brasileiro — a busca de uma arte com sotaque próprio.` },
   { y:1928, ano:'1928', cat:'lit', titulo:'Macunaíma', local:'Mário de Andrade · Brasil',
     desc:`O "herói sem nenhum caráter" tecido a partir de mitos indígenas, folclore e sátira — uma rapsódia que procura a alma plural do Brasil.` },
+  { y:2012, ano:'2012', cat:'art', titulo:'Yayoi Kusama — retrospectivas globais', local:'Tate Modern · Londres / Mundo',
+    desc:`As salas infinitas de espelhos e as bolinhas obsessivas de Kusama percorrem os grandes museus do mundo — a arte como repetição que acalma, e a fila do museu como fenômeno de massa.` },
+  { y:2018, ano:'2018', cat:'music', titulo:'Kendrick Lamar — Pulitzer por DAMN.', local:'EUA',
+    desc:`Pela primeira vez o Pulitzer de Música sai do círculo erudito e do jazz: o rap de Kendrick Lamar é reconhecido como retrato literário da vida afro-americana — a fronteira entre canção e poesia se move.` },
+  { y:2019, ano:'2019', cat:'phi', titulo:'Krenak — Ideias para Adiar o Fim do Mundo', local:'Ailton Krenak · Brasil',
+    desc:`O pensador indígena propõe outra relação com a Terra: não somos donos da natureza, somos parte dela. Filosofia nascida da floresta que conversa de igual para igual com a crise climática.` },
+  { y:2019, ano:'2019', cat:'lit', titulo:'Itamar Vieira Junior — Torto Arado', local:'Brasil',
+    desc:`As irmãs Bibiana e Belonísia e a herança da escravidão no sertão da Chapada Diamantina. O romance que devolveu o grande público à literatura brasileira contemporânea.` },
+  { y:2021, ano:'2021', cat:'art', titulo:'Beeple — Everydays (arte NFT)', local:'Christie’s · mundo digital',
+    desc:`Uma colagem digital é leiloada por US$ 69 milhões e inaugura a era dos NFTs — a pergunta "o que faz uma obra ser única?" volta ao centro, agora em código.` },
+  { y:2022, ano:'2022', cat:'hist', titulo:'Telescópio James Webb — primeiras imagens', local:'NASA / ESA · espaço',
+    desc:`As primeiras imagens do James Webb mostram galáxias do universo-bebê, a 13 bilhões de anos-luz. A humanidade passa a enxergar mais longe — no espaço e no tempo — do que jamais enxergou.` },
+  { y:2022, ano:'2022', cat:'lit', titulo:'Annie Ernaux — Nobel', local:'França',
+    desc:`A "autobiografia coletiva" de Ernaux — memória pessoal escrita como história social — leva o Nobel e consagra a autoficção como forma maior do século XXI.` },
+  { y:2023, ano:'2023', cat:'music', titulo:'Beatles — Now and Then', local:'Londres',
+    desc:`Sessenta anos depois de Love Me Do, a última canção dos Beatles: a voz de Lennon, recuperada de uma fita caseira por inteligência artificial, reúne a banda uma última vez.` },
 ];
 const CAT_LABEL = { hist:'História', phi:'Filosofia', lit:'Literatura', art:'Arte', music:'Música' };
 const ERAS = [
@@ -6493,10 +6526,21 @@ if(typeof lucide!=='undefined')lucide.createIcons();
   ];
   const leitorInput=document.getElementById('situarLeitor');
   if(leitorInput&&!leitorInput.value) leitorInput.value=String(new Date().getFullYear());
+  function romanToInt(s){
+    const v={i:1,v:5,x:10,l:50,c:100,d:500,m:1000};let t=0;s=s.toLowerCase();
+    for(let i=0;i<s.length;i++){const a=v[s[i]],b=v[s[i+1]]||0;if(!a)return 0;t+=a<b?-a:a;}
+    return t;
+  }
   function parseAlvo(str){
-    const nums=String(str||'').match(/\d+/g);
+    const s=String(str||'');
+    const ac=/a\.?\s*c/i.test(s);
+    const sec=s.match(/s[ée]c(?:ulo)?\.?\s*([IVXLCDMivxlcdm]+|\d+)/);
+    if(sec){
+      const n=/^\d+$/.test(sec[1])?parseInt(sec[1],10):romanToInt(sec[1]);
+      if(n>0){ const meio=(n-1)*100+50; return ac?-meio:meio; }
+    }
+    const nums=s.match(/\d+/g);
     if(!nums) return null;
-    const ac=/a\.?\s*c/i.test(str);
     let ys=nums.map(n=>parseInt(n,10));
     if(ac) ys=ys.map(n=>-n);
     return ys.length>1?Math.round((ys[0]+ys[ys.length-1])/2):ys[0];
@@ -6598,6 +6642,25 @@ if(typeof lucide!=='undefined')lucide.createIcons();
     }
     tempos.forEach(x=>renderTempo(x.tempo,x.anoStr,x.alvo));
   });
+  /* Caixa "Hoje, com você" — leva direto ao ponto da linha mais
+     próximo do ano/período digitado (qualquer eixo). */
+  const hojeForm=document.getElementById('hojeForm');
+  if(hojeForm){
+    const hojeMsg=document.getElementById('hojeMsg');
+    hojeForm.addEventListener('submit',e=>{
+      e.preventDefault();
+      const alvo=parseAlvo(document.getElementById('hojeAno').value.trim());
+      if(alvo===null){ hojeMsg.hidden=false; return; }
+      hojeMsg.hidden=true;
+      let best=null,bd=Infinity;
+      document.querySelectorAll('.tl-item').forEach(it=>{
+        if(it.dataset.ynum===undefined){ const yt=it.querySelector('.tl-year'); it.dataset.ynum=parseYear(yt?yt.textContent:''); }
+        const d=Math.abs(Number(it.dataset.ynum)-alvo);
+        if(d<bd){bd=d;best=it;}
+      });
+      if(best) revealItem(best);
+    });
+  }
 })();
 
 /* ─────────────────────────────────────────────────────────────
