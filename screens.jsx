@@ -1093,13 +1093,14 @@ function AppAdminPanel() {
   const recusar = async (id) => { setPending((p) => p.filter((x) => x.user_id !== id)); await cloud.appReject(id); await load(); };
 
   // curadoria do clube — aprovação de conteúdo editorial (rascunho → validado)
-  const CUR_BLOCKS = { radar: 'Radar', curadoria: 'Curadoria', para_guardar: 'Para guardar', ecos: 'Ecos' };
+  const CUR_BLOCKS = { radar: 'Radar', curadoria: 'Curadoria', para_guardar: 'Para guardar', ecos: 'Ecos', pontes: 'Pontes' };
   const curPreview = (it) => {
     const d = it.data || {};
     if (it.block === 'para_guardar') return '“' + (d.pt || '') + '” — ' + [d.autor, d.obra].filter(Boolean).join(', ');
     if (it.block === 'radar') return d.headline_pt || '(sem título)';
     if (it.block === 'curadoria') return d.title_pt || '(sem título)';
     if (it.block === 'ecos') { const bk = it.book_key ? it.book_key.replace(/\b\w/g, (c) => c.toUpperCase()) : ''; return (bk ? bk + ' · ' : '') + (d.title || '') + (d.author ? ' (' + d.author + ')' : ''); }
+    if (it.block === 'pontes') return (d.aT || '?') + ' ↔ ' + (d.bT || '?') + (d.motif ? ' · ' + d.motif : '') + (d.why ? ' — ' + d.why : '');
     return '(item)';
   };
   const validarCur = async (id) => { setCurPending((p) => p.filter((x) => x.id !== id)); await cloud.curadoria.validate(id); };

@@ -382,6 +382,9 @@
           window.ECOS_CURADOS[k] = window.ECOS_CURADOS[k] || [];
           if (!d.id) d.id = 'db-' + row.id;
           window.ECOS_CURADOS[k].push(d); merged++;
+        } else if (row.block === 'pontes' && Array.isArray(window.PONTES_OBRAS)) {
+          // par {a,aT,aA,b,bT,bA,motif,why} — mesmo formato dos curados em data.jsx
+          window.PONTES_OBRAS.push(d); merged++;
         }
       }
       if (merged && typeof window.__rerender === 'function') window.__rerender();
