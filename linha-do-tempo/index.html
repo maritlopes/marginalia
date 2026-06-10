@@ -187,6 +187,7 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .situar-result{margin-top:var(--space-5);text-align:left}
 .situar-result-title{font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;color:var(--color-text);margin-bottom:var(--space-2)}
 .situar-result-title em{color:var(--color-primary);font-style:italic}
+.situar-ponte{font-size:var(--text-sm);color:var(--color-text-muted);font-style:italic;line-height:1.6;margin:0 0 var(--space-2)}
 .situar-tempo{display:flex;align-items:baseline;gap:var(--space-2);flex-wrap:wrap;margin:var(--space-5) 0 var(--space-1);font-family:var(--font-display);font-size:var(--text-base);font-weight:600;color:var(--color-text)}
 .situar-tempo-ano{color:var(--color-primary)}
 .situar-tempo-nota{font-family:var(--font-body);font-size:var(--text-xs);font-weight:400;color:var(--color-text-faint);font-style:italic}
@@ -6486,9 +6487,9 @@ if(typeof lucide!=='undefined')lucide.createIcons();
   if(!form||!result) return;
   const ORDER=['hist','phi','lit','art','music'];
   const TEMPOS=[
-    {id:'situarNarrador', nome:'Tempo do narrador', nota:'quando a voz conta'},
-    {id:'situarNarrativa', nome:'Tempo da narrativa', nota:'quando a história se passa'},
-    {id:'situarLeitor', nome:'Tempo do leitor', nota:'quando você lê'},
+    {id:'situarNarrador', key:'narrador', nome:'Tempo do narrador', nota:'o que acontecia enquanto a voz narrava'},
+    {id:'situarNarrativa', key:'narrativa', nome:'Tempo da narrativa', nota:'o que acontecia no mundo da história'},
+    {id:'situarLeitor', key:'leitor', nome:'Tempo do leitor', nota:'os influxos do seu agora'},
   ];
   const leitorInput=document.getElementById('situarLeitor');
   if(leitorInput&&!leitorInput.value) leitorInput.value=String(new Date().getFullYear());
@@ -6520,6 +6521,30 @@ if(typeof lucide!=='undefined')lucide.createIcons();
     it.scrollIntoView({behavior:'smooth',block:'center'});
     it.classList.add('situar-flash');
     setTimeout(()=>it.classList.remove('situar-flash'),2600);
+  }
+  function fmtAnos(n){ n=Math.round(Math.abs(n)); return n===1?'um ano':n+' anos'; }
+  function pontesEntreTempos(tempos){
+    const m={};
+    tempos.forEach(x=>{ m[x.tempo.key]=x; });
+    const parts=[];
+    if(m.narrador&&m.narrativa){
+      const d=m.narrador.alvo-m.narrativa.alvo;
+      if(d>0) parts.push('a voz narra olhando '+fmtAnos(d)+' para trás');
+      else if(d<0) parts.push('a voz imagina '+fmtAnos(d)+' à frente do seu tempo');
+      else parts.push('a voz narra o seu próprio presente');
+    }
+    if(m.leitor&&(m.narrador||m.narrativa)){
+      const ref=m.narrador||m.narrativa;
+      const d=m.leitor.alvo-ref.alvo;
+      if(d>0) parts.push('você lê '+fmtAnos(d)+' depois '+(m.narrador?'da narração':'da história'));
+      else if(d===0) parts.push('você lê no calor da hora');
+    }
+    if(!parts.length) return '';
+    const alvos=tempos.map(x=>x.alvo);
+    const span=Math.max.apply(null,alvos)-Math.min.apply(null,alvos);
+    let txt=parts.join('; ');
+    if(tempos.length>2&&span>0) txt+=' — esta leitura atravessa '+fmtAnos(span);
+    return txt.charAt(0).toUpperCase()+txt.slice(1)+'.';
   }
   function renderTempo(tempo,anoStr,alvo){
     const head=document.createElement('p');head.className='situar-tempo';
@@ -6565,6 +6590,11 @@ if(typeof lucide!=='undefined')lucide.createIcons();
       const em=document.createElement('em');em.textContent=titulo;
       head.appendChild(em);head.appendChild(document.createTextNode(' na linha do tempo:'));
       result.appendChild(head);
+    }
+    const ponte=pontesEntreTempos(tempos);
+    if(ponte){
+      const p=document.createElement('p');p.className='situar-ponte';p.textContent=ponte;
+      result.appendChild(p);
     }
     tempos.forEach(x=>renderTempo(x.tempo,x.anoStr,x.alvo));
   });
