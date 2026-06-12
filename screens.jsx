@@ -3189,7 +3189,9 @@ function ScreenLibrary({ onNav = () => {} }) {
       <div style={{ padding: '4px 24px 0', display: 'flex', gap: 6, overflowX: 'auto', alignItems: 'center' }}>
         {filters.map(f => {
           const active = filter === f.id;
-          const count = f.id === 'all' ? all.length : (sections.find(s => s.id === f.id)?.books.length || 0);
+          const count = f.id === 'all' ? all.length
+            : f.id === 'nobel' ? all.filter(b => b.nobel).length
+            : (sections.find(s => s.id === f.id)?.books.length || 0);
           return (
             <button key={f.id} onClick={() => setFilter(f.id)} style={{
               padding: '8px 12px', borderRadius: 999, flexShrink: 0,
