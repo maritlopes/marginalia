@@ -1,0 +1,50 @@
+# Publica o site no GitHub Pages a cada push na main.
+# O app e buildado pelo Vite (dist/); as paginas estaticas (/clube/,
+# /linha-do-tempo/, /nobel/, /maratona-nobel/) e os assets da raiz sao
+# copiados por cima. Os .jsx fontes tambem vao juntos  o Marginalia.html
+# legado ainda os carrega via Babel no navegador.
+name: Publicar site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Copiar paginas estaticas e assets
+        run: |
+          cp -R clube linha-do-tempo maratona-nobel nobel app _card-maratona lib frames dist/
+          cp *.png icon.svg manifest.json sw.js CNAME Marginalia.html dist/
+          cp tokens.jsx data.jsx home-variants.jsx screens.jsx dist/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
