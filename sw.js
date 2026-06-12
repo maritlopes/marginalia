@@ -3,23 +3,16 @@
 // para que novas versões publicadas cheguem sempre que houver internet; o cache
 // serve apenas como reserva offline. Network-first também para as APIs externas.
 
-const CACHE = 'marginalia-v15';
+const CACHE = 'marginalia-v16';
+// O app agora é um bundle Vite com hash no nome (ex.: /assets/index-abc123.js);
+// o nome muda a cada versão e não dá pra listar aqui — o network-first abaixo
+// guarda o bundle no cache na primeira visita e o offline segue funcionando.
 const ASSETS = [
   './',
-  './Marginalia.html',
   './manifest.json',
   './icon.svg',
   './symbol.png',
-  './tokens.jsx',
-  './data.jsx',
-  './lib/storage.jsx',
-  './lib/sources.jsx',
-  './lib/i18n.jsx',
-  './lib/share.jsx',
-  './frames/ios-frame.jsx',
-  './home-variants.jsx',
-  './screens.jsx',
-  './lib/cloud.jsx',
+  './logo.png',
 ];
 
 self.addEventListener('install', (event) => {

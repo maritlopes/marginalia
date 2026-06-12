@@ -4285,4 +4285,7 @@ Object.assign(window, {
   ShareRecommendationSheet, StarRating, MinhaAvaliacao,
   PonteCard, PontesEstante, SectionLabel, FeedbackButton, buildNotesMarkdown,
   NOTE_KINDS, noteKind, noteKindColor, noteKindLabel,
+  // usados pelo app principal (src/app-main.jsx) — como módulos, função
+  // declarada não vira global sozinha; precisa estar neste export
+  AccountSheet, ScreenAguardandoApp, ScreenGruposCloud, ScreenGrupoDetalheCloud,
 });
