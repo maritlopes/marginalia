@@ -3737,10 +3737,21 @@ function BookEditorSheet({ book = null, onClose = () => {} }) {
     const f = e.target.files?.[0];
     if (!f) return;
     if (!f.type.startsWith('image/')) { setUploadError('Selecione uma imagem.'); return; }
-    if (f.size > 800 * 1024) { setUploadError('Imagem muito grande (máx 800 KB).'); return; }
+    if (f.size > 10 * 1024 * 1024) { setUploadError('Imagem muito grande (máx 10 MB).'); return; }
     setUploadError(null);
     const reader = new FileReader();
-    reader.onload = () => setCover(reader.result);
+    reader.onload = async () => {
+      // comprime para miniatura — capa embutida grande estoura o
+      // localStorage do iOS e a Biblioteca não persiste no iPad
+      try {
+        const slim = (typeof MG !== 'undefined' && MG.compressCover)
+          ? await MG.compressCover(reader.result) : reader.result;
+        setCover(slim);
+      } catch {
+        if (reader.result.length < 60000) setCover(reader.result);
+        else setUploadError('Não consegui processar a imagem. Tente outra foto.');
+      }
+    };
     reader.onerror = () => setUploadError('Erro ao ler o arquivo.');
     reader.readAsDataURL(f);
   };

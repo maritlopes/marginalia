@@ -332,4 +332,56 @@ const MG = {
   },
 };
 
+// ─── capas leves ──────────────────────────────────────────────
+// Comprime uma imagem (dataURL ou URL) para miniatura JPEG leve.
+// As capas aparecem com no máximo ~120px de largura; 360px preserva
+// nitidez em telas retina (3x). Capa embutida grande estoura o limite
+// de localStorage do iOS (~5 MB) e a Biblioteca não persiste no iPad.
+function compressCover(src, maxW = 360, maxH = 540, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const scale = Math.min(1, maxW / img.width, maxH / img.height);
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        const cx = cv.getContext('2d');
+        cx.fillStyle = '#fff'; cx.fillRect(0, 0, w, h); // PNG transparente → fundo branco
+        cx.drawImage(img, 0, 0, w, h);
+        resolve(cv.toDataURL('image/jpeg', quality));
+      } catch (e) { reject(e); }
+    };
+    img.onerror = () => reject(new Error('imagem inválida'));
+    img.src = src;
+  });
+}
+
+MG.compressCover = compressCover;
+
+// Migração única do legado: recomprime capas base64 pesadas já guardadas.
+// Roda no aparelho que tem as capas (Mac/celular); o push leva o slim à
+// nuvem e o iPad passa a conseguir persistir a Biblioteca.
+MG.slimLegacyCovers = async function () {
+  const FAT = 60000; // chars de base64 ≈ 45 KB de imagem
+  const books = this.getBooks([]);
+  // coverSlim marca capa já recomprimida — evita reprocessar a cada abertura
+  // quando a miniatura ainda fica acima do limiar (imagens que comprimem mal)
+  const fat = books.filter(b => b && !b.coverSlim && typeof b.cover === 'string'
+    && b.cover.startsWith('data:') && b.cover.length > FAT);
+  let done = 0;
+  for (const b of fat) {
+    try {
+      const slim = await compressCover(b.cover);
+      if (slim && slim.length < b.cover.length) { this.updateBook(b.id, { cover: slim, coverSlim: true }); done++; }
+    } catch (e) { console.warn('[Marginália] capa não recomprimida:', b.title, e); }
+  }
+  if (done) console.info('[Marginália] capas recomprimidas:', done);
+  return done;
+};
+
+// agenda a migração depois do boot do app (barata quando não há capa gorda)
+setTimeout(() => { MG.slimLegacyCovers().catch(() => {}); }, 3000);
+
 window.MG = MG;
