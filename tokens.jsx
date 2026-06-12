@@ -39,16 +39,9 @@ function BookCover({ title, author, tone = 'terra', w = 84, h, stripe = true, st
   } : undefined;
   const interactiveStyle = clickable ? { cursor: 'pointer' } : {};
   const H = h || Math.round(w * 1.45);
-  // medalha de laureado Nobel — `nobel` direto ou vindo do livro: {ano, pais}
-  const nobelInfo = nobel || (book && book.nobel) || null;
-  const medal = nobelInfo ? (
-    <img src="nobel-medal.png" alt="Nobel" title={'Nobel' + (nobelInfo.ano ? ' ' + nobelInfo.ano : '')}
-      style={{
-        position: 'absolute', bottom: 4, left: 4, zIndex: 6,
-        width: Math.max(15, Math.round(w * 0.19)), height: 'auto',
-        filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.45))', pointerEvents: 'none',
-      }}/>
-  ) : null;
+  // (a medalha de laureado saiu da capa — camuflava em capas escuras;
+  //  agora é o NobelMark, inline após o nome do autor)
+  const medal = null;
   const tones = {
     terra:  { bg: '#B0533A', fg: '#F7E7D6', band: '#8E3E2A' },
     olive:  { bg: '#5E6B3E', fg: '#EAE4CE', band: '#434E2A' },
@@ -144,6 +137,19 @@ function BookCover({ title, author, tone = 'terra', w = 84, h, stripe = true, st
       }}/>
       {medal}
     </div>
+  );
+}
+
+// selo de laureado Nobel — medalhinha inline, vai DEPOIS do nome do autor
+function NobelMark({ nobel, size = 13, style = {} }) {
+  if (!nobel) return null;
+  return (
+    <img src="nobel-medal.png" alt="Nobel"
+      title={'Nobel' + (nobel.ano ? ' ' + nobel.ano : '') + (nobel.pais ? ' · ' + nobel.pais : '')}
+      style={{
+        width: size, height: 'auto', marginLeft: 5,
+        display: 'inline-block', verticalAlign: '-2px', ...style,
+      }}/>
   );
 }
 
@@ -294,4 +300,4 @@ function AuthorPortrait({ name, size = 56, style = {} }) {
 
 // expor explicitamente — Object.assign abaixo não estava capturando AuthorPortrait
 window.AuthorPortrait = AuthorPortrait;
-Object.assign(window, { T, BookCover, BookSpine, Icon, ProgressRing, LinearProgress, AuthorPortrait });
+Object.assign(window, { T, BookCover, BookSpine, Icon, ProgressRing, LinearProgress, AuthorPortrait, NobelMark });

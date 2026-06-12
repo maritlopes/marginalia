@@ -401,7 +401,7 @@ function HomeVariantA({ onNav = () => {} }) {
                 {b.title}
               </div>
               <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 12, color: T.brown, marginTop: 2 }}>
-                {b.author}
+                {b.author}{b.nobel && typeof NobelMark !== 'undefined' && <NobelMark nobel={b.nobel} size={12}/>}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
                 <LinearProgress pct={b.pct} height={2} style={{ flex: 1 }}/>
@@ -952,7 +952,7 @@ function HomeVariantC({ onNav = () => {} }) {
                 {b.title}
               </div>
               <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, opacity: 0.7, marginBottom: 14 }}>
-                {b.author}
+                {b.author}{b.nobel && typeof NobelMark !== 'undefined' && <NobelMark nobel={b.nobel} size={13}/>}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <ProgressRing pct={b.pct} size={36} stroke={2.5} color="#E9B47A" track="rgba(255,255,255,0.15)"

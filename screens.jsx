@@ -68,7 +68,7 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
               {typeof AuthorPortrait !== 'undefined' && <AuthorPortrait name={b.author} size={28}/>}
               <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 14, color: T.brown }}>
-                {b.author}
+                {b.author}{b.nobel && <NobelMark nobel={b.nobel} size={14}/>}
               </div>
             </div>
             <div style={{ display: 'flex', gap: 14, fontSize: 10, color: T.muted, letterSpacing: 0.4 }}>
@@ -3626,12 +3626,12 @@ function LibrarySection({ section, view }) {
                  onClick={() => { if (typeof window.__openBook === 'function') window.__openBook(b); }}
                  style={{ display: 'flex', flexDirection: 'column', gap: 6, cursor: 'pointer' }}>
               <BookCover title={b.title} author={b.author} tone={b.tone}
-                         cover={b.cover} isbn={b.isbn} nobel={b.nobel} w={94}/>
+                         cover={b.cover} isbn={b.isbn} w={94}/>
               <div style={{ fontFamily: T.serif, fontSize: 11, fontWeight: 500, lineHeight: 1.15, color: T.ink }}>
                 {b.title}
               </div>
               <div style={{ fontSize: 9, color: T.muted, fontStyle: 'italic', fontFamily: T.serif }}>
-                {b.author}
+                {b.author}{b.nobel && <NobelMark nobel={b.nobel} size={10}/>}
               </div>
               {typeof b.pct === 'number' && b.pct > 0 && b.pct < 100 && (
                 <LinearProgress pct={b.pct} height={2}/>
@@ -3649,13 +3649,13 @@ function LibrarySection({ section, view }) {
                 borderBottom: `1px solid ${T.hairlineSoft}`, alignItems: 'center', cursor: 'pointer',
               }}>
               <BookCover title={b.title} author={b.author} tone={b.tone}
-                         cover={b.cover} isbn={b.isbn} nobel={b.nobel} w={42}/>
+                         cover={b.cover} isbn={b.isbn} w={42}/>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: T.serif, fontSize: 14, fontWeight: 500, lineHeight: 1.15 }}>
                   {b.title}
                 </div>
                 <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 11, color: T.brown, marginTop: 2 }}>
-                  {b.author}
+                  {b.author}{b.nobel && <NobelMark nobel={b.nobel} size={11}/>}
                 </div>
                 {typeof b.pct === 'number' && b.pct > 0 && b.pct < 100 && (
                   <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
