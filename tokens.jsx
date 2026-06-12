@@ -28,7 +28,7 @@ const T = {
 // Optional props:
 //   isbn — if provided, fetches real cover from Open Library
 //   cover — direct URL override (takes precedence over isbn)
-function BookCover({ title, author, tone = 'terra', w = 84, h, stripe = true, style = {}, isbn, cover, onClick, book }) {
+function BookCover({ title, author, tone = 'terra', w = 84, h, stripe = true, style = {}, isbn, cover, onClick, book, nobel }) {
   // se onClick estiver presente, OU houver `book`, a capa vira clicável
   // (clicar abre o editor via window.__editBook).
   const clickable = !!(onClick || book);
@@ -39,6 +39,16 @@ function BookCover({ title, author, tone = 'terra', w = 84, h, stripe = true, st
   } : undefined;
   const interactiveStyle = clickable ? { cursor: 'pointer' } : {};
   const H = h || Math.round(w * 1.45);
+  // medalha de laureado Nobel — `nobel` direto ou vindo do livro: {ano, pais}
+  const nobelInfo = nobel || (book && book.nobel) || null;
+  const medal = nobelInfo ? (
+    <img src="nobel-medal.png" alt="Nobel" title={'Nobel' + (nobelInfo.ano ? ' ' + nobelInfo.ano : '')}
+      style={{
+        position: 'absolute', bottom: 4, left: 4, zIndex: 6,
+        width: Math.max(15, Math.round(w * 0.19)), height: 'auto',
+        filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.45))', pointerEvents: 'none',
+      }}/>
+  ) : null;
   const tones = {
     terra:  { bg: '#B0533A', fg: '#F7E7D6', band: '#8E3E2A' },
     olive:  { bg: '#5E6B3E', fg: '#EAE4CE', band: '#434E2A' },
@@ -71,6 +81,7 @@ function BookCover({ title, author, tone = 'terra', w = 84, h, stripe = true, st
           onError={() => setImgFailed(true)}
           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', pointerEvents: 'none' }}
         />
+        {medal}
       </div>
     );
   }
@@ -131,6 +142,7 @@ function BookCover({ title, author, tone = 'terra', w = 84, h, stripe = true, st
         borderRadius: '50%',
         border: `1px solid ${c.fg}`, opacity: 0.4,
       }}/>
+      {medal}
     </div>
   );
 }

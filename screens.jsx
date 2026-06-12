@@ -3104,17 +3104,21 @@ function ScreenLibrary({ onNav = () => {} }) {
         (b.theme || '').toLowerCase().includes(q))
     : all;
 
+  // filtro Nobel corta TRANSVERSALMENTE (mantém as seções por status,
+  // mas só com os livros de autores laureados — campo b.nobel)
+  const pool = filter === 'nobel' ? matches.filter(b => b.nobel) : matches;
+
   const sections = [
     { id: 'reading', label: 'Lendo agora', accent: T.terra,
-      books: [...matches.filter(b => b.status === 'reading')].sort(sortFn) },
+      books: [...pool.filter(b => b.status === 'reading')].sort(sortFn) },
     { id: 'tbr', label: 'TBR — para ler', accent: T.ochre,
-      books: [...matches.filter(b => b.status === 'tbr')].sort(sortFn) },
+      books: [...pool.filter(b => b.status === 'tbr')].sort(sortFn) },
     { id: 'paused', label: 'Pausados', accent: T.muted,
-      books: [...matches.filter(b => b.status === 'paused')].sort(sortFn) },
+      books: [...pool.filter(b => b.status === 'paused')].sort(sortFn) },
     { id: 'read', label: 'Lidos', accent: T.olive,
-      books: [...matches.filter(b => b.status === 'read')].sort(sortFn) },
+      books: [...pool.filter(b => b.status === 'read')].sort(sortFn) },
     { id: 'unset', label: 'Sem categoria', accent: T.brown,
-      books: [...matches.filter(b => !b.status)].sort(sortFn) },
+      books: [...pool.filter(b => !b.status)].sort(sortFn) },
   ].filter(s => s.books.length > 0);
 
   const filters = [
@@ -3122,9 +3126,11 @@ function ScreenLibrary({ onNav = () => {} }) {
     { id: 'reading', l: 'Lendo' },
     { id: 'tbr', l: 'TBR' },
     { id: 'read', l: 'Lidos' },
+    // só aparece quando a estante tem laureados
+    ...(all.some(b => b.nobel) ? [{ id: 'nobel', l: '🏅 Nobel' }] : []),
   ];
 
-  const visibleSections = filter === 'all'
+  const visibleSections = (filter === 'all' || filter === 'nobel')
     ? sections
     : sections.filter(s => s.id === filter);
 
@@ -3618,7 +3624,7 @@ function LibrarySection({ section, view }) {
                  onClick={() => { if (typeof window.__openBook === 'function') window.__openBook(b); }}
                  style={{ display: 'flex', flexDirection: 'column', gap: 6, cursor: 'pointer' }}>
               <BookCover title={b.title} author={b.author} tone={b.tone}
-                         cover={b.cover} isbn={b.isbn} w={94}/>
+                         cover={b.cover} isbn={b.isbn} nobel={b.nobel} w={94}/>
               <div style={{ fontFamily: T.serif, fontSize: 11, fontWeight: 500, lineHeight: 1.15, color: T.ink }}>
                 {b.title}
               </div>
@@ -3641,7 +3647,7 @@ function LibrarySection({ section, view }) {
                 borderBottom: `1px solid ${T.hairlineSoft}`, alignItems: 'center', cursor: 'pointer',
               }}>
               <BookCover title={b.title} author={b.author} tone={b.tone}
-                         cover={b.cover} isbn={b.isbn} w={42}/>
+                         cover={b.cover} isbn={b.isbn} nobel={b.nobel} w={42}/>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: T.serif, fontSize: 14, fontWeight: 500, lineHeight: 1.15 }}>
                   {b.title}

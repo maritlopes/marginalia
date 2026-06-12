@@ -6787,9 +6787,12 @@ if(typeof lucide!=='undefined')lucide.createIcons();
     sbCtx=supabase.createClient('https://rpsiewnsvqpeadwaqsib.supabase.co','sb_publishable_QyDwy0ZCCRYzSFfTXCXQYQ_h3vEAL3I',{auth:{persistSession:false,autoRefreshToken:false}});
     return sbCtx;
   }
+  /* Além de pintar o contexto, devolve os LIVROS que a IA escolheu para o
+     período (ou null) — a caixa "Livros para viajar até lá" usa primeiro
+     essas escolhas literárias; Google Books fica de reserva. */
   async function loadContexto(container,raw){
     const sb=sbClient();
-    if(!sb) return;
+    if(!sb) return null;
     const wrap=el('div','hoje-ctx');
     wrap.appendChild(el('p','hoje-note','✦ compondo o período além da lista…'));
     container.appendChild(wrap);
@@ -6810,7 +6813,8 @@ if(typeof lucide!=='undefined')lucide.createIcons();
         wrap.appendChild(row);
       });
       wrap.appendChild(el('p','hoje-note','Contexto composto por IA a partir do período — confira antes de citar.'));
-    }catch(err){ wrap.remove(); }
+      return Array.isArray(data.livros)&&data.livros.length?data.livros:null;
+    }catch(err){ wrap.remove(); return null; }
   }
   /* Caixa "Para onde você quer viajar?" — dado um ano, século ou tema,
      mostra o que a linha guarda do período, traz contexto de fora (IA)
@@ -6844,11 +6848,25 @@ if(typeof lucide!=='undefined')lucide.createIcons();
       } else {
         hojeRes.appendChild(el('p','hoje-note','Para navegar pela linha, use um ano ou século — enquanto isso, busco contexto e livros sobre "'+raw+'".'));
       }
-      loadContexto(hojeRes,raw);
+      const ctxLivros=loadContexto(hojeRes,raw);
       hojeRes.appendChild(el('p','hoje-sec','Livros para viajar até lá'));
-      const loading=el('p','hoje-note','buscando no Google Books…');
+      const loading=el('p','hoje-note','a curadoria escolhe os livros…');
       hojeRes.appendChild(loading);
-      const livros=await buscarLivros(raw,alvo);
+      /* primeiro as escolhas literárias da IA (mesma chamada do contexto);
+         se vierem vazias, cai na busca genérica (Google Books / Open Library) */
+      let viaIA=false;
+      let livros=[];
+      try{
+        const ia=await ctxLivros;
+        if(Array.isArray(ia)&&ia.length){
+          livros=ia.map(b=>({
+            titulo:b.titulo||'',autores:b.autor||'',ano:b.ano?String(b.ano):'',nota:b.nota||'',
+            link:'https://www.google.com/search?tbm=bks&q='+encodeURIComponent(((b.titulo||'')+' '+(b.autor||'')).trim()),
+          })).filter(b=>b.titulo);
+          viaIA=livros.length>0;
+        }
+      }catch(e){}
+      if(!livros.length) livros=await buscarLivros(raw,alvo);
       loading.remove();
       if(!livros.length){
         hojeRes.appendChild(el('p','hoje-note','Não encontrei sugestões agora — tente outro termo.'));
@@ -6862,9 +6880,12 @@ if(typeof lucide!=='undefined')lucide.createIcons();
         } else row.appendChild(el('span','',b.titulo));
         const meta=[b.autores,b.ano].filter(Boolean).join(', ');
         if(meta) row.appendChild(el('span','hoje-book-meta',' — '+meta));
+        if(b.nota) row.appendChild(el('span','hoje-book-meta',' · '+b.nota));
         hojeRes.appendChild(row);
       });
-      hojeRes.appendChild(el('p','hoje-note','Sugestões de fora da nossa lista (Google Books · Open Library) — vale conferir antes de adotar.'));
+      hojeRes.appendChild(el('p','hoje-note',viaIA
+        ?'Escolhas da curadoria por IA — edições e datas valem conferir antes de adotar.'
+        :'Sugestões de fora da nossa lista (Google Books · Open Library) — vale conferir antes de adotar.'));
     });
   }
 })();
