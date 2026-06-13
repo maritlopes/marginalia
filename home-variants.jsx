@@ -132,7 +132,7 @@ function LoginPrompt() {
         </div>
         <div style={{ fontFamily: T.serif, fontSize: 13.5, color: T.brown, lineHeight: 1.5, maxWidth: 330, margin: '0 auto' }}>
           {invited
-            ? 'Um clube de leitura íntimo e curado, onde cada livro é uma porta. Entre com seu e-mail para participar — a curadora confirma seu acesso e o seu lugar fica guardado.'
+            ? 'Um clube de leitura íntimo e curado, onde cada livro é uma porta. Entre com seu e-mail para participar — Mariana confirma seu acesso e o seu lugar fica guardado.'
             : 'Entre com seu e-mail para guardar seus livros e notas e tê-los iguais em todos os aparelhos. Um código de 6 dígitos chega no e-mail — sem senha.'}
         </div>
       </div>

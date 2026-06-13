@@ -1143,7 +1143,7 @@ function ScreenAguardandoApp() {
       <div style={{ marginBottom: 18 }}>{typeof BrandMark !== 'undefined' ? <BrandMark size={52} opacity={0.85}/> : null}</div>
       <div style={{ fontFamily: T.serif, fontSize: 25, fontWeight: 500, letterSpacing: -0.4, marginBottom: 12 }}>Quase lá!</div>
       <div style={{ fontFamily: T.serif, fontSize: 15, lineHeight: 1.5, color: T.brown, maxWidth: 300, marginBottom: 8 }}>
-        Seu acesso à Marginália está <strong>aguardando aprovação</strong> da curadora. Assim que ela liberar, o app abre sozinho.
+        Seu acesso à Marginália está <strong>aguardando aprovação</strong> de Mariana, a curadora. Assim que ela liberar, o app abre sozinho.
       </div>
       <div style={{ fontSize: 12, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginBottom: 26 }}>Pode fechar e voltar depois — seu lugar está guardado.</div>
       <button onClick={verificar} disabled={checking} style={{ padding: '12px 22px', borderRadius: 10, border: 0, background: T.ink, color: T.cream, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 12, opacity: checking ? 0.6 : 1 }}>{checking ? 'verificando…' : 'Já fui aprovada? Verificar'}</button>
@@ -1358,7 +1358,7 @@ function ScreenGruposCloud({ onNav = () => {} }) {
               </div>
               <div style={{ fontFamily: T.serif, fontSize: 14, color: T.brown, lineHeight: 1.5, maxWidth: 320, margin: '0 auto' }}>
                 {pendingInvite
-                  ? 'Um clube de leitura íntimo e curado, onde cada livro é uma porta. Entre com seu e-mail para participar — a curadora confirma seu acesso e o seu lugar fica guardado.'
+                  ? 'Um clube de leitura íntimo e curado, onde cada livro é uma porta. Entre com seu e-mail para participar — Mariana confirma seu acesso e o seu lugar fica guardado.'
                   : 'Os círculos são rodas de leitura com amigos. Entre com seu e-mail para criar o seu ou participar de um — um código de 6 dígitos chega no e-mail, sem senha.'}
               </div>
             </div>
