@@ -1295,31 +1295,7 @@ function ScreenGruposCloud({ onNav = () => {} }) {
     if (data && window.__openGrupo) window.__openGrupo(data);
   };
 
-  const [guestName, setGuestName] = React.useState('');
   const pendingInvite = (typeof window !== 'undefined') && !!window.__pendingJoin;
-  const entrarConvidado = async () => {
-    if (!guestName.trim()) { setMsg('Digite um nome para entrar.'); return; }
-    const jcode = window.__pendingJoin || (code && code.trim()) || null;
-    setBusy(true); setMsg(null);
-    const r = await cloud.signInGuest(guestName);
-    if (r.error) { setBusy(false); setMsg('Não consegui entrar: ' + r.error.message); return; }
-    // porta do app: registra e checa aprovação
-    const st = (cloud.refreshAppStatus) ? await cloud.refreshAppStatus() : 'approved';
-    setBusy(false);
-    if (st === 'pending') {
-      if (jcode) window.__pendingJoin = jcode; // guarda o círculo para entrar após aprovação
-      if (window.__rerender) window.__rerender(); // a tela de espera assume
-      return;
-    }
-    // aprovado(a) → entra no círculo direto
-    window.__pendingJoin = null;
-    if (jcode) {
-      const jr = await cloud.groups.join(jcode, guestName);
-      await refresh();
-      if (jr && !jr.error && jr.data && window.__openGrupo) { window.__openGrupo(jr.data); return; }
-    }
-    await refresh();
-  };
 
   const inputStyle = { flex: 1, padding: '11px 12px', border: `1px solid ${T.hairline}`, borderRadius: 10, background: T.cream, color: T.ink, fontFamily: T.sans, fontSize: 14, outline: 'none' };
   const btnDark = { padding: '11px 16px', borderRadius: 10, border: 0, background: T.ink, color: T.cream, fontFamily: T.sans, fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: busy ? 0.6 : 1 };
@@ -1350,51 +1326,20 @@ function ScreenGruposCloud({ onNav = () => {} }) {
         <div style={{ padding: '20px 24px', color: T.muted, fontSize: 13, fontFamily: T.serif, fontStyle: 'italic' }}>Carregando…</div>
       ) : !user ? (
         <div style={{ padding: '8px 24px 0' }}>
-          {pendingInvite && (
-            <div style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 14, padding: '16px 18px', marginBottom: 14, textAlign: 'center' }}>
-              <div style={{ marginBottom: 8, opacity: 0.85 }}>{typeof BrandMark !== 'undefined' ? <BrandMark size={30}/> : null}</div>
+          <div style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 14, padding: '18px' }}>
+            <div style={{ textAlign: 'center', marginBottom: 14 }}>
+              <div style={{ marginBottom: 8, opacity: 0.85 }}>{typeof BrandMark !== 'undefined' ? <BrandMark size={32}/> : null}</div>
               <div style={{ fontFamily: T.serif, fontSize: 18, fontWeight: 500, letterSpacing: -0.3, color: T.ink, marginBottom: 6 }}>
-                Você foi convidada para a Marginália
+                {pendingInvite ? 'Você foi convidada para a Marginália' : 'Entre para ler em círculo'}
               </div>
               <div style={{ fontFamily: T.serif, fontSize: 14, color: T.brown, lineHeight: 1.5, maxWidth: 320, margin: '0 auto' }}>
-                Um clube de leitura íntimo e curado, onde cada livro é uma porta. Entre abaixo para participar do círculo — a curadora confirma seu acesso e o seu lugar fica guardado.
+                {pendingInvite
+                  ? 'Um clube de leitura íntimo e curado, onde cada livro é uma porta. Entre com seu e-mail para participar — a curadora confirma seu acesso e o seu lugar fica guardado.'
+                  : 'Os círculos são rodas de leitura com amigos. Entre com seu e-mail para criar o seu ou participar de um — um código de 6 dígitos chega no e-mail, sem senha.'}
               </div>
             </div>
-          )}
-          <div style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '16px 18px' }}>
-            <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 8 }}>
-              Entrar rápido
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input value={guestName} onChange={e => setGuestName(e.target.value)}
-                placeholder="seu nome (ex.: Ana)" onKeyDown={e => e.key === 'Enter' && entrarConvidado()}
-                autoCapitalize="words" style={inputStyle}/>
-              <button onClick={entrarConvidado} disabled={busy} style={btnDark}>{busy ? '…' : 'Entrar'}</button>
-            </div>
-            <div style={{ marginTop: 10, padding: '9px 11px', background: '#F6EFE0',
-                          border: `1px solid ${T.hairline}`, borderRadius: 8, fontSize: 11,
-                          color: T.brown, fontFamily: T.serif, lineHeight: 1.45 }}>
-              ⚠️ Sem e-mail, sem senha — só um nome. É uma <strong>conta temporária</strong>,
-              que vive só neste aparelho: se você limpar o navegador ou trocar de celular,
-              os livros e anotações se perdem. Para guardar de verdade, prefira <strong>entrar com e-mail</strong> abaixo.
-            </div>
+            {typeof EmailLoginCard !== 'undefined' ? <EmailLoginCard onLoggedIn={(u) => { setUser(u); refresh(); }}/> : null}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '16px 2px 12px' }}>
-            <div style={{ flex: 1, height: 1, background: T.hairline }}/>
-            <div style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: T.muted, fontWeight: 600 }}>ou</div>
-            <div style={{ flex: 1, height: 1, background: T.hairline }}/>
-          </div>
-          <button onClick={() => onNav('library')} style={{
-            width: '100%', padding: '13px 0', background: 'transparent', color: T.ink,
-            border: `1.5px solid ${T.ink}`, borderRadius: 12, fontFamily: T.sans, fontSize: 13,
-            fontWeight: 600, cursor: 'pointer',
-          }}>
-            Entrar com e-mail — guarda em qualquer aparelho
-          </button>
-          <div style={{ textAlign: 'center', fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 7 }}>
-            recomendado — seus livros e notas ficam salvos na nuvem
-          </div>
-          {msg && <div style={{ marginTop: 12, padding: '10px 12px', background: '#F4D9D0', borderRadius: 10, fontSize: 12, color: '#8E3E2A' }}>{msg}</div>}
         </div>
       ) : (
         <>
@@ -3280,15 +3225,99 @@ function ScreenLibrary({ onNav = () => {} }) {
 // Fica no rodapé da Biblioteca. Tudo é local (localStorage); o backup
 // é um arquivo .json que a leitora guarda onde quiser.
 // ─────────────────────────────────────────────────────────────
+// EmailLoginCard — formulário de entrada por e-mail (código de 6 dígitos).
+// Caminho ÚNICO de entrada do app (a conta-convidada temporária saiu do fluxo).
+// Reusado na Home (primeira tela) e na seção de Sincronização da Biblioteca.
+// Cuida sozinho do envio do código, do estado pendente (a tela de espera
+// assume) e, se houver convite guardado (window.__pendingJoin), de entrar no
+// círculo logo após conectar. onLoggedIn(user) avisa o pai para atualizar.
+function EmailLoginCard({ onLoggedIn = () => {}, intro = null } = {}) {
+  const cloud = (typeof window !== 'undefined') ? window.MGCloud : null;
+  const [email, setEmail] = React.useState('');
+  const [code, setCode] = React.useState('');
+  const [step, setStep] = React.useState('idle'); // idle | sent
+  const [busy, setBusy] = React.useState(false);
+  const [msg, setMsg] = React.useState(null);
+  if (!cloud || !cloud.available) return null;
+
+  const enviar = async () => {
+    if (!email.trim()) { setMsg('Digite seu e-mail.'); return; }
+    setBusy(true); setMsg(null);
+    const { error } = await cloud.sendCode(email);
+    setBusy(false);
+    if (error) setMsg('Não foi possível enviar: ' + error.message);
+    else { setStep('sent'); setMsg('Enviamos um código de 6 dígitos para ' + email.trim() + '. Confira seu e-mail (e a caixa de spam).'); }
+  };
+  const entrar = async () => {
+    if (!code.trim()) { setMsg('Digite o código.'); return; }
+    setBusy(true); setMsg(null);
+    const { error } = await cloud.verifyCode(email, code);
+    setBusy(false);
+    if (error) { setMsg('Código inválido ou expirado. Tente novamente.'); return; }
+    const u = await cloud.currentUser();
+    setStep('idle'); setCode('');
+    onLoggedIn(u);
+    // porta do app: se ficou pendente, a tela de espera assume (mantém o convite guardado)
+    if (typeof window !== 'undefined' && window.__appStatus === 'pending') {
+      if (window.__rerender) window.__rerender();
+      return;
+    }
+    // veio de um link de convite? entra direto (círculos são livres p/ aprovados)
+    if (typeof window !== 'undefined' && window.__pendingJoin && cloud.groups) {
+      const jc = window.__pendingJoin; window.__pendingJoin = null;
+      setMsg('Conectada! Entrando no círculo…');
+      const r = await cloud.groups.join(jc);
+      if (r && !r.error && r.data && window.__openGrupo) { window.__openGrupo(r.data); return; }
+      setMsg('Conectada! (não encontrei o círculo do convite — confira o link.)');
+      if (window.__rerender) window.__rerender();
+      return;
+    }
+    setMsg('Conectada! Seus aparelhos vão sincronizar.');
+    if (window.__rerender) window.__rerender();
+  };
+
+  const inputStyle = { flex: 1, padding: '11px 12px', border: `1px solid ${T.hairline}`, borderRadius: 10, background: T.cream, color: T.ink, fontFamily: T.sans, fontSize: 14, outline: 'none' };
+  const btnDark = { padding: '11px 16px', borderRadius: 10, border: 0, background: T.ink, color: T.cream, fontFamily: T.sans, fontSize: 13, fontWeight: 600, cursor: 'pointer', letterSpacing: 0.2, opacity: busy ? 0.6 : 1, whiteSpace: 'nowrap' };
+
+  return (
+    <div>
+      {intro}
+      {step === 'idle' ? (
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input type="email" inputMode="email" autoCapitalize="none" placeholder="seu@email.com"
+            value={email} onChange={e => setEmail(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && enviar()} style={inputStyle}/>
+          <button onClick={enviar} disabled={busy} style={btnDark}>{busy ? '…' : 'Enviar código'}</button>
+        </div>
+      ) : (
+        <div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input type="text" inputMode="numeric" placeholder="código de 6 dígitos"
+              value={code} onChange={e => setCode(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && entrar()} style={inputStyle}/>
+            <button onClick={entrar} disabled={busy} style={btnDark}>{busy ? '…' : 'Entrar'}</button>
+          </div>
+          <button onClick={() => { setStep('idle'); setMsg(null); }} style={{
+            marginTop: 8, background: 'transparent', border: 0, color: T.brown,
+            fontFamily: T.sans, fontSize: 11, cursor: 'pointer', padding: 0, textDecoration: 'underline',
+          }}>usar outro e-mail</button>
+        </div>
+      )}
+      {msg && (
+        <div style={{ marginTop: 12, padding: '10px 12px', background: '#EFE8DA', borderRadius: 10, fontSize: 12, color: T.brown, lineHeight: 1.4 }}>
+          {msg}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // CloudAccount — entrar/sair da sincronização na nuvem (Supabase, Fase 1).
 // Login por código de 6 dígitos enviado por e-mail.
 // showAdmin=false esconde o painel de administradora (usado no mini-perfil do avatar).
 function CloudAccount({ showAdmin = true } = {}) {
   const cloud = (typeof window !== 'undefined') ? window.MGCloud : null;
   const [user, setUser] = React.useState(null);
-  const [email, setEmail] = React.useState('');
-  const [code, setCode] = React.useState('');
-  const [step, setStep] = React.useState('idle'); // idle | sent
   const [busy, setBusy] = React.useState(false);
   const [msg, setMsg] = React.useState(null);
   const [nome, setNome] = React.useState('');
@@ -3326,43 +3355,9 @@ function CloudAccount({ showAdmin = true } = {}) {
 
   if (!cloud || !cloud.available) return null;
 
-  const enviar = async () => {
-    if (!email.trim()) { setMsg('Digite seu e-mail.'); return; }
-    setBusy(true); setMsg(null);
-    const { error } = await cloud.sendCode(email);
-    setBusy(false);
-    if (error) setMsg('Não foi possível enviar: ' + error.message);
-    else { setStep('sent'); setMsg('Enviamos um código de 6 dígitos para ' + email.trim() + '. Confira seu e-mail (e a caixa de spam).'); }
-  };
-
-  const entrar = async () => {
-    if (!code.trim()) { setMsg('Digite o código.'); return; }
-    setBusy(true); setMsg(null);
-    const { error } = await cloud.verifyCode(email, code);
-    setBusy(false);
-    if (error) { setMsg('Código inválido ou expirado. Tente novamente.'); return; }
-    const u = await cloud.currentUser();
-    setUser(u); setStep('idle'); setCode('');
-    // porta do app: se ficou pendente, a tela de espera assume (mantém o convite guardado)
-    if (typeof window !== 'undefined' && window.__appStatus === 'pending') {
-      if (window.__rerender) window.__rerender();
-      return;
-    }
-    // veio de um link de convite? entra direto (círculos são livres p/ aprovados)
-    if (typeof window !== 'undefined' && window.__pendingJoin && cloud.groups) {
-      const jc = window.__pendingJoin; window.__pendingJoin = null;
-      setMsg('Conectada! Entrando no círculo…');
-      const r = await cloud.groups.join(jc);
-      if (r && !r.error && r.data) { if (window.__openGrupo) window.__openGrupo(r.data); return; }
-      setMsg('Conectada! (não encontrei o círculo do convite — confira o link.)');
-      return;
-    }
-    setMsg('Conectada! Seus aparelhos vão sincronizar.');
-  };
-
   const sair = async () => {
     await cloud.signOut();
-    setUser(null); setEmail(''); setCode(''); setStep('idle'); setMsg('Você saiu. Este aparelho deixa de sincronizar.');
+    setUser(null); setMsg('Você saiu. Este aparelho deixa de sincronizar.');
   };
 
   const inputStyle = {
@@ -3407,35 +3402,14 @@ function CloudAccount({ showAdmin = true } = {}) {
           }}>Sair desta conta</button>
         </>
       ) : (
-        <>
+        <EmailLoginCard onLoggedIn={(u) => setUser(u)} intro={
           <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.45, marginBottom: 12 }}>
             Entre com seu e-mail para que celular e computador fiquem sempre iguais. Você recebe um código de 6 dígitos — sem senha.
           </div>
-          {step === 'idle' ? (
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input type="email" inputMode="email" autoCapitalize="none" placeholder="seu@email.com"
-                value={email} onChange={e => setEmail(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && enviar()} style={inputStyle}/>
-              <button onClick={enviar} disabled={busy} style={btnDark}>{busy ? '…' : 'Enviar código'}</button>
-            </div>
-          ) : (
-            <div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <input type="text" inputMode="numeric" placeholder="código de 6 dígitos"
-                  value={code} onChange={e => setCode(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && entrar()} style={inputStyle}/>
-                <button onClick={entrar} disabled={busy} style={btnDark}>{busy ? '…' : 'Entrar'}</button>
-              </div>
-              <button onClick={() => { setStep('idle'); setMsg(null); }} style={{
-                marginTop: 8, background: 'transparent', border: 0, color: T.brown,
-                fontFamily: T.sans, fontSize: 11, cursor: 'pointer', padding: 0, textDecoration: 'underline',
-              }}>usar outro e-mail</button>
-            </div>
-          )}
-        </>
+        }/>
       )}
 
-      {msg && (
+      {user && msg && (
         <div style={{ marginTop: 12, padding: '10px 12px', background: '#EFE8DA', borderRadius: 10, fontSize: 12, color: T.brown, lineHeight: 1.4 }}>
           {msg}
         </div>
@@ -4333,4 +4307,5 @@ Object.assign(window, {
   // usados pelo app principal (src/app-main.jsx) — como módulos, função
   // declarada não vira global sozinha; precisa estar neste export
   AccountSheet, ScreenAguardandoApp, ScreenGruposCloud, ScreenGrupoDetalheCloud,
+  EmailLoginCard,
 });

@@ -102,8 +102,10 @@ function UserAvatar({ size = 36 }) {
   );
 }
 
-// LoginPrompt — cartão de login/sincronização para quem ainda não entrou (some após logar).
-// O cartão inteiro é <button> (toque robusto no iOS, inclusive pelo ícone na tela inicial).
+// LoginPrompt — boas-vindas + entrada por e-mail na PRIMEIRA tela (some após logar).
+// Caminho único de entrada (a conta-convidada temporária saiu). O formulário
+// (EmailLoginCard, definido em screens.jsx) entra aqui inline; se a leitora
+// chegou por um link de convite (window.__pendingJoin), o texto se adapta.
 function LoginPrompt() {
   const [user, setUser] = React.useState(undefined);
   const tick = (typeof window !== 'undefined' && window.__cloudStatus) || '';
@@ -116,26 +118,26 @@ function LoginPrompt() {
     return () => { alive = false; };
   }, [tick]);
   if (user === undefined || user) return null; // carregando, ou já conectada → não aparece
-  // caminho único e robusto: leva à tela de login da Biblioteca (form inline, confiável no modo app)
-  const ir = () => {
-    if (typeof window === 'undefined') return;
-    window.__scrollToSync = true;
-    if (window.__setRoute) window.__setRoute('library');
-  };
+
+  const invited = (typeof window !== 'undefined') && !!window.__pendingJoin;
   return (
-    <button type="button" onClick={ir} style={{
-      display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', cursor: 'pointer',
-      border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '10px 13px', marginBottom: 18,
+    <div style={{
+      border: `1px solid ${T.hairline}`, borderRadius: 14, padding: 18, marginBottom: 18,
       background: T.cream, color: T.ink, fontFamily: T.sans,
-      WebkitAppearance: 'none', appearance: 'none', WebkitTapHighlightColor: 'transparent',
     }}>
-      <Icon name="user" size={15} color={T.terra}/>
-      <span style={{ flex: 1, lineHeight: 1.3 }}>
-        <span style={{ display: 'block', fontSize: 12.5, fontWeight: 600 }}>Você ainda não entrou</span>
-        <span style={{ display: 'block', fontSize: 11, color: T.brown }}>Toque para entrar e sincronizar (abre na Biblioteca)</span>
-      </span>
-      <span style={{ fontSize: 15, color: T.terra }}>→</span>
-    </button>
+      <div style={{ textAlign: 'center', marginBottom: 14 }}>
+        <div style={{ marginBottom: 8, opacity: 0.85 }}>{typeof BrandMark !== 'undefined' ? <BrandMark size={34}/> : null}</div>
+        <div style={{ fontFamily: T.serif, fontSize: 19, fontWeight: 500, letterSpacing: -0.3, marginBottom: 6 }}>
+          {invited ? 'Você foi convidada para a Marginália' : 'Entre na Marginália'}
+        </div>
+        <div style={{ fontFamily: T.serif, fontSize: 13.5, color: T.brown, lineHeight: 1.5, maxWidth: 330, margin: '0 auto' }}>
+          {invited
+            ? 'Um clube de leitura íntimo e curado, onde cada livro é uma porta. Entre com seu e-mail para participar — a curadora confirma seu acesso e o seu lugar fica guardado.'
+            : 'Entre com seu e-mail para guardar seus livros e notas e tê-los iguais em todos os aparelhos. Um código de 6 dígitos chega no e-mail — sem senha.'}
+        </div>
+      </div>
+      {typeof EmailLoginCard !== 'undefined' ? <EmailLoginCard onLoggedIn={(u) => setUser(u)}/> : null}
+    </div>
   );
 }
 

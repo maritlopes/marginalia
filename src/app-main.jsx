@@ -178,8 +178,10 @@ function MarginaliaApp() {
         if (!error && data) setOpenGrupo(data);
         else setRoute('grupos');
       } else {
-        window.__pendingJoin = code;   // após entrar na conta, pré-preenche o código
-        setRoute('grupos');
+        // deslogada: guarda o convite e fica na HOME, onde as boas-vindas + o
+        // login por e-mail aparecem em destaque (não joga mais em Círculos).
+        window.__pendingJoin = code;
+        setRoute('home');
       }
     }, 1600);
     return () => clearTimeout(t);
