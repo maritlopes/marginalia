@@ -3825,6 +3825,47 @@ function AccountSheet({ onClose = () => {} }) {
   );
 }
 
+// ── Exportar a BIBLIOTECA (livros) como documento legível ──
+// Agrupa por status (a estante é o subconjunto aceso; o acervo, a verdade).
+// Sem duplicar: owned = lendo + quero + lidos + adormecidos; desejos = !owned.
+function _libGroups(books) {
+  const V = (typeof window.libraryViews === 'function')
+    ? window.libraryViews(books || [])
+    : { catalogo: books || [], desejos: [], lendo: [], quero: [], lidos: [], dormem: [] };
+  return [
+    { t: 'Lendo', arr: V.lendo, stars: false },
+    { t: 'Quero ler', arr: V.quero, stars: false },
+    { t: 'Lidos', arr: V.lidos, stars: true },
+    { t: 'Adormecidos no acervo', arr: V.dormem, stars: false },
+    { t: 'Lista de desejos', arr: V.desejos, stars: false },
+  ].filter(g => g.arr.length);
+}
+function _libHeader(books) {
+  const V = window.libraryViews ? window.libraryViews(books || []) : { catalogo: books || [], desejos: [] };
+  return { hoje: new Date().toLocaleDateString('pt-BR'), nAcervo: V.catalogo.length, nDesejos: V.desejos.length };
+}
+function buildLibraryMarkdown(books) {
+  const sorted = (a) => [...a].sort((x, y) => (x.title || '').localeCompare(y.title || '', 'pt-BR'));
+  const nobel = (b) => b.nobel ? ' · Nobel' + (b.nobel.ano ? ' ' + b.nobel.ano : '') : '';
+  const stars = (b) => b.rating ? ' — ' + '★'.repeat(b.rating) : '';
+  const line = (b, withStars) => `- **${b.title || 'Sem título'}** — ${b.author || 'autor desconhecido'}${b.year ? ' (' + b.year + ')' : ''}${nobel(b)}${withStars ? stars(b) : ''}`;
+  const h = _libHeader(books);
+  let md = `# Minha biblioteca — Marginália\n\n*Exportado em ${h.hoje} · ${h.nAcervo} livros no acervo · ${h.nDesejos} na lista de desejos*\n`;
+  _libGroups(books).forEach(g => { md += `\n## ${g.t} (${g.arr.length})\n` + sorted(g.arr).map(b => line(b, g.stars)).join('\n') + '\n'; });
+  return md;
+}
+function buildLibraryDocHtml(books) {
+  const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const sorted = (a) => [...a].sort((x, y) => (x.title || '').localeCompare(y.title || '', 'pt-BR'));
+  const nobel = (b) => b.nobel ? ' · Nobel' + (b.nobel.ano ? ' ' + esc(b.nobel.ano) : '') : '';
+  const stars = (b) => b.rating ? ' — ' + '★'.repeat(b.rating) : '';
+  const li = (b, withStars) => `<li><b>${esc(b.title || 'Sem título')}</b> — ${esc(b.author || 'autor desconhecido')}${b.year ? ' (' + esc(b.year) + ')' : ''}${nobel(b)}${withStars ? stars(b) : ''}</li>`;
+  const h = _libHeader(books);
+  let body = `<h1>Minha biblioteca — Marginália</h1><p><i>Exportado em ${h.hoje} · ${h.nAcervo} livros no acervo · ${h.nDesejos} na lista de desejos</i></p>`;
+  _libGroups(books).forEach(g => { body += `<h2>${esc(g.t)} (${g.arr.length})</h2><ul>` + sorted(g.arr).map(b => li(b, g.stars)).join('') + '</ul>'; });
+  return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Minha biblioteca</title></head><body style="font-family:Georgia,'Times New Roman',serif;line-height:1.5">${body}</body></html>`;
+}
+
 function BackupPanel() {
   const fileRef = React.useRef(null);
   const [msg, setMsg] = React.useState(null);
@@ -3909,6 +3950,32 @@ function BackupPanel() {
     }
   };
 
+  const _download = (content, mime, filename) => {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  const _bibVazia = () => {
+    const books = window.BOOKS || [];
+    if (!books.length || window.__demoShelf) { flash('Acrescente seus livros antes de exportar a biblioteca.'); return null; }
+    return books;
+  };
+  const baixarBibliotecaMd = () => {
+    const books = _bibVazia(); if (!books) return;
+    const d = new Date().toISOString().slice(0, 10);
+    _download(buildLibraryMarkdown(books), 'text/markdown', `marginalia-biblioteca-${d}.md`);
+    flash('Biblioteca exportada em Markdown — abra no Obsidian.');
+  };
+  const baixarBibliotecaDoc = () => {
+    const books = _bibVazia(); if (!books) return;
+    const d = new Date().toISOString().slice(0, 10);
+    _download('﻿' + buildLibraryDocHtml(books), 'application/msword', `marginalia-biblioteca-${d}.doc`);
+    flash('Biblioteca exportada em Word (.doc).');
+  };
+
   const btn = (extra = {}) => ({
     flex: 1, padding: '11px 12px', borderRadius: 10, cursor: 'pointer',
     fontFamily: T.sans, fontSize: 12, fontWeight: 600, letterSpacing: 0.2,
@@ -3957,6 +4024,21 @@ function BackupPanel() {
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={baixarMd} style={btn()}>↓ Baixar .md</button>
           <button onClick={copiarMd} style={btn()}>⧉ Copiar</button>
+        </div>
+      </div>
+
+      {/* Exportar a biblioteca (livros) em documento legível */}
+      <div style={{ borderTop: `1px solid ${T.hairline}`, paddingTop: 20, marginTop: 22 }}>
+        <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 6 }}>
+          Exportar a biblioteca
+        </div>
+        <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.45, marginBottom: 12 }}>
+          Seus livros em um documento, agrupados por lendo · quero ler · lidos · adormecidos ·
+          desejos. Em Markdown (para o Obsidian) ou Word (.doc), pronto para imprimir ou guardar.
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={baixarBibliotecaMd} style={btn()}>↓ Biblioteca .md</button>
+          <button onClick={baixarBibliotecaDoc} style={btn()}>↓ Biblioteca .doc</button>
         </div>
       </div>
 
