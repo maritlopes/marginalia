@@ -1075,11 +1075,33 @@ function SectionLabel({ children, color }) {
   );
 }
 
+// WelcomeNewMember — saudação calorosa na PRIMEIRA entrada, logo após a
+// curadora aprovar. Arremata o funil do onboarding (link → login → espera →
+// AQUI). Mostrada uma única vez (controlada por 'mg_was_pending' + app-main).
+function WelcomeNewMember({ onClose = () => {} }) {
+  return (
+    <div style={{ position: 'absolute', inset: 0, zIndex: 95, background: T.bone, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 30px', textAlign: 'center', fontFamily: T.sans, color: T.ink }}>
+      <div style={{ marginBottom: 18 }}>{typeof BrandMark !== 'undefined' ? <BrandMark size={54}/> : null}</div>
+      <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 10 }}>Acesso aprovado</div>
+      <div style={{ fontFamily: T.serif, fontSize: 27, fontWeight: 500, letterSpacing: -0.5, marginBottom: 12 }}>Bem-vinda à Marginália</div>
+      <div style={{ fontFamily: T.serif, fontSize: 15, lineHeight: 1.6, color: T.brown, maxWidth: 330, marginBottom: 24 }}>
+        Que bom ter você aqui. Cada livro é uma porta — e você nunca lê sozinha. Monte sua estante, guarde suas notas à margem e siga os ecos entre as obras.
+      </div>
+      <button onClick={onClose} style={{ padding: '13px 26px', borderRadius: 11, border: 0, background: T.ink, color: T.cream, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Começar a ler</button>
+    </div>
+  );
+}
+
 function ScreenAguardandoApp() {
   const cloud = (typeof window !== 'undefined') ? window.MGCloud : null;
   const [checking, setChecking] = React.useState(false);
 
+  // marca que este aparelho passou pela fila — usado para saudar uma vez quando
+  // a aprovação chegar (inclusive se a pessoa fechar e voltar já aprovada).
+  React.useEffect(() => { try { localStorage.setItem('mg_was_pending', '1'); } catch (e) {} }, []);
+
   const finalizar = async () => {
+    try { localStorage.removeItem('mg_was_pending'); } catch (e) {}
     // aprovada: se veio de um convite, entra no círculo; depois libera o app
     const jc = (typeof window !== 'undefined') ? window.__pendingJoin : null;
     if (jc && cloud && cloud.groups) {
@@ -1089,11 +1111,13 @@ function ScreenAguardandoApp() {
         if (jr && !jr.error && jr.data && window.__openGrupo) {
           if (window.__rerender) window.__rerender();
           setTimeout(() => window.__openGrupo(jr.data), 60);
-          return;
+          return; // entrou no círculo — o próprio círculo é a recepção
         }
       } catch (e) { /* segue */ }
     }
     if (window.__rerender) window.__rerender();
+    // sem convite: saúda na Home
+    if (typeof window !== 'undefined' && typeof window.__welcomeNewMember === 'function') window.__welcomeNewMember();
   };
 
   React.useEffect(() => {
@@ -4307,5 +4331,5 @@ Object.assign(window, {
   // usados pelo app principal (src/app-main.jsx) — como módulos, função
   // declarada não vira global sozinha; precisa estar neste export
   AccountSheet, ScreenAguardandoApp, ScreenGruposCloud, ScreenGrupoDetalheCloud,
-  EmailLoginCard,
+  EmailLoginCard, WelcomeNewMember,
 });

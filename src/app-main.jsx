@@ -127,6 +127,7 @@ function MarginaliaApp() {
   const [sharingRec, setSharingRec] = React.useState(null);
   const [editingChallenge, setEditingChallenge] = React.useState(null);
   const [showAccount, setShowAccount] = React.useState(false);
+  const [showWelcome, setShowWelcome] = React.useState(false);
   const [, forceRender] = React.useReducer(x => x + 1, 0);
 
   // modo web desktop: navegador (não instalado) em tela larga → frame de site (nav no topo)
@@ -154,12 +155,30 @@ function MarginaliaApp() {
     window.__shareRecommendation = (book) => setSharingRec(book);
     window.__editChallenge = (c) => setEditingChallenge(c);
     window.__openAccount = () => setShowAccount(true);
+    window.__welcomeNewMember = () => setShowWelcome(true);
     window.__setRoute = setRoute; // útil para deep-linking e debug
     return () => {
       delete window.__rerender; delete window.__editBook; delete window.__openBook;
       delete window.__openGrupo; delete window.__shareNote; delete window.__shareRecommendation;
-      delete window.__editChallenge; delete window.__openAccount; delete window.__setRoute;
+      delete window.__editChallenge; delete window.__openAccount; delete window.__welcomeNewMember;
+      delete window.__setRoute;
     };
+  }, []);
+
+  // boas-vindas pós-aprovação no caso de a pessoa ter fechado a tela de espera e
+  // voltado já aprovada (a marca 'mg_was_pending' fica deste aparelho). O caminho
+  // ao vivo (aprovação enquanto a tela de espera está aberta) usa __welcomeNewMember.
+  React.useEffect(() => {
+    const id = setTimeout(() => {
+      try {
+        if (localStorage.getItem('mg_was_pending') === '1'
+            && window.__appStatus && window.__appStatus !== 'pending') {
+          localStorage.removeItem('mg_was_pending');
+          setShowWelcome(true);
+        }
+      } catch (e) {}
+    }, 1200); // dá tempo de a aprovação resolver no boot
+    return () => clearTimeout(id);
   }, []);
 
   // aplica acento ao carregar e a cada mudança
@@ -256,6 +275,9 @@ function MarginaliaApp() {
             boxShadow: '0 6px 20px rgba(0,0,0,0.25), 0 0 0 1px rgba(247,241,228,0.08)',
           }}
         >+</button>
+      )}
+      {showWelcome && typeof WelcomeNewMember !== 'undefined' && (
+        <WelcomeNewMember onClose={() => setShowWelcome(false)}/>
       )}
       {editingBook !== null && (
         <BookEditorSheet
