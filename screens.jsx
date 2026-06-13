@@ -1351,8 +1351,14 @@ function ScreenGruposCloud({ onNav = () => {} }) {
       ) : !user ? (
         <div style={{ padding: '8px 24px 0' }}>
           {pendingInvite && (
-            <div style={{ fontFamily: T.serif, fontSize: 15, color: T.brown, fontStyle: 'italic', marginBottom: 14, lineHeight: 1.5 }}>
-              Você foi convidada(o) para um círculo de leitura. Entre com um nome para participar:
+            <div style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 14, padding: '16px 18px', marginBottom: 14, textAlign: 'center' }}>
+              <div style={{ marginBottom: 8, opacity: 0.85 }}>{typeof BrandMark !== 'undefined' ? <BrandMark size={30}/> : null}</div>
+              <div style={{ fontFamily: T.serif, fontSize: 18, fontWeight: 500, letterSpacing: -0.3, color: T.ink, marginBottom: 6 }}>
+                Você foi convidada para a Marginália
+              </div>
+              <div style={{ fontFamily: T.serif, fontSize: 14, color: T.brown, lineHeight: 1.5, maxWidth: 320, margin: '0 auto' }}>
+                Um clube de leitura íntimo e curado, onde cada livro é uma porta. Entre abaixo para participar do círculo — a curadora confirma seu acesso e o seu lugar fica guardado.
+              </div>
             </div>
           )}
           <div style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '16px 18px' }}>
@@ -1373,10 +1379,20 @@ function ScreenGruposCloud({ onNav = () => {} }) {
               os livros e anotações se perdem. Para guardar de verdade, prefira <strong>entrar com e-mail</strong> abaixo.
             </div>
           </div>
-          <div style={{ textAlign: 'center', margin: '14px 0 0' }}>
-            <button onClick={() => onNav('library')} style={{ background: 'transparent', border: 0, color: T.brown, fontFamily: T.sans, fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>
-              ou entre com seu e-mail (conta permanente)
-            </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '16px 2px 12px' }}>
+            <div style={{ flex: 1, height: 1, background: T.hairline }}/>
+            <div style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: T.muted, fontWeight: 600 }}>ou</div>
+            <div style={{ flex: 1, height: 1, background: T.hairline }}/>
+          </div>
+          <button onClick={() => onNav('library')} style={{
+            width: '100%', padding: '13px 0', background: 'transparent', color: T.ink,
+            border: `1.5px solid ${T.ink}`, borderRadius: 12, fontFamily: T.sans, fontSize: 13,
+            fontWeight: 600, cursor: 'pointer',
+          }}>
+            Entrar com e-mail — guarda em qualquer aparelho
+          </button>
+          <div style={{ textAlign: 'center', fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 7 }}>
+            recomendado — seus livros e notas ficam salvos na nuvem
           </div>
           {msg && <div style={{ marginTop: 12, padding: '10px 12px', background: '#F4D9D0', borderRadius: 10, fontSize: 12, color: '#8E3E2A' }}>{msg}</div>}
         </div>
@@ -3146,7 +3162,9 @@ function ScreenLibrary({ onNav = () => {} }) {
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
           <div style={{ fontFamily: T.serif, fontSize: 30, fontWeight: 400, letterSpacing: -0.6, lineHeight: 1.05 }}>
             <span style={{ fontVariantNumeric: 'tabular-nums' }}>{all.length}</span>{' '}
-            <span style={{ fontStyle: 'italic', color: T.terra }}>livros</span>
+            <span style={{ fontStyle: 'italic', color: T.terra }}>
+              {(typeof window !== 'undefined' && window.__demoShelf) ? 'exemplos' : 'livros'}
+            </span>
           </div>
           <button onClick={() => setView(view === 'grid' ? 'list' : 'grid')} style={{
             background: 'transparent', border: `1px solid ${T.hairline}`, borderRadius: 8,
@@ -3223,9 +3241,28 @@ function ScreenLibrary({ onNav = () => {} }) {
 
       {/* sections */}
       <div style={{ padding: '20px 0 0' }}>
+        {/* Vitrine: estante ainda sem livros próprios → mostra os exemplos com
+            um convite claro pra começar a estante de verdade (os exemplos saem
+            de cena quando a leitora acrescenta o primeiro livro dela). */}
+        {(typeof window !== 'undefined' && window.__demoShelf && !q) && (
+          <div style={{ margin: '0 24px 4px', padding: '16px 18px', background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 14, textAlign: 'center', fontFamily: T.serif }}>
+            <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 6 }}>✦ Estante de exemplo</div>
+            <div style={{ fontSize: 14, lineHeight: 1.55, color: T.brown, maxWidth: 340, margin: '0 auto 14px' }}>
+              Estes livros são só uma amostra, para você ver a Marginália por dentro. Acrescente o primeiro livro <em>seu</em> — os exemplos saem de cena e a estante passa a ser sua.
+            </div>
+            <button
+              onClick={() => { if (typeof window.__editBook === 'function') window.__editBook({}); }}
+              style={{ padding: '11px 20px', borderRadius: 10, border: 0, background: T.ink, color: T.cream, fontFamily: T.sans, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              Começar a minha estante
+            </button>
+          </div>
+        )}
         {visibleSections.length === 0 && (
+          // tem livros, mas a busca/filtro atual não devolveu nada
           <div style={{ padding: '40px 24px', textAlign: 'center', color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>
-            {q ? `Nada encontrado para "${q}".` : 'Nada por aqui ainda. Toque no + para acrescentar.'}
+            {q ? `Nada encontrado para "${q}".`
+               : filter === 'nobel' ? 'Nenhum laureado do Nobel na sua estante ainda.'
+               : 'Nenhum livro nesta categoria por enquanto.'}
           </div>
         )}
         {visibleSections.map(s => (
