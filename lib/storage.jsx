@@ -52,6 +52,17 @@ function save(state) {
   }
 }
 
+// Acende a medalha do Nobel num livro recém-criado, casando o autor com a
+// lista de laureados (window.nobelForAuthor, definida em data.jsx). Roda em
+// runtime — data.jsx já carregou quando a leitora adiciona um livro.
+function enrichNobel(book) {
+  if (!book || book.nobel) return book;
+  const fn = (typeof window !== 'undefined') && window.nobelForAuthor;
+  if (!fn) return book;
+  const nobel = fn(book.author);
+  return nobel ? { ...book, nobel } : book;
+}
+
 const MG = {
   // estado completo
   getState: load,
@@ -77,6 +88,7 @@ const MG = {
     save(s);
   },
   addBook(book) {
+    book = enrichNobel(book);
     const books = this.getBooks();
     const next = [...books, book];
     this.setBooks(next);
@@ -85,6 +97,11 @@ const MG = {
     return next;
   },
   updateBook(bookId, patch) {
+    // se o autor mudou, reavalia a medalha do Nobel (acende ou apaga)
+    if (patch && Object.prototype.hasOwnProperty.call(patch, 'author') && !('nobel' in patch)) {
+      const fn = (typeof window !== 'undefined') && window.nobelForAuthor;
+      if (fn) patch = { ...patch, nobel: fn(patch.author) || undefined };
+    }
     // copy-on-write: se o livro é seed (não está em storage ainda),
     // copia o seed para storage com o patch aplicado; futuras edições gridam.
     const stored = this.getBooks([]);
@@ -383,5 +400,23 @@ MG.slimLegacyCovers = async function () {
 
 // agenda a migração depois do boot do app (barata quando não há capa gorda)
 setTimeout(() => { MG.slimLegacyCovers().catch(() => {}); }, 3000);
+
+// Migração leve: acende a medalha 🏅 nos livros JÁ na Biblioteca cujo autor é
+// laureado mas que entraram antes desta detecção (idempotente — só toca livros
+// sem campo nobel). Resolve o caso da leitora que adicionou um Nobel e não viu
+// a moeda. Roda uma vez por boot, depois que data.jsx expôs nobelForAuthor.
+MG.detectNobelInLibrary = function () {
+  if (typeof window === 'undefined' || !window.nobelForAuthor) return 0;
+  const books = this.getBooks([]);
+  let done = 0;
+  for (const b of books) {
+    if (!b || b.nobel) continue;
+    const nobel = window.nobelForAuthor(b.author);
+    if (nobel) { this.updateBook(b.id, { nobel }); done++; }
+  }
+  if (done) console.info('[Marginália] medalhas Nobel acesas:', done);
+  return done;
+};
+setTimeout(() => { try { MG.detectNobelInLibrary(); } catch (e) {} }, 3500);
 
 window.MG = MG;

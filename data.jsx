@@ -891,7 +891,111 @@ function computeMemorias({ books, notes, today = new Date() } = {}) {
   return out;
 }
 
+// ─── Laureados do Nobel de Literatura ────────────────────────────────────
+// Fonte: a lista da página /nobel/ (defaultData), categorias dos VENCEDORES
+// (1901–2025). Serve para acender a medalha 🏅 quando a leitora adiciona à
+// Biblioteca um livro de autor laureado. Triplas [autor, ano, país].
+// ⚠️ Espelho manual: ao incluir um novo laureado, atualizar aqui E em /nobel/.
+const NOBEL_LAUREATES = [
+  ['Sully Prudhomme',1901,'França'],['Theodor Mommsen',1902,'Alemanha'],
+  ['Bjørnstjerne Bjørnson',1903,'Noruega'],['Frédéric Mistral',1904,'França'],
+  ['José Echegaray',1904,'Espanha'],['Henryk Sienkiewicz',1905,'Polônia'],
+  ['Giosuè Carducci',1906,'Itália'],['Rudyard Kipling',1907,'Reino Unido'],
+  ['Rudolf Eucken',1908,'Alemanha'],['Selma Lagerlöf',1909,'Suécia'],
+  ['Paul Heyse',1910,'Alemanha'],['Maurice Maeterlinck',1911,'Bélgica'],
+  ['Gerhart Hauptmann',1912,'Alemanha'],['Rabindranath Tagore',1913,'Índia'],
+  ['Romain Rolland',1915,'França'],['Verner von Heidenstam',1916,'Suécia'],
+  ['Karl Gjellerup',1917,'Dinamarca'],['Henrik Pontoppidan',1917,'Dinamarca'],
+  ['Carl Spitteler',1919,'Suíça'],['Knut Hamsun',1920,'Noruega'],
+  ['Anatole France',1921,'França'],['Jacinto Benavente',1922,'Espanha'],
+  ['W.B. Yeats',1923,'Irlanda'],['William Butler Yeats',1923,'Irlanda'],
+  ['Władysław Reymont',1924,'Polônia'],['George Bernard Shaw',1925,'Irlanda'],
+  ['Grazia Deledda',1926,'Itália'],['Henri Bergson',1927,'França'],
+  ['Sigrid Undset',1928,'Noruega'],['Thomas Mann',1929,'Alemanha'],
+  ['Sinclair Lewis',1930,'EUA'],['Erik Axel Karlfeldt',1931,'Suécia'],
+  ['John Galsworthy',1932,'Reino Unido'],['Ivan Bunin',1933,'Rússia'],
+  ['Luigi Pirandello',1934,'Itália'],['Eugene O’Neill',1936,'EUA'],
+  ['Roger Martin du Gard',1937,'França'],['Pearl S. Buck',1938,'EUA'],
+  ['Frans Eemil Sillanpää',1939,'Finlândia'],['Johannes V. Jensen',1944,'Dinamarca'],
+  ['Gabriela Mistral',1945,'Chile'],['Hermann Hesse',1946,'Alemanha'],
+  ['André Gide',1947,'França'],['T.S. Eliot',1948,'Reino Unido'],
+  ['Thomas Stearns Eliot',1948,'Reino Unido'],['William Faulkner',1949,'EUA'],
+  ['Bertrand Russell',1950,'Reino Unido'],['Pär Lagerkvist',1951,'Suécia'],
+  ['François Mauriac',1952,'França'],['Winston Churchill',1953,'Reino Unido'],
+  ['Ernest Hemingway',1954,'EUA'],['Halldór Laxness',1955,'Islândia'],
+  ['Juan Ramón Jiménez',1956,'Espanha'],['Albert Camus',1957,'França'],
+  ['Boris Pasternak',1958,'URSS'],['Salvatore Quasimodo',1959,'Itália'],
+  ['Saint-John Perse',1960,'França'],['Ivo Andrić',1961,'Iugoslávia'],
+  ['John Steinbeck',1962,'EUA'],['Giorgos Seferis',1963,'Grécia'],
+  ['Jean-Paul Sartre',1964,'França'],['Mikhail Sholokhov',1965,'URSS'],
+  ['Shmuel Yosef Agnon',1966,'Israel'],['Nelly Sachs',1966,'Alemanha/Suécia'],
+  ['Miguel Ángel Asturias',1967,'Guatemala'],['Yasunari Kawabata',1968,'Japão'],
+  ['Samuel Beckett',1969,'Irlanda'],['Aleksandr Solzhenitsyn',1970,'URSS'],
+  ['Pablo Neruda',1971,'Chile'],['Heinrich Böll',1972,'Alemanha'],
+  ['Patrick White',1973,'Austrália'],['Eyvind Johnson',1974,'Suécia'],
+  ['Harry Martinson',1974,'Suécia'],['Eugenio Montale',1975,'Itália'],
+  ['Saul Bellow',1976,'EUA'],['Vicente Aleixandre',1977,'Espanha'],
+  ['Isaac Bashevis Singer',1978,'EUA'],['Odysseas Elytis',1979,'Grécia'],
+  ['Czesław Miłosz',1980,'Polônia'],['Elias Canetti',1981,'Bulgária/Reino Unido'],
+  ['Gabriel García Márquez',1982,'Colômbia'],['William Golding',1983,'Reino Unido'],
+  ['Jaroslav Seifert',1984,'Tcheco-Eslováquia'],['Claude Simon',1985,'França'],
+  ['Wole Soyinka',1986,'Nigéria'],['Joseph Brodsky',1987,'URSS/EUA'],
+  ['Naguib Mahfouz',1988,'Egito'],['Camilo José Cela',1989,'Espanha'],
+  ['Octavio Paz',1990,'México'],['Nadine Gordimer',1991,'África do Sul'],
+  ['Derek Walcott',1992,'Santa Lúcia'],['Toni Morrison',1993,'EUA'],
+  ['Kenzaburō Ōe',1994,'Japão'],['Seamus Heaney',1995,'Irlanda'],
+  ['Wisława Szymborska',1996,'Polônia'],['Dario Fo',1997,'Itália'],
+  ['José Saramago',1998,'Portugal'],['Günter Grass',1999,'Alemanha'],
+  ['Gao Xingjian',2000,'China/França'],['V.S. Naipaul',2001,'Trinidad/Reino Unido'],
+  ['Vidiadhar Surajprasad Naipaul',2001,'Trinidad/Reino Unido'],
+  ['Imre Kertész',2002,'Hungria'],['J.M. Coetzee',2003,'África do Sul'],
+  ['John Maxwell Coetzee',2003,'África do Sul'],['Elfriede Jelinek',2004,'Áustria'],
+  ['Harold Pinter',2005,'Reino Unido'],['Orhan Pamuk',2006,'Turquia'],
+  ['Doris Lessing',2007,'Reino Unido'],['J.M.G. Le Clézio',2008,'França'],
+  ['Jean-Marie Gustave Le Clézio',2008,'França'],['Herta Müller',2009,'Romênia/Alemanha'],
+  ['Mario Vargas Llosa',2010,'Peru'],['Tomas Tranströmer',2011,'Suécia'],
+  ['Mo Yan',2012,'China'],['Alice Munro',2013,'Canadá'],
+  ['Patrick Modiano',2014,'França'],['Svetlana Alexievich',2015,'Bielorrússia'],
+  ['Bob Dylan',2016,'EUA'],['Kazuo Ishiguro',2017,'Reino Unido'],
+  ['Olga Tokarczuk',2018,'Polônia'],['Peter Handke',2019,'Áustria'],
+  ['Louise Glück',2020,'EUA'],['Abdulrazak Gurnah',2021,'Tanzânia/Reino Unido'],
+  ['Annie Ernaux',2022,'França'],['Jon Fosse',2023,'Noruega'],
+  ['Han Kang',2024,'Coreia do Sul'],['László Krasznahorkai',2025,'Hungria'],
+];
+
+function _normNobelName(s) {
+  return (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
+}
+const _NOBEL_BY_NAME = {};
+const _NOBEL_TOKENS = [];
+NOBEL_LAUREATES.forEach(([author, ano, pais]) => {
+  const n = _normNobelName(author);
+  if (!_NOBEL_BY_NAME[n]) _NOBEL_BY_NAME[n] = { ano, pais };
+  const toks = n.split(' ');
+  _NOBEL_TOKENS.push({ first: toks[0], last: toks[toks.length - 1], ano, pais });
+});
+
+// Devolve { ano, pais } se o autor for laureado, senão null.
+// Match: nome normalizado exato; depois primeiro+último nome ambos presentes
+// (cobre acentos perdidos, ordem trocada e nomes do meio extra; exige os dois
+// para não confundir parentes homônimos — ex. Heinrich ≠ Thomas Mann).
+function nobelForAuthor(author) {
+  const n = _normNobelName(author);
+  if (!n) return null;
+  if (_NOBEL_BY_NAME[n]) return _NOBEL_BY_NAME[n];
+  const toks = n.split(' ');
+  for (const L of _NOBEL_TOKENS) {
+    if (L.first.length >= 2 && L.last.length >= 3
+        && toks.indexOf(L.first) !== -1 && toks.indexOf(L.last) !== -1) {
+      return { ano: L.ano, pais: L.pais };
+    }
+  }
+  return null;
+}
+
 Object.assign(window, {
+  NOBEL_LAUREATES, nobelForAuthor,
   BOOK_CURRENT, NOTES_SEED, BOOKS_SEED, THEMES_STUDY, ACTIVITY,
   PONTES, PONTE_CATS, GLOSSARIO, ECOS_CURADOS, curatedEcos,
   PONTES_OBRAS, pontesNaEstante,
