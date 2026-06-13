@@ -3439,13 +3439,14 @@ function AlimentarPanel({ owned = true }) {
               <div style={{ fontSize: 12.5, color: T.muted, fontStyle: 'italic', fontFamily: T.serif, padding: '8px 0' }}>Nada encontrado. Tente outra busca — ou use "À mão".</div>
             ) : (
               <>
-                <div style={{ fontSize: 10.5, color: T.muted, marginBottom: 4, fontFamily: T.sans }}>{results.length} {results.length === 1 ? 'título' : 'títulos'} · toque pra inserir — o painel fica aberto</div>
+                <div style={{ fontSize: 10.5, color: T.muted, marginBottom: 4, fontFamily: T.sans }}>{results.length} {results.length === 1 ? 'título' : 'títulos'} · toque no livro para adicionar — pode adicionar vários</div>
                 {results.map((r, i) => {
                   const k = keyOf(r.title, r.author);
                   const inside = existing.has(k) || done.includes(k);
                   const foreign = r.lang && r.lang !== 'pt';
                   return (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 0', borderBottom: `1px solid ${T.hairlineSoft}`, opacity: foreign ? 0.55 : 1 }}>
+                    <button key={i} onClick={() => { if (!inside) insert(r.title, r.author, { year: r.year, pages: r.pages, isbn: r.isbn }); }} disabled={inside}
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 2px', borderBottom: `1px solid ${T.hairlineSoft}`, background: 'transparent', border: 0, textAlign: 'left', cursor: inside ? 'default' : 'pointer', opacity: foreign ? 0.6 : 1 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontFamily: T.serif, fontSize: 13.5, fontWeight: 500, lineHeight: 1.2, color: T.ink }}>
                           {r.title}{foreign && <span style={{ fontSize: 9.5, color: '#9a7b54', border: '1px solid rgba(154,123,84,.4)', borderRadius: 10, padding: '1px 6px', marginLeft: 6 }}>{String(r.lang || '').toUpperCase()}</span>}
@@ -3455,11 +3456,15 @@ function AlimentarPanel({ owned = true }) {
                         </div>
                       </div>
                       {inside ? (
-                        <span style={{ width: 28, height: 28, flexShrink: 0, borderRadius: '50%', background: T.terra, color: T.cream, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="check" size={14} color={T.cream}/></span>
+                        <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: T.sans, fontSize: 11, fontWeight: 600, color: T.terra }}>
+                          <Icon name="check" size={14} color={T.terra}/> adicionado
+                        </span>
                       ) : (
-                        <button onClick={() => insert(r.title, r.author, { year: r.year, pages: r.pages, isbn: r.isbn })} aria-label="inserir" style={{ width: 28, height: 28, flexShrink: 0, borderRadius: '50%', background: 'transparent', border: `1px solid ${T.terra}`, color: T.terra, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icon name="plus" size={15} color={T.terra}/></button>
+                        <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5, background: T.terra, color: T.cream, borderRadius: 999, padding: '7px 13px', fontFamily: T.sans, fontSize: 11.5, fontWeight: 600 }}>
+                          <Icon name="plus" size={13} color={T.cream}/> Adicionar
+                        </span>
                       )}
-                    </div>
+                    </button>
                   );
                 })}
               </>
