@@ -210,6 +210,10 @@ function Icon({ name, size = 20, color = 'currentColor', strokeWidth = 1.6 }) {
     list: <><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1" fill={color}/><circle cx="4" cy="12" r="1" fill={color}/><circle cx="4" cy="18" r="1" fill={color}/></>,
     hourglass: <><path d="M7 3h10M7 21h10M7 3l5 9 5-9M7 21l5-9 5 9"/></>,
     globe: <><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></>,
+    moon: <><path d="M21 12.8A8.5 8.5 0 1111.2 3 6.7 6.7 0 0021 12.8z"/></>,
+    check: <><path d="M5 12.5l4.5 4.5L19 6.5"/></>,
+    wind: <><path d="M3 9h11a2.5 2.5 0 10-2.5-2.5M3 15h15a2.5 2.5 0 11-2.5 2.5M3 12h8"/></>,
+    reading: <><path d="M12 7C9.5 5.4 6.6 5.4 4 6.6v12c2.6-1.2 5.5-1.2 8 .4 2.5-1.6 5.4-1.6 8-.4v-12C17.4 5.4 14.5 5.4 12 7z"/><path d="M12 7v12"/></>,
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"

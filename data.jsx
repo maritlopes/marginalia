@@ -17,6 +17,37 @@ const BOOK_STATUS = {
   paused:  { id: 'paused',  label: 'Pausado', color: '#8A7E6B' },
 };
 
+// ─────────────────────────────────────────────────────────────
+// AS TRÊS VISÕES DA BIBLIOTECA — eixos ortogonais sobre UM só livro
+//   posse   →  owned : true  = tenho (Minha biblioteca / catálogo)
+//                      false = Lista de desejos (quero comprar)
+//   leitura →  status: null/ausente = dorme (só no catálogo)
+//                      'tbr'=quero ler · 'reading'/'paused'=lendo · 'read'=lido
+// A Estante de leitura é o subconjunto "aceso" (status ≠ null), curado e curto;
+// o catálogo é a verdade e o histórico. Um livro pode estar em mais de uma visão.
+// Retrocompat (migração virtual, sem reescrever dado): livro sem o campo `owned`
+// conta como owned:true — todo livro antigo é um livro que a leitora tem.
+// O desejo nasce com owned:false EXPLÍCITO; ao "comprar", vira owned:true (dorme).
+// ─────────────────────────────────────────────────────────────
+const SHELF_STATUS = ['reading', 'paused', 'tbr', 'read'];
+function bookOwned(b)   { return !!b && b.owned !== false; }
+function bookOnShelf(b) { return !!b && SHELF_STATUS.indexOf(b.status) !== -1; }
+function bookDormant(b) { return bookOwned(b) && !bookOnShelf(b); } // no catálogo, ainda dorme
+// Reparte uma lista de livros nas três visões (e nas seções da Estante),
+// sem duplicar nenhum dado — tudo derivado dos eixos owned × status.
+function libraryViews(books) {
+  const bs = Array.isArray(books) ? books : [];
+  return {
+    desejos:  bs.filter(b => !bookOwned(b)),                              // Lista de desejos
+    catalogo: bs.filter(bookOwned),                                      // Minha biblioteca (tudo que tem)
+    estante:  bs.filter(bookOnShelf),                                    // Estante de leitura (aceso)
+    dormem:   bs.filter(bookDormant),                                    // "Os que ainda dormem"
+    lendo:    bs.filter(b => b.status === 'reading' || b.status === 'paused'),
+    quero:    bs.filter(b => b.status === 'tbr'),
+    lidos:    bs.filter(b => b.status === 'read'),
+  };
+}
+
 const BOOK_CURRENT = {
   id: 'meditacoes',
   title: 'Meditações',
@@ -999,7 +1030,8 @@ Object.assign(window, {
   BOOK_CURRENT, NOTES_SEED, BOOKS_SEED, THEMES_STUDY, ACTIVITY,
   PONTES, PONTE_CATS, GLOSSARIO, ECOS_CURADOS, curatedEcos,
   PONTES_OBRAS, pontesNaEstante,
-  BOOK_STATUS, HOJE_BANNER, FRASES_MARCANTES, CURADORIA, SUGESTOES_POR_LIVRO,
+  BOOK_STATUS, SHELF_STATUS, bookOwned, bookOnShelf, bookDormant, libraryViews,
+  HOJE_BANNER, FRASES_MARCANTES, CURADORIA, SUGESTOES_POR_LIVRO,
   CHALLENGE_TYPES, CHALLENGE_PERIODS, CHALLENGE_SUGESTOES, periodWindow,
   computeMemorias,
   _refreshLive,

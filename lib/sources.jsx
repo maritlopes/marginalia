@@ -107,6 +107,58 @@ const Sources = {
     return results;
   },
 
+  // Busca por AUTOR — lista as obras de um autor para alimentar o catálogo
+  // rápido ("tenho uma prateleira inteira de Saramago"). Usa o qualificador
+  // inauthor: do Google (mais preciso que busca livre) e deduplica as várias
+  // edições do mesmo título (Google devolve uma entrada por edição).
+  async searchByAuthor(name, limit = 20) {
+    if (!name) return [];
+    const k = 'ga:' + name;
+    const cached = _cacheGet(k);
+    if (cached) return cached;
+    const _norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+    let results = [];
+    try {
+      let url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent('inauthor:"' + name + '"')}&maxResults=40&printType=books&orderBy=relevance&country=BR`;
+      if (GOOGLE_BOOKS_KEY) url += '&key=' + GOOGLE_BOOKS_KEY;
+      const res = await fetch(url);
+      const data = await res.json();
+      results = (data.items || []).map(it => {
+        const v = it.volumeInfo || {};
+        const ids = v.industryIdentifiers || [];
+        const isbnObj = ids.find(x => x.type === 'ISBN_13') || ids.find(x => x.type === 'ISBN_10') || ids[0];
+        return {
+          title: v.title + (v.subtitle ? ': ' + v.subtitle : ''),
+          author: (v.authors && v.authors[0]) || name,
+          year: v.publishedDate ? String(v.publishedDate).slice(0, 4) : null,
+          pages: v.pageCount || null,
+          isbn: isbnObj ? isbnObj.identifier : null,
+          lang: v.language || null,
+        };
+      }).filter(r => r.title);
+      // dedupe por título normalizado (mantém a 1ª edição; PT primeiro)
+      results.sort((a, b) => (b.lang === 'pt' ? 1 : 0) - (a.lang === 'pt' ? 1 : 0));
+      const seen = new Set(); const dedup = [];
+      for (const r of results) { const key = _norm(r.title); if (!key || seen.has(key)) continue; seen.add(key); dedup.push(r); }
+      results = dedup.slice(0, limit);
+    } catch (e) {
+      console.warn('[Marginália] busca por autor falhou', name, e);
+    }
+    // reserva: Open Library por autor
+    if (!results.length) {
+      try {
+        const res = await fetch(`https://openlibrary.org/search.json?author=${encodeURIComponent(name)}&limit=${limit}&fields=title,author_name,first_publish_year`);
+        const data = await res.json();
+        const seen = new Set();
+        results = (data.docs || []).map(d => ({
+          title: d.title, author: (d.author_name || [name])[0], year: d.first_publish_year || null,
+        })).filter(r => { const key = _norm(r.title); if (!key || seen.has(key)) return false; seen.add(key); return true; }).slice(0, limit);
+      } catch { results = []; }
+    }
+    _cacheSet(k, results);
+    return results;
+  },
+
   // reserva: busca por título no Open Library
   async _searchOpenLibrary(query, limit = 8) {
     const res = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=${limit}&fields=title,author_name,first_publish_year,isbn,cover_i,number_of_pages_median,publisher,key`);

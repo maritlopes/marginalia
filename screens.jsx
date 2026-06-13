@@ -3045,15 +3045,57 @@ function ScreenFoco({ onNav = () => {} }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// ScreenLibrary — toda a biblioteca, em três seções (Lendo / Lidos / TBR)
+// ScreenLibrary — três visões sobre o MESMO livro: Estante (premente) ·
+// Catálogo (Minha biblioteca) · Desejos. Abre na Estante. As visões derivam
+// dos eixos owned × status via window.libraryViews (ver data.jsx).
 // ─────────────────────────────────────────────────────────────
 function ScreenLibrary({ onNav = () => {} }) {
+  const [tab, setTab] = React.useState('estante'); // estante | catalogo | desejos
+  const all = window.BOOKS || [];
+  const V = (typeof window.libraryViews === 'function')
+    ? window.libraryViews(all)
+    : { estante: all, catalogo: all, desejos: [], dormem: [], lendo: [], quero: [], lidos: [] };
+  const tabs = [
+    { id: 'estante',  l: 'Estante',  n: V.estante.length },
+    { id: 'catalogo', l: 'Acervo', n: V.catalogo.length },
+    { id: 'desejos',  l: 'Desejos',  n: V.desejos.length },
+  ];
+  return (
+    <div style={{ width: '100%', height: '100%', background: T.bone, overflow: 'auto', paddingBottom: 120 }}>
+      <div style={{ padding: '56px 24px 0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <div style={{ fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, fontWeight: 600 }}>Sua biblioteca</div>
+          <BrandMark size={22}/>
+        </div>
+        <div style={{ display: 'flex', gap: 6, background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: 4 }}>
+          {tabs.map(t => {
+            const on = tab === t.id;
+            return (
+              <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, padding: '9px 6px', borderRadius: 9, border: 0, cursor: 'pointer', background: on ? T.terra : 'transparent', color: on ? T.cream : T.brown, fontFamily: T.sans, fontSize: 12.5, fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                {t.l}<span style={{ fontSize: 10, fontFamily: T.mono, opacity: 0.75, fontVariantNumeric: 'tabular-nums' }}>{t.n}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      {tab === 'estante'  && <EstanteView all={all} V={V} onNav={onNav}/>}
+      {tab === 'catalogo' && <CatalogoView all={all} V={V} onNav={onNav}/>}
+      {tab === 'desejos'  && <DesejosView all={all} V={V} onNav={onNav}/>}
+      <BackupPanel/>
+    </div>
+  );
+}
+
+// ── Visão 1: Estante de leitura (premente, curada, COM capa) ──
+function EstanteView({ all, V, onNav = () => {} }) {
   const [filter, setFilter] = React.useState('all');
   const [view, setView] = React.useState('grid'); // grid | list
   const [sort, setSort] = React.useState('added'); // added | title | progress
   const [query, setQuery] = React.useState('');
-
-  const all = window.BOOKS || [];
+  const [showAllRead, setShowAllRead] = React.useState(false);
+  const READ_CAP = 20;
+  const shelf = V.estante; // só os "acesos" (status ≠ null); os dormentes vivem no catálogo
+  const demo = (typeof window !== 'undefined' && window.__demoShelf);
 
   // estatísticas — na vitrine (estante vazia, exemplos) os números de leitura ficam zerados
   const stats = React.useMemo(() => {
@@ -3080,39 +3122,41 @@ function ScreenLibrary({ onNav = () => {} }) {
     progress: (a, b) => (b.pct || 0) - (a.pct || 0),
   }[sort];
 
-  // busca
+  // busca — dentro da estante (os dormentes ficam no catálogo)
   const q = query.trim().toLowerCase();
   const matches = q
-    ? all.filter(b =>
+    ? shelf.filter(b =>
         (b.title || '').toLowerCase().includes(q) ||
         (b.author || '').toLowerCase().includes(q) ||
         (b.theme || '').toLowerCase().includes(q))
-    : all;
+    : shelf;
 
   // filtro Nobel corta TRANSVERSALMENTE (mantém as seções por status,
   // mas só com os livros de autores laureados — campo b.nobel)
   const pool = filter === 'nobel' ? matches.filter(b => b.nobel) : matches;
 
+  // Lidos é curado/curto: ~20 à vista, "ver mais" expande no lugar.
+  const readBooks = [...pool.filter(b => b.status === 'read')].sort(sortFn);
+  const readShown = showAllRead ? readBooks : readBooks.slice(0, READ_CAP);
+
   const sections = [
     { id: 'reading', label: 'Lendo agora', accent: T.terra,
       books: [...pool.filter(b => b.status === 'reading')].sort(sortFn) },
-    { id: 'tbr', label: 'TBR — para ler', accent: T.ochre,
+    { id: 'tbr', label: 'Quero ler', accent: T.ochre,
       books: [...pool.filter(b => b.status === 'tbr')].sort(sortFn) },
     { id: 'paused', label: 'Pausados', accent: T.muted,
       books: [...pool.filter(b => b.status === 'paused')].sort(sortFn) },
-    { id: 'read', label: 'Lidos', accent: T.olive,
-      books: [...pool.filter(b => b.status === 'read')].sort(sortFn) },
-    { id: 'unset', label: 'Sem categoria', accent: T.brown,
-      books: [...pool.filter(b => !b.status)].sort(sortFn) },
+    { id: 'read', label: 'Lidos recentes', accent: T.olive,
+      books: readShown, more: readBooks.length - readShown.length },
   ].filter(s => s.books.length > 0);
 
   const filters = [
     { id: 'all', l: 'Tudo' },
     { id: 'reading', l: 'Lendo' },
-    { id: 'tbr', l: 'TBR' },
+    { id: 'tbr', l: 'Quero ler' },
     { id: 'read', l: 'Lidos' },
     // só aparece quando a estante tem laureados
-    ...(all.some(b => b.nobel) ? [{ id: 'nobel', l: '🏅 Nobel' }] : []),
+    ...(shelf.some(b => b.nobel) ? [{ id: 'nobel', l: '🏅 Nobel' }] : []),
   ];
 
   const visibleSections = (filter === 'all' || filter === 'nobel')
@@ -3120,20 +3164,12 @@ function ScreenLibrary({ onNav = () => {} }) {
     : sections.filter(s => s.id === filter);
 
   return (
-    <div style={{ width: '100%', height: '100%', background: T.bone, overflow: 'auto', paddingBottom: 120 }}>
-      <div style={{ padding: '56px 24px 12px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-          <div style={{ fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, fontWeight: 600 }}>
-            Sua biblioteca
-          </div>
-          <BrandMark size={22}/>
-        </div>
+    <>
+      <div style={{ padding: '14px 24px 2px' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
-          <div style={{ fontFamily: T.serif, fontSize: 30, fontWeight: 400, letterSpacing: -0.6, lineHeight: 1.05 }}>
-            <span style={{ fontVariantNumeric: 'tabular-nums' }}>{all.length}</span>{' '}
-            <span style={{ fontStyle: 'italic', color: T.terra }}>
-              {(typeof window !== 'undefined' && window.__demoShelf) ? 'exemplos' : 'livros'}
-            </span>
+          <div style={{ fontFamily: T.serif, fontSize: 28, fontWeight: 400, letterSpacing: -0.6, lineHeight: 1.05 }}>
+            <span style={{ fontVariantNumeric: 'tabular-nums' }}>{shelf.length}</span>{' '}
+            <span style={{ fontStyle: 'italic', color: T.terra }}>{demo ? 'exemplos' : 'na estante'}</span>
           </div>
           <button onClick={() => setView(view === 'grid' ? 'list' : 'grid')} style={{
             background: 'transparent', border: `1px solid ${T.hairline}`, borderRadius: 8,
@@ -3142,6 +3178,7 @@ function ScreenLibrary({ onNav = () => {} }) {
             <Icon name={view === 'grid' ? 'list' : 'grid'} size={16}/>
           </button>
         </div>
+        <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, color: T.terra, marginTop: 2 }}>O que pede presença agora.</div>
       </div>
 
       {/* estatísticas */}
@@ -3231,16 +3268,290 @@ function ScreenLibrary({ onNav = () => {} }) {
           <div style={{ padding: '40px 24px', textAlign: 'center', color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>
             {q ? `Nada encontrado para "${q}".`
                : filter === 'nobel' ? 'Nenhum laureado do Nobel na sua estante ainda.'
-               : 'Nenhum livro nesta categoria por enquanto.'}
+               : 'A estante está em silêncio. Tire a poeira de um livro do acervo para trazê-lo aqui.'}
           </div>
         )}
         {visibleSections.map(s => (
-          <LibrarySection key={s.id} section={s} view={view}/>
+          <React.Fragment key={s.id}>
+            <LibrarySection section={s} view={view}/>
+            {s.id === 'read' && s.more > 0 && !showAllRead && (
+              <div style={{ padding: '0 24px 22px', marginTop: -12 }}>
+                <button onClick={() => setShowAllRead(true)} style={{
+                  width: '100%', padding: '10px', borderRadius: 10, background: 'transparent',
+                  border: `1px solid ${T.hairline}`, color: T.brown, fontFamily: T.sans,
+                  fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                }}>
+                  <Icon name="chevron" size={13}/> ver mais {s.more} {s.more === 1 ? 'lido' : 'lidos'}
+                </button>
+              </div>
+            )}
+          </React.Fragment>
         ))}
       </div>
+    </>
+  );
+}
 
-      <BackupPanel/>
+// ── Linha compacta (catálogo / desejos): SEM capa, só título + autor ──
+// Marca de status à esquerda quando showStatus (dorme · em leitura · lido).
+function CatalogRow({ b, showStatus = false, right = null }) {
+  const open = () => { if (typeof window.__openBook === 'function') window.__openBook(b); };
+  let mark = { ic: 'bookmark', c: T.muted };
+  if (showStatus) {
+    mark = b.status === 'read' ? { ic: 'check', c: T.olive }
+      : (b.status === 'reading' || b.status === 'paused') ? { ic: 'reading', c: T.terra }
+      : { ic: 'moon', c: T.muted };
+  }
+  return (
+    <div onClick={open} style={{ display: 'flex', gap: 11, alignItems: 'center', padding: '11px 0', borderBottom: `1px solid ${T.hairlineSoft}`, cursor: 'pointer' }}>
+      <Icon name={mark.ic} size={15} color={mark.c}/>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: T.serif, fontSize: 14, fontWeight: 500, lineHeight: 1.2, color: T.ink }}>
+          {b.title}{b.nobel && <NobelMark nobel={b.nobel} size={11}/>}
+        </div>
+        <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 11, color: T.brown, marginTop: 1 }}>
+          {b.author || 'autor desconhecido'}{b.year ? ` · ${b.year}` : ''}
+        </div>
+      </div>
+      {right}
     </div>
+  );
+}
+
+// ── Painel "alimentar": busca por autor/título e insere SEM capa, OU à mão.
+// owned=true → catálogo (Minha biblioteca); owned=false → Lista de desejos.
+// Fica aberto após inserir, pra emendar vários. A capa só nasce depois, no
+// ritual "tirar a poeira" (a estante é a única visão com capa).
+function AlimentarPanel({ owned = true }) {
+  const [open, setOpen] = React.useState(false);
+  const [mode, setMode] = React.useState('autor'); // autor | titulo | mao
+  const [q, setQ] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+  const [results, setResults] = React.useState(null);
+  const [mt, setMt] = React.useState('');
+  const [ma, setMa] = React.useState('');
+  const [done, setDone] = React.useState([]); // chaves inseridas nesta sessão do painel
+
+  const norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  const keyOf = (t, a) => norm(t) + '|' + norm(a || '');
+  const existing = new Set((window.BOOKS || []).map(b => keyOf(b.title, b.author)));
+  const noun = owned ? 'acervo' : 'lista de desejos';
+
+  const search = async () => {
+    if (!q.trim() || typeof Sources === 'undefined') return;
+    setBusy(true); setResults(null);
+    try {
+      const list = mode === 'autor'
+        ? await Sources.searchByAuthor(q.trim(), 20)
+        : await Sources.searchByTitle(q.trim(), 12);
+      setResults(list || []);
+    } catch { setResults([]); }
+    finally { setBusy(false); }
+  };
+
+  const insert = (title, author, extra = {}) => {
+    if (typeof MG === 'undefined' || !MG.addBook) return;
+    const k = keyOf(title, author);
+    if (!String(title || '').trim() || existing.has(k) || done.includes(k)) return;
+    const id = (title || 'livro').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30) + '-' + Date.now().toString(36).slice(-4);
+    MG.addBook({
+      id, title: String(title).trim(), author: String(author || '').trim(),
+      owned, status: null, cover: null,
+      year: extra.year || null, pages: extra.pages || null, isbn: extra.isbn || null,
+      tone: ['terra', 'olive', 'ochre', 'sage', 'ink'][Math.floor(Math.random() * 5)],
+      addedAt: new Date().toISOString(),
+    });
+    setDone(d => [...d, k]);
+  };
+
+  const insertManual = () => { if (mt.trim()) { insert(mt, ma); setMt(''); setMa(''); } };
+
+  if (!open) {
+    return (
+      <div style={{ padding: '14px 24px 0' }}>
+        <button onClick={() => setOpen(true)} style={{ width: '100%', padding: '12px', borderRadius: 12, background: T.terra, color: T.cream, border: 0, fontFamily: T.sans, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
+          <Icon name="plus" size={16} color={T.cream}/> {owned ? 'Acrescentar ao acervo' : 'Acrescentar um desejo'}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: '14px 24px 0' }}>
+      <div style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 14, padding: '14px 14px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 500 }}>Acrescentar ao {noun}</div>
+          <button onClick={() => { setOpen(false); setResults(null); setQ(''); setDone([]); }} style={{ background: 'transparent', border: 0, cursor: 'pointer', color: T.muted, padding: 4 }} aria-label="fechar">
+            <Icon name="x" size={16}/>
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+          {[{ id: 'autor', l: 'Por autor', ic: 'user' }, { id: 'titulo', l: 'Por título', ic: 'book' }, { id: 'mao', l: 'À mão', ic: 'pen' }].map(m => {
+            const on = mode === m.id;
+            return (
+              <button key={m.id} onClick={() => { setMode(m.id); setResults(null); }} style={{ flex: 1, padding: '7px 4px', borderRadius: 9, border: `1px solid ${on ? T.terra : T.hairline}`, background: on ? T.terra : 'transparent', color: on ? T.cream : T.brown, fontFamily: T.sans, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                <Icon name={m.ic} size={12} color={on ? T.cream : T.brown}/> {m.l}
+              </button>
+            );
+          })}
+        </div>
+
+        {mode === 'mao' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <input value={mt} onChange={e => setMt(e.target.value)} placeholder="título"
+              style={{ padding: '10px 12px', border: `1px solid ${T.hairline}`, borderRadius: 9, background: T.paper, color: T.ink, fontFamily: T.sans, fontSize: 13, outline: 'none' }}/>
+            <input value={ma} onChange={e => setMa(e.target.value)} onKeyDown={e => e.key === 'Enter' && insertManual()} placeholder="autor"
+              style={{ padding: '10px 12px', border: `1px solid ${T.hairline}`, borderRadius: 9, background: T.paper, color: T.ink, fontFamily: T.sans, fontSize: 13, outline: 'none' }}/>
+            <button onClick={insertManual} disabled={!mt.trim()} style={{ padding: '10px', borderRadius: 9, border: 0, background: T.ink, color: T.cream, fontFamily: T.sans, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', opacity: mt.trim() ? 1 : 0.5 }}>Inserir</button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: 7 }}>
+            <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && search()}
+              placeholder={mode === 'autor' ? 'nome do autor (ex.: José Saramago)' : 'título do livro'}
+              style={{ flex: 1, padding: '10px 12px', border: `1px solid ${T.hairline}`, borderRadius: 9, background: T.paper, color: T.ink, fontFamily: T.sans, fontSize: 13, outline: 'none' }}/>
+            <button onClick={search} disabled={busy || !q.trim()} style={{ background: T.ink, color: T.cream, border: 0, borderRadius: 9, padding: '0 16px', fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: busy ? 'wait' : 'pointer', opacity: (busy || !q.trim()) ? 0.6 : 1 }}>{busy ? '…' : 'Buscar'}</button>
+          </div>
+        )}
+
+        {mode !== 'mao' && results && (
+          <div style={{ marginTop: 12 }}>
+            {results.length === 0 ? (
+              <div style={{ fontSize: 12.5, color: T.muted, fontStyle: 'italic', fontFamily: T.serif, padding: '8px 0' }}>Nada encontrado. Tente outra busca — ou use "À mão".</div>
+            ) : (
+              <>
+                <div style={{ fontSize: 10.5, color: T.muted, marginBottom: 4, fontFamily: T.sans }}>{results.length} {results.length === 1 ? 'título' : 'títulos'} · toque pra inserir — o painel fica aberto</div>
+                {results.map((r, i) => {
+                  const k = keyOf(r.title, r.author);
+                  const inside = existing.has(k) || done.includes(k);
+                  const foreign = r.lang && r.lang !== 'pt';
+                  return (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 0', borderBottom: `1px solid ${T.hairlineSoft}`, opacity: foreign ? 0.55 : 1 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: T.serif, fontSize: 13.5, fontWeight: 500, lineHeight: 1.2, color: T.ink }}>
+                          {r.title}{foreign && <span style={{ fontSize: 9.5, color: '#9a7b54', border: '1px solid rgba(154,123,84,.4)', borderRadius: 10, padding: '1px 6px', marginLeft: 6 }}>{String(r.lang || '').toUpperCase()}</span>}
+                        </div>
+                        <div style={{ fontSize: 10.5, color: T.muted, fontFamily: T.sans, marginTop: 1 }}>
+                          {mode === 'autor' ? (r.year || '') : ((r.author || 'autor desconhecido') + (r.year ? ` · ${r.year}` : ''))}
+                        </div>
+                      </div>
+                      {inside ? (
+                        <span style={{ width: 28, height: 28, flexShrink: 0, borderRadius: '50%', background: T.terra, color: T.cream, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="check" size={14} color={T.cream}/></span>
+                      ) : (
+                        <button onClick={() => insert(r.title, r.author, { year: r.year, pages: r.pages, isbn: r.isbn })} aria-label="inserir" style={{ width: 28, height: 28, flexShrink: 0, borderRadius: '50%', background: 'transparent', border: `1px solid ${T.terra}`, color: T.terra, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icon name="plus" size={15} color={T.terra}/></button>
+                      )}
+                    </div>
+                  );
+                })}
+              </>
+            )}
+          </div>
+        )}
+
+        {done.length > 0 && (
+          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 7, background: 'rgba(176,83,58,0.1)', borderRadius: 9, padding: '8px 11px' }}>
+            <Icon name="check" size={14} color={T.terra}/>
+            <span style={{ fontSize: 11.5, color: T.terraDeep, fontFamily: T.sans }}>
+              {done.length} {done.length === 1 ? 'livro entrou' : 'livros entraram'} {owned ? 'no acervo · adormecidos, sem capa' : 'na lista de desejos'}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Visão 2: Minha biblioteca (catálogo físico, SEM capa, buscável) ──
+function CatalogoView({ all, V, onNav = () => {} }) {
+  const [query, setQuery] = React.useState('');
+  const [filter, setFilter] = React.useState('all'); // all | dormem
+  const catalogo = V.catalogo;
+  const dormemCount = V.dormem.length;
+
+  const q = query.trim().toLowerCase();
+  let list = filter === 'dormem' ? V.dormem : catalogo;
+  if (q) list = list.filter(b => (b.title || '').toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q));
+  list = [...list].sort((a, b) => (a.title || '').localeCompare(b.title || '', 'pt-BR'));
+
+  return (
+    <>
+      <div style={{ padding: '14px 24px 0' }}>
+        <div style={{ fontFamily: T.serif, fontSize: 28, fontWeight: 400, letterSpacing: -0.6, lineHeight: 1.05 }}>
+          Minha <span style={{ fontStyle: 'italic', color: T.terra }}>biblioteca</span>
+        </div>
+        <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 12.5, color: T.terra, marginTop: 6, lineHeight: 1.4 }}>
+          "Sempre imaginei que o Paraíso fosse uma espécie de biblioteca."
+          <span style={{ display: 'block', fontStyle: 'normal', fontSize: 10.5, color: T.muted, marginTop: 2 }}>— Jorge Luis Borges</span>
+        </div>
+        <div style={{ fontSize: 11, color: T.muted, marginTop: 8, fontFamily: T.sans }}>
+          {catalogo.length} {catalogo.length === 1 ? 'livro' : 'livros'}{dormemCount > 0 && <> · {dormemCount} {dormemCount === 1 ? 'adormecido' : 'adormecidos'}</>}
+        </div>
+      </div>
+
+      <AlimentarPanel owned={true}/>
+
+      <div style={{ padding: '14px 24px 0', position: 'relative' }}>
+        <div style={{ position: 'absolute', left: 36, top: '50%', transform: 'translateY(-50%)', color: T.muted, pointerEvents: 'none' }}>
+          <Icon name="search" size={14} color={T.muted}/>
+        </div>
+        <input value={query} onChange={e => setQuery(e.target.value)} placeholder="buscar título ou autor…"
+          style={{ width: '100%', padding: '10px 14px 10px 38px', border: `1px solid ${T.hairline}`, borderRadius: 999, background: T.paper, color: T.ink, fontFamily: T.sans, fontSize: 13, outline: 'none' }}/>
+      </div>
+      <div style={{ padding: '10px 24px 0', display: 'flex', gap: 6 }}>
+        {[{ id: 'all', l: 'Todos' }, { id: 'dormem', l: 'Os adormecidos' }].map(f => {
+          if (f.id === 'dormem' && dormemCount === 0) return null;
+          const active = filter === f.id;
+          return (
+            <button key={f.id} onClick={() => setFilter(f.id)} style={{ padding: '8px 12px', borderRadius: 999, background: active ? T.ink : 'transparent', color: active ? T.cream : T.brown, border: `1px solid ${active ? T.ink : T.hairline}`, fontFamily: T.sans, fontSize: 12, fontWeight: 500, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              {f.id === 'dormem' && <Icon name="moon" size={12} color={active ? T.cream : T.muted}/>}{f.l}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ padding: '12px 24px 0' }}>
+        {list.length === 0 ? (
+          <div style={{ padding: '30px 0', textAlign: 'center', color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>
+            {q ? `Nada encontrado para "${q}".` : 'O acervo está vazio. Acrescente seus livros acima — título e autor já bastam.'}
+          </div>
+        ) : list.map(b => <CatalogRow key={b.id} b={b} showStatus/>)}
+      </div>
+    </>
+  );
+}
+
+// ── Visão 3: Lista de desejos (o que quer comprar, SEM capa, leve) ──
+function DesejosView({ all, V, onNav = () => {} }) {
+  const desejos = [...V.desejos].sort((a, b) => (b.addedAt || '').localeCompare(a.addedAt || ''));
+  const comprei = (b) => { if (typeof MG !== 'undefined' && MG.updateBook) MG.updateBook(b.id, { owned: true }); };
+
+  return (
+    <>
+      <div style={{ padding: '14px 24px 0' }}>
+        <div style={{ fontFamily: T.serif, fontSize: 28, fontWeight: 400, letterSpacing: -0.6, lineHeight: 1.05 }}>
+          Lista de <span style={{ fontStyle: 'italic', color: T.terra }}>desejos</span>
+        </div>
+        <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, color: T.terra, marginTop: 4 }}>"Os livros que ainda virão."</div>
+        <div style={{ fontSize: 11, color: T.muted, marginTop: 6, fontFamily: T.sans }}>{desejos.length} {desejos.length === 1 ? 'desejo' : 'desejos'}</div>
+      </div>
+
+      <AlimentarPanel owned={false}/>
+
+      <div style={{ padding: '14px 24px 0' }}>
+        {desejos.length === 0 ? (
+          <div style={{ padding: '30px 0', textAlign: 'center', color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>
+            Nenhum desejo ainda. Anote acima os livros que você quer comprar.
+          </div>
+        ) : desejos.map(b => (
+          <CatalogRow key={b.id} b={b} right={
+            <button onClick={(e) => { e.stopPropagation(); comprei(b); }} style={{ background: 'transparent', border: `1px solid ${T.terra}`, color: T.terra, borderRadius: 999, padding: '5px 11px', fontFamily: T.sans, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+              comprei <Icon name="arrowRight" size={12} color={T.terra}/>
+            </button>
+          }/>
+        ))}
+      </div>
+    </>
   );
 }
 
