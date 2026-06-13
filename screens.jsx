@@ -3055,10 +3055,12 @@ function ScreenLibrary({ onNav = () => {} }) {
   const V = (typeof window.libraryViews === 'function')
     ? window.libraryViews(all)
     : { estante: all, catalogo: all, desejos: [], dormem: [], lendo: [], quero: [], lidos: [] };
+  // Estante (premente) e Desejos ficam aqui em abas (listas curtas). O Acervo,
+  // que pode crescer pra milhares, ganha PÁGINA PRÓPRIA (rota 'acervo'), aberta
+  // pelo cartão-link abaixo — assim esta página não vira uma lista gigante.
   const tabs = [
-    { id: 'estante',  l: 'Estante',  n: V.estante.length },
-    { id: 'catalogo', l: 'Acervo', n: V.catalogo.length },
-    { id: 'desejos',  l: 'Desejos',  n: V.desejos.length },
+    { id: 'estante', l: 'Estante', n: V.estante.length },
+    { id: 'desejos', l: 'Desejos', n: V.desejos.length },
   ];
   return (
     <div style={{ width: '100%', height: '100%', background: T.bone, overflow: 'auto', paddingBottom: 120 }}>
@@ -3077,10 +3079,26 @@ function ScreenLibrary({ onNav = () => {} }) {
             );
           })}
         </div>
+        {/* cartão-link pro acervo (página própria) */}
+        <button onClick={() => onNav('acervo')} style={{
+          width: '100%', marginTop: 10, display: 'flex', alignItems: 'center', gap: 12,
+          background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12,
+          padding: '12px 14px', cursor: 'pointer', textAlign: 'left',
+        }}>
+          <span style={{ width: 34, height: 34, borderRadius: 9, background: 'rgba(176,83,58,0.12)', color: T.terra, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Icon name="stack" size={18} color={T.terra}/>
+          </span>
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ display: 'block', fontFamily: T.serif, fontSize: 15, fontWeight: 500, color: T.ink }}>Meu acervo</span>
+            <span style={{ display: 'block', fontSize: 11.5, color: T.muted }}>
+              {V.catalogo.length} {V.catalogo.length === 1 ? 'livro' : 'livros'}{V.dormem.length > 0 ? ` · ${V.dormem.length} ${V.dormem.length === 1 ? 'adormecido' : 'adormecidos'}` : ''}
+            </span>
+          </span>
+          <Icon name="arrowRight" size={16} color={T.terra}/>
+        </button>
       </div>
-      {tab === 'estante'  && <EstanteView all={all} V={V} onNav={onNav}/>}
-      {tab === 'catalogo' && <CatalogoView all={all} V={V} onNav={onNav}/>}
-      {tab === 'desejos'  && <DesejosView all={all} V={V} onNav={onNav}/>}
+      {tab === 'estante' && <EstanteView all={all} V={V} onNav={onNav}/>}
+      {tab === 'desejos' && <DesejosView all={all} V={V} onNav={onNav}/>}
       <BackupPanel/>
     </div>
   );
@@ -3552,6 +3570,32 @@ function DesejosView({ all, V, onNav = () => {} }) {
         ))}
       </div>
     </>
+  );
+}
+
+// ── Página dedicada do Acervo (Minha biblioteca) — rota 'acervo' ──
+// O acervo pode crescer pra milhares de livros; em vez de virar uma lista
+// gigante dentro da Biblioteca, ganha página própria (link dedicado, ver
+// app-main.jsx: rota 'acervo' + deep-link #acervo). Reusa CatalogoView.
+function ScreenAcervo({ onNav = () => {} }) {
+  const all = window.BOOKS || [];
+  const V = (typeof window.libraryViews === 'function')
+    ? window.libraryViews(all)
+    : { desejos: [], catalogo: all, estante: all, dormem: [], lendo: [], quero: [], lidos: [] };
+  return (
+    <div style={{ width: '100%', height: '100%', background: T.bone, overflow: 'auto', paddingBottom: 120 }}>
+      <div style={{ padding: '56px 24px 0' }}>
+        <button onClick={() => onNav('library')} style={{
+          background: 'transparent', border: 0, cursor: 'pointer',
+          fontFamily: T.sans, fontSize: 12, color: T.brown, fontWeight: 600,
+          letterSpacing: 0.4, textTransform: 'uppercase',
+          display: 'flex', alignItems: 'center', gap: 6, padding: 0,
+        }}>
+          <Icon name="arrowLeft" size={16}/> Biblioteca
+        </button>
+      </div>
+      <CatalogoView all={all} V={V} onNav={onNav}/>
+    </div>
   );
 }
 
@@ -4633,7 +4677,7 @@ function ShareRecommendationSheet({ book, onClose = () => {} }) {
 
 Object.assign(window, {
   ScreenBookDetail, ScreenNoteEditor,
-  ScreenAddBook, ScreenLibrary, ScreenFoco,
+  ScreenAddBook, ScreenLibrary, ScreenAcervo, ScreenFoco,
   ScreenMetas, ChallengeCard, ChallengeSuggestion, ChallengeEditorSheet, FieldLabel,
   BookEditorSheet, LibrarySection, Stat, BrandMark, ShareNoteSheet,
   ShareRecommendationSheet, StarRating, MinhaAvaliacao,

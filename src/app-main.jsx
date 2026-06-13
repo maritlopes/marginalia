@@ -206,6 +206,18 @@ function MarginaliaApp() {
     return () => clearTimeout(t);
   }, []);
 
+  // Link dedicado do Acervo: abrir em #acervo cai direto na página (bookmarkável,
+  // dá pra adicionar à tela inicial); e a URL reflete quando se entra/sai do acervo.
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#acervo') setRoute('acervo');
+  }, []);
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const base = window.location.pathname + window.location.search;
+    if (route === 'acervo' && window.location.hash !== '#acervo') window.history.replaceState({}, '', base + '#acervo');
+    else if (route !== 'acervo' && window.location.hash === '#acervo') window.history.replaceState({}, '', base);
+  }, [route]);
+
   const HomeComp = prefs.homeVariant === 'B' ? HomeVariantB
                  : prefs.homeVariant === 'C' ? HomeVariantC
                  : HomeVariantA;
@@ -215,6 +227,7 @@ function MarginaliaApp() {
       case 'home':      return <HomeComp onNav={setRoute}/>;
       case 'metas':     return <ScreenMetas onNav={setRoute}/>;
       case 'library':   return <ScreenLibrary onNav={setRoute}/>;
+      case 'acervo':    return <ScreenAcervo onNav={setRoute}/>;
       case 'book':      return <ScreenBookDetail book={detailBook} onNav={setRoute}/>;
       case 'note':      return <ScreenNoteEditor onNav={setRoute}/>;
       case 'desafios':  return <ScreenMetas onNav={setRoute}/>;
@@ -231,7 +244,7 @@ function MarginaliaApp() {
 
   // mapa rota → tab ativa no tab bar
   const tabForRoute = {
-    library: 'library', book: 'library',
+    library: 'library', book: 'library', acervo: 'library',
     desafios: 'desafios', metas: 'desafios',
     grupos: 'grupos',
   };
