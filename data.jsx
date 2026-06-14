@@ -949,6 +949,8 @@ const NOBEL_LAUREATES = [
   ['Roger Martin du Gard',1937,'França'],['Pearl S. Buck',1938,'EUA'],
   ['Frans Eemil Sillanpää',1939,'Finlândia'],['Johannes V. Jensen',1944,'Dinamarca'],
   ['Gabriela Mistral',1945,'Chile'],['Hermann Hesse',1946,'Alemanha'],
+  ['Herman Hesse',1946,'Alemanha'], // alias p/ o typo comum (um 'n' só) — sem ambiguidade
+
   ['André Gide',1947,'França'],['T.S. Eliot',1948,'Reino Unido'],
   ['Thomas Stearns Eliot',1948,'Reino Unido'],['William Faulkner',1949,'EUA'],
   ['Bertrand Russell',1950,'Reino Unido'],['Pär Lagerkvist',1951,'Suécia'],
