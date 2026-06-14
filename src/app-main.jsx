@@ -131,6 +131,7 @@ function MarginaliaApp() {
   const [editingChallenge, setEditingChallenge] = React.useState(null);
   const [showAccount, setShowAccount] = React.useState(false);
   const [showWelcome, setShowWelcome] = React.useState(false);
+  const [dustBook, setDustBook] = React.useState(null);
   const [, forceRender] = React.useReducer(x => x + 1, 0);
 
   // modo web desktop: navegador (não instalado) em tela larga → frame de site (nav no topo)
@@ -159,12 +160,13 @@ function MarginaliaApp() {
     window.__editChallenge = (c) => setEditingChallenge(c);
     window.__openAccount = () => setShowAccount(true);
     window.__welcomeNewMember = () => setShowWelcome(true);
+    window.__tirarPoeira = (book) => setDustBook(book); // ritual: desperta um adormecido do acervo
     window.__setRoute = setRoute; // útil para deep-linking e debug
     return () => {
       delete window.__rerender; delete window.__editBook; delete window.__openBook;
       delete window.__openGrupo; delete window.__shareNote; delete window.__shareRecommendation;
       delete window.__editChallenge; delete window.__openAccount; delete window.__welcomeNewMember;
-      delete window.__setRoute;
+      delete window.__tirarPoeira; delete window.__setRoute;
     };
   }, []);
 
@@ -299,6 +301,12 @@ function MarginaliaApp() {
         <BookEditorSheet
           book={editingBook.id ? editingBook : null}
           onClose={() => setEditingBook(null)}
+        />
+      )}
+      {dustBook !== null && typeof TirarPoeiraSheet !== 'undefined' && (
+        <TirarPoeiraSheet
+          book={dustBook}
+          onClose={() => setDustBook(null)}
         />
       )}
       {openGrupo !== null && (

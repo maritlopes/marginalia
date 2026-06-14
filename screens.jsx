@@ -3538,7 +3538,17 @@ function CatalogoView({ all, V, onNav = () => {} }) {
           <div style={{ padding: '30px 0', textAlign: 'center', color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>
             {q ? `Nada encontrado para "${q}".` : 'O acervo está vazio. Acrescente seus livros acima — título e autor já bastam.'}
           </div>
-        ) : list.map(b => <CatalogRow key={b.id} b={b} showStatus/>)}
+        ) : list.map(b => {
+          const dormant = (typeof window.bookDormant === 'function') ? window.bookDormant(b) : false;
+          return (
+            <CatalogRow key={b.id} b={b} showStatus right={dormant ? (
+              <button onClick={(e) => { e.stopPropagation(); if (typeof window.__tirarPoeira === 'function') window.__tirarPoeira(b); }}
+                style={{ background: 'transparent', border: `1px solid ${T.terra}`, color: T.terra, borderRadius: 999, padding: '5px 11px', fontFamily: T.sans, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+                <Icon name="wind" size={13} color={T.terra}/> tirar a poeira
+              </button>
+            ) : null}/>
+          );
+        })}
       </div>
     </>
   );
@@ -3575,6 +3585,171 @@ function DesejosView({ all, V, onNav = () => {} }) {
         ))}
       </div>
     </>
+  );
+}
+
+// ── Ritual "TIRAR A POEIRA" — desperta um livro adormecido do acervo e o leva
+// para a Estante de leitura. É AQUI que a capa nasce (a estante é a única visão
+// com capa): busca no Google/Open Library, ou upload/URL. O livro continua no
+// acervo (owned não muda) — só ganha status (quero ler/lendo/lido) e capa.
+// Voz acolhedora (Marginália), não Goodreads. Disparado pelo Acervo (rows
+// adormecidas) via window.__tirarPoeira.
+function TirarPoeiraSheet({ book, onClose }) {
+  const b = book || {};
+  const [status, setStatus] = React.useState('tbr');
+  const [cover, setCover] = React.useState('');
+  const [results, setResults] = React.useState(null); // null=buscando | [] | [capas]
+  const [urlInput, setUrlInput] = React.useState('');
+  const [uploadError, setUploadError] = React.useState(null);
+  const fileRef = React.useRef(null);
+
+  // assim que abre, procura capas pelo título + autor — a capa NASCE no ritual
+  React.useEffect(() => {
+    let alive = true;
+    setResults(null); setCover('');
+    (async () => {
+      if (typeof Sources === 'undefined' || !b.title) { if (alive) setResults([]); return; }
+      try {
+        const q = [b.title, b.author].filter(x => x && x !== 'Anônimo').join(' ');
+        const list = await Sources.searchByTitle(q, 8);
+        if (alive) setResults((list || []).filter(r => r.cover));
+      } catch { if (alive) setResults([]); }
+    })();
+    return () => { alive = false; };
+  }, [b.id]);
+
+  const handleFile = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (!f.type.startsWith('image/')) { setUploadError('Selecione uma imagem.'); return; }
+    if (f.size > 10 * 1024 * 1024) { setUploadError('Imagem muito grande (máx 10 MB).'); return; }
+    setUploadError(null);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const slim = (typeof MG !== 'undefined' && MG.compressCover)
+          ? await MG.compressCover(reader.result) : reader.result;
+        setCover(slim);
+      } catch {
+        if (reader.result.length < 60000) setCover(reader.result);
+        else setUploadError('Não consegui processar a imagem. Tente outra foto.');
+      }
+    };
+    reader.onerror = () => setUploadError('Erro ao ler o arquivo.');
+    reader.readAsDataURL(f);
+  };
+  const useUrl = () => { const u = urlInput.trim(); if (u) { setCover(u); setUrlInput(''); } };
+
+  const acordar = () => {
+    if (typeof MG === 'undefined' || !MG.updateBook) { onClose(); return; }
+    const patch = {
+      status,
+      cover: cover || b.cover || null,
+      owned: true, // permanece no acervo — a posse é verdade, não muda
+      ...(status === 'reading' ? { readingSince: new Date().toISOString() } : {}),
+      ...(status === 'read' ? { finishedAt: new Date().toISOString().slice(0, 10), pct: 100 } : {}),
+    };
+    MG.updateBook(b.id, patch);
+    onClose();
+  };
+
+  const STATUSES = [
+    { id: 'tbr', l: 'Quero ler', c: T.ochre, ic: 'bookmark' },
+    { id: 'reading', l: 'Estou lendo', c: T.terra, ic: 'reading' },
+    { id: 'read', l: 'Já li', c: T.olive, ic: 'check' },
+  ];
+
+  return (
+    <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(42,38,32,0.5)', display: 'flex', alignItems: 'flex-end', zIndex: 82 }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: T.paper, borderRadius: '24px 24px 0 0', padding: '14px 20px 28px', maxHeight: '92%', overflow: 'auto', fontFamily: T.sans, color: T.ink }}>
+        <div style={{ width: 36, height: 4, background: T.hairline, borderRadius: 4, margin: '0 auto 16px' }}/>
+
+        {/* cabeçalho do ritual */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <button onClick={onClose} style={{ background: 'transparent', border: 0, cursor: 'pointer', fontSize: 13, color: T.brown }}>Cancelar</button>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: T.serif, fontSize: 16, fontWeight: 500 }}>
+            <Icon name="wind" size={17} color={T.terra}/> Tirar a poeira
+          </div>
+          <button onClick={acordar} style={{ background: T.terra, color: T.cream, border: 0, borderRadius: 999, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', letterSpacing: 0.3 }}>Despertar</button>
+        </div>
+        <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 12.5, color: T.terra, textAlign: 'center', marginBottom: 16 }}>
+          Desperte este livro e traga-o para a estante.
+        </div>
+
+        {/* o livro + a capa que nasce */}
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 18 }}>
+          <BookCover title={b.title || 'Sem título'} author={b.author || ''} tone={b.tone || 'terra'} cover={cover || b.cover || null} w={86}/>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: T.serif, fontSize: 19, fontWeight: 500, lineHeight: 1.15, letterSpacing: -0.3 }}>
+              {b.title}{b.nobel && <NobelMark nobel={b.nobel} size={12}/>}
+            </div>
+            <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, color: T.brown, marginTop: 3 }}>
+              {b.author || 'autor desconhecido'}{b.year ? ` · ${b.year}` : ''}
+            </div>
+            <div style={{ fontSize: 11, color: T.muted, fontFamily: T.sans, marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <Icon name="moon" size={12} color={T.muted}/> adormecido no acervo
+            </div>
+          </div>
+        </div>
+
+        {/* status — como ele entra na estante */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, marginBottom: 8, fontWeight: 600 }}>Como ele entra na estante</div>
+          <div style={{ display: 'flex', gap: 7 }}>
+            {STATUSES.map(s => {
+              const on = status === s.id;
+              return (
+                <button key={s.id} onClick={() => setStatus(s.id)} style={{ flex: 1, padding: '11px 6px', borderRadius: 12, background: on ? s.c : 'transparent', color: on ? T.cream : T.brown, border: `1px solid ${on ? s.c : T.hairline}`, fontFamily: T.sans, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+                  <Icon name={s.ic} size={16} color={on ? T.cream : s.c}/> {s.l}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* a capa nasce — busca + upload + URL + papel */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, marginBottom: 8, fontWeight: 600 }}>A capa</div>
+          {results === null ? (
+            <div style={{ fontSize: 12.5, color: T.muted, fontStyle: 'italic', fontFamily: T.serif, padding: '6px 0' }}>Procurando capas para este livro…</div>
+          ) : results.length > 0 ? (
+            <div style={{ display: 'flex', gap: 9, overflowX: 'auto', paddingBottom: 6, marginBottom: 10 }}>
+              {results.slice(0, 8).map((r, i) => {
+                const on = cover === r.cover;
+                return (
+                  <button key={i} onClick={() => setCover(on ? '' : r.cover)} style={{ flexShrink: 0, padding: 0, background: 'transparent', border: 0, cursor: 'pointer', borderRadius: 5 }}>
+                    <img src={r.cover} alt={r.title} onError={e => { e.target.parentNode.style.display = 'none'; }}
+                      style={{ width: 54, height: 81, objectFit: 'cover', borderRadius: 4, boxShadow: on ? `0 0 0 3px ${T.terra}` : '0 1px 4px rgba(0,0,0,0.18)', opacity: on ? 1 : 0.92 }}/>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: T.muted, fontStyle: 'italic', fontFamily: T.serif, marginBottom: 10 }}>Nenhuma capa encontrada — escolha do seu telefone, cole um link ou deixe em papel.</div>
+          )}
+
+          <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+            <button onClick={() => fileRef.current?.click()} style={{ flex: 1, minWidth: 90, padding: '10px 8px', borderRadius: 10, background: T.cream, color: T.ink, border: `1px solid ${T.hairline}`, cursor: 'pointer', fontFamily: T.sans, fontSize: 12, fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <Icon name="stack" size={14}/> Do meu telefone
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }}/>
+            <button onClick={() => setCover('')} style={{ flex: 1, minWidth: 90, padding: '10px 8px', borderRadius: 10, background: !cover ? T.ink : T.cream, color: !cover ? T.cream : T.ink, border: `1px solid ${!cover ? T.ink : T.hairline}`, cursor: 'pointer', fontFamily: T.sans, fontSize: 12, fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <Icon name="book" size={14}/> Capa de papel
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input value={urlInput} onChange={e => setUrlInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && useUrl()} placeholder="ou cole URL de uma imagem da web"
+              style={{ flex: 1, padding: '10px 12px', border: `1px solid ${T.hairline}`, borderRadius: 10, background: T.cream, color: T.ink, fontFamily: T.sans, fontSize: 12, outline: 'none' }}/>
+            <button onClick={useUrl} disabled={!urlInput.trim()} style={{ background: T.terra, color: T.cream, border: 0, borderRadius: 10, padding: '0 14px', fontSize: 12, fontWeight: 600, cursor: urlInput.trim() ? 'pointer' : 'default', opacity: urlInput.trim() ? 1 : 0.5, letterSpacing: 0.3 }}>Usar</button>
+          </div>
+          {uploadError && <div style={{ marginTop: 8, padding: '8px 10px', background: '#F4D9D0', borderRadius: 6, fontSize: 11, color: '#8E3E2A' }}>{uploadError}</div>}
+        </div>
+
+        <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', textAlign: 'center', lineHeight: 1.5 }}>
+          O livro continua no acervo — agora também aceso na estante.
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -4773,5 +4948,5 @@ Object.assign(window, {
   // usados pelo app principal (src/app-main.jsx) — como módulos, função
   // declarada não vira global sozinha; precisa estar neste export
   AccountSheet, ScreenAguardandoApp, ScreenGruposCloud, ScreenGrupoDetalheCloud,
-  EmailLoginCard, WelcomeNewMember,
+  EmailLoginCard, WelcomeNewMember, TirarPoeiraSheet,
 });
