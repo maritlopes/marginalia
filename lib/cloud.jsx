@@ -70,10 +70,22 @@
     if (!localS) return cloudS;
     const newer = (cloudS.updatedAt || '') > (localS.updatedAt || '') ? cloudS : localS;
     const older = newer === cloudS ? localS : cloudS;
+    // União por id. Em CONFLITO (mesmo id nos dois lados), vence o item com
+    // `updatedAt` mais recente — assim a última edição DAQUELE livro prevalece,
+    // mesmo que o outro aparelho tenha o estado mais novo no geral. Itens sem
+    // carimbo (legado) caem no comportamento antigo: prevalece o estado mais novo.
     const unionById = (key) => {
       const m = new Map();
-      (newer[key] || []).forEach((x) => { if (x && x.id != null) m.set(x.id, x); });
-      (older[key] || []).forEach((x) => { if (x && x.id != null && !m.has(x.id)) m.set(x.id, x); });
+      const consider = (x) => {
+        if (!x || x.id == null) return;
+        const prev = m.get(x.id);
+        if (!prev) { m.set(x.id, x); return; }
+        const xu = x.updatedAt || '';
+        const pu = prev.updatedAt || '';
+        if (xu && xu > pu) m.set(x.id, x);   // este item é mais recente → vence
+      };
+      (newer[key] || []).forEach(consider);  // estado mais novo entra primeiro
+      (older[key] || []).forEach(consider);  // só sobrescreve se o item for mais recente
       return [...m.values()];
     };
     const bothNull = (k) => localS[k] === null && cloudS[k] === null;

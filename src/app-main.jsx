@@ -113,6 +113,9 @@ function MarginaliaApp() {
 
   const [prefs, setPrefs] = React.useState(() => MG.getPrefs());
   const [route, setRoute] = React.useState('home');
+  const [bookReturn, setBookReturn] = React.useState('library'); // rota de origem ao abrir um livro (pra o "voltar" do detalhe retornar pra lá)
+  const routeRef = React.useRef('home');
+  routeRef.current = route;
   const [showSplash, setShowSplash] = React.useState(true);
 
   // splash de boas-vindas: 1.5s, depois fade out
@@ -149,7 +152,7 @@ function MarginaliaApp() {
       forceRender();
     };
     window.__editBook = (book) => setEditingBook(book);
-    window.__openBook = (book) => { window.__viewBook = book; setDetailBook(book); setRoute('book'); };
+    window.__openBook = (book) => { window.__viewBook = book; setDetailBook(book); setBookReturn(routeRef.current === 'book' ? 'library' : routeRef.current); setRoute('book'); };
     window.__openGrupo = (g) => setOpenGrupo(g);
     window.__shareNote = (note, book) => setSharingNote({ note, book });
     window.__shareRecommendation = (book) => setSharingRec(book);
@@ -228,7 +231,7 @@ function MarginaliaApp() {
       case 'metas':     return <ScreenMetas onNav={setRoute}/>;
       case 'library':   return <ScreenLibrary onNav={setRoute}/>;
       case 'acervo':    return <ScreenAcervo onNav={setRoute}/>;
-      case 'book':      return <ScreenBookDetail book={detailBook} onNav={setRoute}/>;
+      case 'book':      return <ScreenBookDetail book={detailBook} onNav={setRoute} back={bookReturn}/>;
       case 'note':      return <ScreenNoteEditor onNav={setRoute}/>;
       case 'desafios':  return <ScreenMetas onNav={setRoute}/>;
       case 'grupos':    return <ScreenGruposCloud onNav={setRoute}/>;

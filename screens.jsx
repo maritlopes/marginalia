@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────────
 // Book detail — deep reading view with progress, chapters, theme
 // ─────────────────────────────────────────────────────────────
-function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () => {} }) {
+function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () => {}, back = 'home' }) {
   // relê sempre a versão viva do livro na estante (para refletir edições recentes),
   // caindo para o objeto recebido e, por fim, para o livro atual / exemplo.
   const liveBook = (book && book.id) ? (window.BOOKS || []).find(x => x.id === book.id) : null;
@@ -40,7 +40,7 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
         borderBottom: `1px solid ${T.hairline}`,
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
-          <button onClick={() => onNav('home')} style={{
+          <button onClick={() => onNav(back)} style={{
             width: 36, height: 36, borderRadius: '50%', background: T.bone,
             border: `1px solid ${T.hairline}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer',

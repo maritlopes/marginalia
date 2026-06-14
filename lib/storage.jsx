@@ -88,7 +88,7 @@ const MG = {
     save(s);
   },
   addBook(book) {
-    book = enrichNobel(book);
+    book = { ...enrichNobel(book), updatedAt: new Date().toISOString() };
     const books = this.getBooks();
     const next = [...books, book];
     this.setBooks(next);
@@ -102,6 +102,10 @@ const MG = {
       const fn = (typeof window !== 'undefined') && window.nobelForAuthor;
       if (fn) patch = { ...patch, nobel: fn(patch.author) || undefined };
     }
+    // carimbo de edição por livro — no merge da nuvem, a edição mais recente
+    // DESTE livro prevalece (não é sobrescrita por um aparelho com estado mais
+    // novo no geral mas com versão velha do livro). Ver unionById em lib/cloud.jsx.
+    patch = { ...patch, updatedAt: new Date().toISOString() };
     // copy-on-write: se o livro é seed (não está em storage ainda),
     // copia o seed para storage com o patch aplicado; futuras edições gridam.
     const stored = this.getBooks([]);
