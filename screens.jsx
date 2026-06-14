@@ -14,7 +14,12 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
   const currentPage = b.currentPage || 0;
   const openEditor = () => { if (typeof window.__editBook === 'function') window.__editBook(b); };
 
-  const [tab, setTab] = React.useState('sobre');
+  // aba inicial normalmente 'sobre'; a "primeira porta" abre o livro já em 'ecos'
+  // (window.__openBookTab) — lê uma vez e limpa, pra não afetar próximas aberturas.
+  const [tab, setTab] = React.useState(() => {
+    try { const t = window.__openBookTab; if (t) { window.__openBookTab = null; return t; } } catch (e) {}
+    return 'sobre';
+  });
   const demoChapters = [
     { n: 'I', title: 'Dívidas e gratidão', pages: '1–24', done: true },
     { n: 'II', title: 'O tempo emprestado', pages: '25–62', done: true },
@@ -1088,6 +1093,86 @@ function WelcomeNewMember({ onClose = () => {} }) {
         Que bom ter você aqui. Cada livro é uma porta — e você nunca lê sozinha. Monte sua estante, guarde suas notas à margem e siga os ecos entre as obras.
       </div>
       <button onClick={onClose} style={{ padding: '13px 26px', borderRadius: 11, border: 0, background: T.ink, color: T.cream, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Começar a ler</button>
+    </div>
+  );
+}
+
+// ── A PRIMEIRA PORTA — sequência de chegada que ENTREGA a alma antes de pedir
+// trabalho. Mostrada uma vez ao novo membro logo após WelcomeNewMember: abre com
+// Grande Sertão já trabalhado à mão (Ecos curados) + a nota da curadora, e
+// convida a primeira margem (um livro só, que a IA enche de ecos ao vivo pelo
+// fluxo normal). Gating: localStorage 'mg_seen_chegada' (mostra uma vez).
+function ChegadaSequence({ onClose = () => {} }) {
+  const gs = { title: 'Grande Sertão: Veredas', author: 'João Guimarães Rosa', tone: 'terra' };
+  const todos = (typeof curatedEcos === 'function') ? (curatedEcos(gs) || []) : [];
+  // 3 ecos que atravessam disciplinas distintas: filosofia · música · cinema
+  const destaque = ['gs2', 'gs4', 'gs6'].map(id => todos.find(e => e.id === id)).filter(Boolean);
+  const mostra = destaque.length ? destaque : todos.slice(0, 3);
+
+  const fechar = (abrirEditor) => {
+    try { localStorage.setItem('mg_seen_chegada', '1'); } catch (e) {}
+    onClose();
+    if (abrirEditor && typeof window.__editBook === 'function') {
+      // marca pra que, ao salvar, o editor leve direto ao livro (onde os ecos esperam)
+      window.__afterAddOpenBook = true;
+      setTimeout(() => window.__editBook({}), 90);
+    }
+  };
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, zIndex: 95, background: T.bone, overflow: 'auto', fontFamily: T.sans, color: T.ink }}>
+      <div style={{ maxWidth: 460, margin: '0 auto', padding: '40px 26px 40px' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 10 }}>A primeira porta</div>
+          <div style={{ fontFamily: T.serif, fontSize: 25, fontWeight: 500, letterSpacing: -0.4, lineHeight: 1.12, marginBottom: 8 }}>
+            Como a Marginália <span style={{ fontStyle: 'italic', color: T.terra }}>lê</span>
+          </div>
+          <div style={{ fontFamily: T.serif, fontSize: 14, lineHeight: 1.55, color: T.brown, maxWidth: 360, margin: '0 auto 24px' }}>
+            Antes de você trazer seus livros, deixa a gente te mostrar — com um só.
+          </div>
+        </div>
+
+        {/* o livro + os três tempos */}
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 18 }}>
+          <BookCover title={gs.title} author={gs.author} tone={gs.tone} w={76}/>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: T.serif, fontSize: 19, fontWeight: 500, lineHeight: 1.12 }}>Grande Sertão: Veredas</div>
+            <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, color: T.brown, marginTop: 3 }}>João Guimarães Rosa · 1956</div>
+            <div style={{ fontSize: 11.5, color: T.muted, fontFamily: T.serif, marginTop: 8, lineHeight: 1.5 }}>
+              Todo livro tem três tempos — o do autor, o da história e o seu.
+            </div>
+          </div>
+        </div>
+
+        {/* nota da curadora (RASCUNHO — Mariana edita com as próprias palavras) */}
+        <div style={{ background: 'rgba(176,83,58,0.07)', border: `1px solid ${T.hairline}`, borderRadius: 14, padding: '14px 16px', marginBottom: 24 }}>
+          <div style={{ fontSize: 9.5, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 6 }}>Nota da curadora</div>
+          <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 14, lineHeight: 1.6, color: T.ink }}>
+            "Escolhi abrir a porta com o Grande Sertão porque é um livro que ensina a ler: uma frase puxa Heráclito, um causo puxa Goethe, e o sertão vira o mundo inteiro. É isso que a Marginália faz com cada livro — não te deixa lendo sozinha."
+          </div>
+          <div style={{ fontFamily: T.serif, fontSize: 12, color: T.brown, marginTop: 8, textAlign: 'right' }}>— Mariana</div>
+        </div>
+
+        {/* os ecos */}
+        <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 4 }}>✦ Ecos desta obra</div>
+        <div style={{ fontSize: 11.5, color: T.muted, fontStyle: 'italic', fontFamily: T.serif, marginBottom: 12 }}>
+          Outras obras que ressoam com ele — filosofia, música, cinema.
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 14 }}>
+          {mostra.map((p, i) => <PonteCard key={p.id || i} p={p} book={gs}/>)}
+        </div>
+        <div style={{ fontSize: 11.5, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', textAlign: 'center', marginBottom: 28 }}>
+          …e ainda Goethe, Euclides, Portinari e o cangaço. Cada livro seu vira uma porta dessas.
+        </div>
+
+        {/* convite — a primeira margem */}
+        <button onClick={() => fechar(true)} style={{ width: '100%', padding: '14px', borderRadius: 12, border: 0, background: T.ink, color: T.cream, fontFamily: T.sans, fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 10 }}>
+          Qual livro está com você agora?
+        </button>
+        <button onClick={() => fechar(false)} style={{ width: '100%', padding: '11px', borderRadius: 12, border: 0, background: 'transparent', color: T.brown, fontFamily: T.sans, fontSize: 13, cursor: 'pointer' }}>
+          Explorar primeiro
+        </button>
+      </div>
     </div>
   );
 }
@@ -4446,16 +4531,22 @@ function BookEditorSheet({ book = null, onClose = () => {} }) {
       // marca quando virou "Lendo", para a home priorizar o mais recente
       ...(status === 'reading' ? { readingSince: new Date().toISOString() } : {}),
     };
+    let novo = null;
     if (isEdit) {
       MG.updateBook(book.id, patch);
     } else {
       const id = (title || 'livro').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30) + '-' + Date.now().toString(36).slice(-4);
-      MG.addBook({
-        id, ...patch, theme: 'Sem tema',
-        addedAt: new Date().toISOString(),
-      });
+      novo = { id, ...patch, theme: 'Sem tema', addedAt: new Date().toISOString() };
+      MG.addBook(novo);
     }
     onClose();
+    // vindo da "primeira porta": cai direto no livro recém-criado, onde o convite
+    // "✨ Gerar ecos" já espera — é o uau no livro dela, no minuto 3.
+    if (novo && typeof window !== 'undefined' && window.__afterAddOpenBook) {
+      window.__afterAddOpenBook = false;
+      window.__openBookTab = 'ecos'; // cai direto na aba Ecos, onde o convite espera
+      if (typeof window.__openBook === 'function') setTimeout(() => window.__openBook(novo), 100);
+    }
   };
 
   return (
@@ -4948,5 +5039,5 @@ Object.assign(window, {
   // usados pelo app principal (src/app-main.jsx) — como módulos, função
   // declarada não vira global sozinha; precisa estar neste export
   AccountSheet, ScreenAguardandoApp, ScreenGruposCloud, ScreenGrupoDetalheCloud,
-  EmailLoginCard, WelcomeNewMember, TirarPoeiraSheet,
+  EmailLoginCard, WelcomeNewMember, TirarPoeiraSheet, ChegadaSequence,
 });

@@ -131,6 +131,7 @@ function MarginaliaApp() {
   const [editingChallenge, setEditingChallenge] = React.useState(null);
   const [showAccount, setShowAccount] = React.useState(false);
   const [showWelcome, setShowWelcome] = React.useState(false);
+  const [showChegada, setShowChegada] = React.useState(false);
   const [dustBook, setDustBook] = React.useState(null);
   const [, forceRender] = React.useReducer(x => x + 1, 0);
 
@@ -161,12 +162,13 @@ function MarginaliaApp() {
     window.__openAccount = () => setShowAccount(true);
     window.__welcomeNewMember = () => setShowWelcome(true);
     window.__tirarPoeira = (book) => setDustBook(book); // ritual: desperta um adormecido do acervo
+    window.__abrirChegada = () => setShowChegada(true); // primeira porta (rever a apresentação)
     window.__setRoute = setRoute; // útil para deep-linking e debug
     return () => {
       delete window.__rerender; delete window.__editBook; delete window.__openBook;
       delete window.__openGrupo; delete window.__shareNote; delete window.__shareRecommendation;
       delete window.__editChallenge; delete window.__openAccount; delete window.__welcomeNewMember;
-      delete window.__tirarPoeira; delete window.__setRoute;
+      delete window.__tirarPoeira; delete window.__abrirChegada; delete window.__setRoute;
     };
   }, []);
 
@@ -295,7 +297,16 @@ function MarginaliaApp() {
         >+</button>
       )}
       {showWelcome && typeof WelcomeNewMember !== 'undefined' && (
-        <WelcomeNewMember onClose={() => setShowWelcome(false)}/>
+        <WelcomeNewMember onClose={() => {
+          setShowWelcome(false);
+          // encadeia a primeira porta (Grande Sertão), só na 1ª vez
+          let seen = false;
+          try { seen = localStorage.getItem('mg_seen_chegada') === '1'; } catch (e) {}
+          if (!seen && typeof ChegadaSequence !== 'undefined') setShowChegada(true);
+        }}/>
+      )}
+      {showChegada && typeof ChegadaSequence !== 'undefined' && (
+        <ChegadaSequence onClose={() => setShowChegada(false)}/>
       )}
       {editingBook !== null && (
         <BookEditorSheet
