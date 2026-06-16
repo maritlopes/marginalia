@@ -1187,21 +1187,18 @@ function ScreenAguardandoApp() {
 
   const finalizar = async () => {
     try { localStorage.removeItem('mg_was_pending'); } catch (e) {}
-    // aprovada: se veio de um convite, entra no círculo; depois libera o app
+    // aprovada: se veio de um convite, entra no círculo em SEGUNDO PLANO — mas a
+    // recepção agora é a MESMA pra todo mundo: a saudação + a Primeira porta.
+    // (Antes o convite pulava a chegada e caía direto no círculo; decisão de
+    // 2026-06-16: todo novo membro vê a entrada de impacto, venha por e-mail ou
+    // por convite. O círculo continua lá, é só achar em Círculos.)
     const jc = (typeof window !== 'undefined') ? window.__pendingJoin : null;
     if (jc && cloud && cloud.groups) {
       window.__pendingJoin = null;
-      try {
-        const jr = await cloud.groups.join(jc);
-        if (jr && !jr.error && jr.data && window.__openGrupo) {
-          if (window.__rerender) window.__rerender();
-          setTimeout(() => window.__openGrupo(jr.data), 60);
-          return; // entrou no círculo — o próprio círculo é a recepção
-        }
-      } catch (e) { /* segue */ }
+      try { await cloud.groups.join(jc); } catch (e) { /* segue mesmo se o convite falhar */ }
     }
     if (window.__rerender) window.__rerender();
-    // sem convite: saúda na Home
+    // saúda na Home (o onClose do WelcomeNewMember encadeia a Primeira porta)
     if (typeof window !== 'undefined' && typeof window.__welcomeNewMember === 'function') window.__welcomeNewMember();
   };
 
