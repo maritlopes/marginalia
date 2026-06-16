@@ -4044,6 +4044,16 @@ function CloudAccount({ showAdmin = true } = {}) {
             padding: '9px 14px', borderRadius: 10, border: `1px solid ${T.hairline}`,
             background: 'transparent', color: T.brown, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer',
           }}>Sair desta conta</button>
+
+          <div style={{ marginTop: 16, paddingTop: 14, borderTop: `1px solid ${T.hairline}` }}>
+            <button onClick={() => { if (typeof window !== 'undefined' && typeof window.__abrirChegada === 'function') window.__abrirChegada(); }} style={{
+              padding: '9px 14px', borderRadius: 10, border: `1px solid ${T.hairline}`,
+              background: 'transparent', color: T.terra, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            }}>✦ Rever a primeira porta</button>
+            <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 6 }}>
+              A apresentação de boas-vindas — como a Marginália lê um livro.
+            </div>
+          </div>
         </>
       ) : (
         <EmailLoginCard onLoggedIn={(u) => setUser(u)} intro={
