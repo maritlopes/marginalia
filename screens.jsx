@@ -1270,8 +1270,21 @@ function AppAdminPanel() {
     if (it.block === 'pontes') return (d.aT || '?') + ' ↔ ' + (d.bT || '?') + (d.motif ? ' · ' + d.motif : '') + (d.why ? ' — ' + d.why : '');
     return '(item)';
   };
-  const validarCur = async (id) => { setCurPending((p) => p.filter((x) => x.id !== id)); await cloud.curadoria.validate(id); };
+  const validarCur = async (id) => { setCurPending((p) => p.filter((x) => x.id !== id)); await cloud.curadoria.validate(id); setCurPub(null); };
   const descartarCur = async (id) => { setCurPending((p) => p.filter((x) => x.id !== id)); await cloud.curadoria.discard(id); };
+
+  // gerir itens JÁ publicados (validated) — sem SQL
+  const [curPub, setCurPub] = React.useState(null); // null=não carregado | [] | [itens]
+  const [pubConfirm, setPubConfirm] = React.useState(null); // id aguardando confirmação de remoção
+  const togglePub = async () => {
+    if (curPub !== null) { setCurPub(null); return; } // fecha
+    if (cloud && cloud.curadoria && cloud.curadoria.published) setCurPub(await cloud.curadoria.published());
+  };
+  const removerPub = async (id) => {
+    setCurPub((p) => (p || []).filter((x) => x.id !== id));
+    setPubConfirm(null);
+    if (cloud && cloud.curadoria && cloud.curadoria.remove) await cloud.curadoria.remove(id);
+  };
 
   return (
     <div style={{ marginBottom: 22, borderBottom: `1px solid ${T.hairline}`, paddingBottom: 20 }}>
@@ -1329,6 +1342,40 @@ function AppAdminPanel() {
                 <button onClick={() => descartarCur(it.id)} style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${T.hairline}`, background: 'transparent', color: T.brown, fontSize: 12, cursor: 'pointer', flexShrink: 0 }}>Descartar</button>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* gerir o que já está publicado — remover sem SQL */}
+        <button onClick={togglePub} style={{ marginTop: 12, background: 'transparent', border: 0, color: T.terra, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+          {curPub === null ? '⚙ Gerenciar o que já está publicado' : '▾ Publicados (' + curPub.length + ') — toque fora pra fechar'}
+        </button>
+        {curPub !== null && (
+          <div style={{ marginTop: 8 }}>
+            <div style={{ fontSize: 11.5, color: T.brown, fontFamily: T.serif, lineHeight: 1.4, marginBottom: 8 }}>
+              O que está no ar agora. <strong>Remover</strong> tira de vez (some da home no próximo carregamento do app).
+            </div>
+            {curPub.length === 0 ? (
+              <div style={{ fontSize: 12, color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>Nada publicado pela rotina ainda.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 320, overflowY: 'auto' }}>
+                {curPub.map((it) => (
+                  <div key={it.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: T.bone, border: `1px solid ${T.hairlineSoft}`, borderRadius: 9, padding: '8px 10px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 8.5, letterSpacing: 1, textTransform: 'uppercase', color: T.muted, fontWeight: 700, marginBottom: 2 }}>{CUR_BLOCKS[it.block] || it.block}</div>
+                      <div style={{ fontSize: 12, color: T.ink, fontFamily: T.serif, lineHeight: 1.35, overflowWrap: 'anywhere' }}>{curPreview(it)}</div>
+                    </div>
+                    {pubConfirm === it.id ? (
+                      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                        <button onClick={() => removerPub(it.id)} style={{ padding: '5px 9px', borderRadius: 7, border: 0, background: T.terra, color: T.cream, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>Confirmar</button>
+                        <button onClick={() => setPubConfirm(null)} style={{ padding: '5px 8px', borderRadius: 7, border: `1px solid ${T.hairline}`, background: 'transparent', color: T.brown, fontSize: 11, cursor: 'pointer' }}>Não</button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setPubConfirm(it.id)} style={{ padding: '5px 10px', borderRadius: 7, border: `1px solid ${T.hairline}`, background: 'transparent', color: T.brown, fontSize: 11, cursor: 'pointer', flexShrink: 0 }}>Remover</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

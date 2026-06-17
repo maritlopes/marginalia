@@ -443,6 +443,23 @@
       if (error) { console.warn('[curadoria] discard:', error.message); return { error }; }
       return {};
     },
+    // itens JÁ publicados (validated) — para a admin gerir sem SQL
+    published: async function () {
+      const { data, error } = await sb
+        .from('curadoria_items')
+        .select('id, block, data, book_key, created_by, source, validated_at, created_at')
+        .eq('status', 'validated')
+        .order('block', { ascending: true })
+        .order('validated_at', { ascending: false });
+      if (error) { console.warn('[curadoria] published:', error.message); return []; }
+      return data || [];
+    },
+    // remove de vez um item publicado (some da home no próximo carregamento)
+    remove: async function (id) {
+      const { error } = await sb.from('curadoria_items').delete().eq('id', id);
+      if (error) { console.warn('[curadoria] remove:', error.message); return { error }; }
+      return {};
+    },
   };
 
   // sempre que o app salva localmente, agenda um envio à nuvem (se logada)
