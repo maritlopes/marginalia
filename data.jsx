@@ -33,6 +33,10 @@ const SHELF_STATUS = ['reading', 'paused', 'tbr', 'read'];
 function bookOwned(b)   { return !!b && b.owned !== false; }
 function bookOnShelf(b) { return !!b && SHELF_STATUS.indexOf(b.status) !== -1; }
 function bookDormant(b) { return bookOwned(b) && !bookOnShelf(b); } // no catálogo, ainda dorme
+// MARCA DE LEITURA do acervo (campo `mark`: 'tbr'/'reading'/'read'): intenção que a
+// leitora registra fora da Estante — ex.: marcando um laureado na /nobel/. Só vale
+// enquanto o livro dorme (sem status); ao "tirar a poeira", vira status real + capa.
+function bookMark(b) { return (b && bookDormant(b) && b.mark) ? b.mark : null; }
 // Reparte uma lista de livros nas três visões (e nas seções da Estante),
 // sem duplicar nenhum dado — tudo derivado dos eixos owned × status.
 function libraryViews(books) {
@@ -1032,7 +1036,7 @@ Object.assign(window, {
   BOOK_CURRENT, NOTES_SEED, BOOKS_SEED, THEMES_STUDY, ACTIVITY,
   PONTES, PONTE_CATS, GLOSSARIO, ECOS_CURADOS, curatedEcos,
   PONTES_OBRAS, pontesNaEstante,
-  BOOK_STATUS, SHELF_STATUS, bookOwned, bookOnShelf, bookDormant, libraryViews,
+  BOOK_STATUS, SHELF_STATUS, bookOwned, bookOnShelf, bookDormant, bookMark, libraryViews,
   HOJE_BANNER, FRASES_MARCANTES, CURADORIA, SUGESTOES_POR_LIVRO,
   CHALLENGE_TYPES, CHALLENGE_PERIODS, CHALLENGE_SUGESTOES, periodWindow,
   computeMemorias,

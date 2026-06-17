@@ -67,6 +67,9 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .logo-mg{font-family:var(--font-display);font-size:var(--text-base);font-weight:600;color:var(--color-text-muted);white-space:nowrap}
 .medal-glyph{width:32px;height:32px;flex-shrink:0;object-fit:contain}
 @media(max-width:600px){.logo-em,.logo-mark-mg,.logo-mg{display:none}}
+.header-actions{display:flex;align-items:center;gap:var(--space-2)}
+.back-mg{display:inline-flex;align-items:center;gap:6px;padding:.4rem .7rem;border-radius:var(--radius-full);border:1px solid var(--color-border);color:var(--color-text-muted);font-family:var(--font-body);font-size:var(--text-sm);font-weight:500;text-decoration:none;transition:all var(--transition)}
+.back-mg:hover{color:var(--color-text);background:var(--color-surface-2);border-color:var(--color-primary)}
 .theme-toggle{width:38px;height:38px;border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;color:var(--color-text-muted);border:1px solid var(--color-border);transition:all var(--transition)}
 .theme-toggle:hover{color:var(--color-text);background:var(--color-surface-2);border-color:var(--color-primary)}
 
@@ -376,9 +379,15 @@ footer .brand a:hover{text-decoration:underline}
       <img class="logo-mark-mg" src="/symbol.png" alt="">
       <span class="logo-mg">Marginália</span>
     </a>
-    <button class="theme-toggle" id="theme-toggle" aria-label="Alternar tema" title="Alternar tema claro/escuro">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-    </button>
+    <div class="header-actions">
+      <a class="back-mg" href="/?app=1" title="Voltar ao app Marginália">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        <span>Marginália</span>
+      </a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Alternar tema" title="Alternar tema claro/escuro">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
   </div>
 </header>
 

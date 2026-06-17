@@ -3395,6 +3395,8 @@ function EstanteView({ all, V, onNav = () => {} }) {
 
 // ── Linha compacta (catálogo / desejos): SEM capa, só título + autor ──
 // Marca de status à esquerda quando showStatus (dorme · em leitura · lido).
+// rótulo da MARCA de leitura do acervo (registrada fora da estante, ex.: pela /nobel/)
+const MARK_LABEL = { tbr: 'quero ler', reading: 'lendo', read: 'lido' };
 function CatalogRow({ b, showStatus = false, right = null }) {
   const open = () => { if (typeof window.__openBook === 'function') window.__openBook(b); };
   let mark = { ic: 'bookmark', c: T.muted };
@@ -3403,6 +3405,7 @@ function CatalogRow({ b, showStatus = false, right = null }) {
       : (b.status === 'reading' || b.status === 'paused') ? { ic: 'reading', c: T.terra }
       : { ic: 'moon', c: T.muted };
   }
+  const rmark = (typeof window.bookMark === 'function') ? window.bookMark(b) : null;
   return (
     <div onClick={open} style={{ display: 'flex', gap: 11, alignItems: 'center', padding: '11px 0', borderBottom: `1px solid ${T.hairlineSoft}`, cursor: 'pointer' }}>
       <Icon name={mark.ic} size={15} color={mark.c}/>
@@ -3414,6 +3417,11 @@ function CatalogRow({ b, showStatus = false, right = null }) {
           {b.author || 'autor desconhecido'}{b.year ? ` · ${b.year}` : ''}
         </div>
       </div>
+      {rmark && (
+        <span style={{ flexShrink: 0, fontFamily: T.sans, fontSize: 9.5, fontWeight: 600, letterSpacing: 0.3, textTransform: 'uppercase', color: rmark === 'read' ? T.olive : T.terra, border: `1px solid ${rmark === 'read' ? T.olive : T.terra}`, borderRadius: 999, padding: '2px 7px', opacity: 0.85 }}>
+          {MARK_LABEL[rmark] || rmark}
+        </span>
+      )}
       {right}
     </div>
   );
@@ -3678,7 +3686,9 @@ function DesejosView({ all, V, onNav = () => {} }) {
 // adormecidas) via window.__tirarPoeira.
 function TirarPoeiraSheet({ book, onClose }) {
   const b = book || {};
-  const [status, setStatus] = React.useState('tbr');
+  // pré-seleciona pela MARCA de leitura do acervo (ex.: marcada na /nobel/), se houver
+  const seedStatus = (b.mark === 'read' || b.mark === 'reading' || b.mark === 'tbr') ? b.mark : 'tbr';
+  const [status, setStatus] = React.useState(seedStatus);
   const [cover, setCover] = React.useState('');
   const [results, setResults] = React.useState(null); // null=buscando | [] | [capas]
   const [urlInput, setUrlInput] = React.useState('');
@@ -3728,6 +3738,7 @@ function TirarPoeiraSheet({ book, onClose }) {
       status,
       cover: cover || b.cover || null,
       owned: true, // permanece no acervo — a posse é verdade, não muda
+      ...(b.mark ? { mark: null } : {}), // a marca virou status real — não precisa mais
       ...(status === 'reading' ? { readingSince: new Date().toISOString() } : {}),
       ...(status === 'read' ? { finishedAt: new Date().toISOString().slice(0, 10), pct: 100 } : {}),
     };
