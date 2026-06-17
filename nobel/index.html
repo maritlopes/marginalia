@@ -155,7 +155,9 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .read-line{font-size:var(--text-sm);color:var(--color-text);line-height:1.4;display:flex;align-items:center;gap:.4em;flex-wrap:wrap}
 .read-line .bk-icon{color:var(--color-primary);flex-shrink:0;font-size:.85em}
 .read-line .bk-title{font-style:italic}
-.over500-tag{font-family:var(--font-body);font-size:.62rem;font-weight:600;letter-spacing:.03em;background:var(--color-surface-3);color:var(--color-text-muted);padding:.05rem .35rem;border-radius:var(--radius-sm);white-space:nowrap}
+.app-books{margin-top:var(--space-2);padding-top:var(--space-2);border-top:1px dashed var(--color-border)}
+.app-books-label{font-family:var(--font-body);font-size:.62rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--color-primary);opacity:.85;margin-bottom:2px}
+.app-line .bk-icon{opacity:.7}
 .book-row .pts{font-family:var(--font-display);font-size:var(--text-sm);color:var(--color-text-faint);flex-shrink:0;min-width:42px;text-align:right;font-weight:500}
 .book-row.done .pts{color:var(--color-primary);font-weight:600}
 .book-row .laur-eyebrow{font-family:var(--font-body);font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--cat-a);font-weight:700;margin-bottom:3px}
@@ -497,10 +499,6 @@ footer .brand a:hover{text-decoration:underline}
         <option value="lendo">Lendo</option>
         <option value="tbr">Quero ler</option>
       </select>
-      <div class="check-row">
-        <input type="checkbox" id="bk-over500">
-        <label for="bk-over500">Mais de 500 páginas</label>
-      </div>
       <div class="btn-row">
         <button class="btn-save" id="bk-add">Adicionar livro</button>
       </div>
@@ -567,8 +565,6 @@ footer .brand a:hover{text-decoration:underline}
 var STORAGE_KEY = 'nobel-literatura-v1';
 var OLD_KEY = 'nobel-literatura-v0';
 var THEME_KEY = 'nobel-literatura-theme';
-var CAT_PTS = { a: 3, b: 2, c: 1 };
-var CAT_BADGE = { a: 'badge-a', b: 'badge-b', c: 'badge-c' };
 var STATUS_LABEL = { tbr: 'Quero ler', lendo: 'Lendo', lido: 'Lido' };
 var COUNTRY_FLAG = {
   'França':'🇫🇷','Alemanha':'🇩🇪','Noruega':'🇳🇴','Espanha':'🇪🇸','Polônia':'🇵🇱','Itália':'🇮🇹',
@@ -759,7 +755,7 @@ function migrateV2(oldArr) {
     var books = [];
     if (b.done) {
       // título do livro lido era desconhecido no modelo antigo (o "title" era o autor)
-      books.push({ title: '', over500: !!b.over500, obs: b.obs || '', status: 'lido' });
+      books.push({ title: '', obs: b.obs || '', status: 'lido' });
     }
     return { id: b.id, cat: b.cat || 'c', author: author, nobel: b.nobel || '', country: b.country || '', books: books };
   });
@@ -816,6 +812,11 @@ window.__maratona = {
   replace: function (arr) {
     if (!Array.isArray(arr)) return;
     laureates = arr; normalize(); recomputeNextId(); render();
+  },
+  // a camada de sync chama isto depois de carregar a biblioteca do app (lente)
+  setAppLibrary: function (books) {
+    window.__appLibrary = Array.isArray(books) ? books : [];
+    render();
   }
 };
 
@@ -830,16 +831,8 @@ function escHtml(s) {
   return d.innerHTML;
 }
 
-function bookPts(cat, over500) {
-  var p = CAT_PTS[cat] || 1;
-  return over500 ? p * 2 : p;
-}
-
 // página atemporal: "lido" é simplesmente lido (sem janela de maratona, sem ponto).
 function countsPoint(bk) { return bk.status === 'lido'; }
-function laureatePts(l) {
-  return l.books.reduce(function(s, bk){ return s + (countsPoint(bk) ? bookPts(l.cat, bk.over500) : 0); }, 0);
-}
 function lidoCount(l) {
   return l.books.filter(countsPoint).length;
 }
@@ -850,6 +843,61 @@ function statusIcon(s) {
 }
 function starString(r) { r = r || 0; var s = ''; for (var i = 1; i <= 5; i++) s += (i <= r ? '★' : '☆'); return s; }
 
+/* ---------- LENTE DA BIBLIOTECA (somente leitura) ----------
+   A /nobel/ LÊ o estado do app (marginalia_state) e mostra, sob cada laureado,
+   os livros que a leitora já tem na estante do app. Não escreve nada aqui — a
+   escrita-de-volta virá numa fase dedicada. window.__appLibrary é preenchido
+   pela camada de sincronização (script abaixo) após o login. */
+window.__appLibrary = window.__appLibrary || [];
+
+function nrm(s) {
+  return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+// casa o autor do livro do app com o laureado: igualdade normalizada OU
+// primeiro+último nome ambos presentes (cobre acento perdido, ordem trocada,
+// nome do meio; exige os dois pra não confundir homônimos).
+function authorMatches(bookAuthor, laureateAuthor) {
+  var a = nrm(bookAuthor), b = nrm(laureateAuthor);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  var pa = a.split(' '), pb = b.split(' ');
+  if (pa.length < 2 || pb.length < 2) return false;
+  var firstA = pa[0], lastA = pa[pa.length - 1];
+  var firstB = pb[0], lastB = pb[pb.length - 1];
+  return firstA === firstB && lastA === lastB;
+}
+// status do app → rótulo da estante. Mostra só o que está numa prateleira ativa
+// (lido/lendo/quero); adormecidos (status null, ex.: os importados do Nobel) NÃO
+// aparecem — seriam ruído.
+var APP_STATUS_LABEL = { read: 'Lido', reading: 'Lendo', paused: 'Lendo', tbr: 'Quero ler' };
+function appBooksForLaureate(l) {
+  var lib = window.__appLibrary || [];
+  if (!lib.length) return [];
+  var seen = {};
+  // não repetir títulos que já estão na camada editável (l.books) do nobel_state
+  (l.books || []).forEach(function(b){ seen[nrm(b.title)] = true; });
+  var out = [];
+  lib.forEach(function(b) {
+    if (!b || !APP_STATUS_LABEL[b.status]) return;
+    if (!authorMatches(b.author, l.author)) return;
+    var k = nrm(b.title);
+    if (k && seen[k]) return;
+    seen[k] = true;
+    out.push(b);
+  });
+  return out;
+}
+function appBooksHtml(list) {
+  var rows = list.map(function(b) {
+    var t = b.title ? escHtml(b.title) : '<span style="opacity:.6">(sem título)</span>';
+    var stars = (b.status === 'read' && b.rating) ? ' <span class="bk-stars">' + starString(b.rating) + '</span>' : '';
+    var lab = APP_STATUS_LABEL[b.status] || '';
+    var stag = (b.status === 'read') ? '' : ' <span class="st-tag ' + (b.status === 'tbr' ? 'tbr' : 'lendo') + '">' + lab + '</span>';
+    return '<div class="read-line app-line"><span class="bk-icon">☁</span><span class="bk-title">' + t + '</span>' + stars + stag + '</div>';
+  }).join('');
+  return '<div class="read-books app-books"><div class="app-books-label">Na sua biblioteca</div>' + rows + '</div>';
+}
+
 /* ---------- RENDER ---------- */
 function render() {
   [['a', function(l){ return l.cat === 'a' || l.cat === 'b'; }],
@@ -857,38 +905,38 @@ function render() {
     var cat = grp[0];
     var list = document.getElementById('list-' + cat);
     var items = laureates.filter(grp[1]);
-    var readAuthors = items.filter(function(l){ return lidoCount(l) > 0; }).length;
-    var lidoBooks = items.reduce(function(s, l){ return s + lidoCount(l); }, 0);
+    // conta lidos do nobel_state + lidos vindos da biblioteca do app (lente).
+    // appBooksForLaureate já deduplica contra l.books, então não há contagem dobrada.
+    function readCount(l){ return lidoCount(l) + appBooksForLaureate(l).filter(function(b){ return b.status === 'read'; }).length; }
+    var readAuthors = items.filter(function(l){ return readCount(l) > 0; }).length;
+    var lidoBooks = items.reduce(function(s, l){ return s + readCount(l); }, 0);
     document.getElementById('count-' + cat).textContent = readAuthors + '/' + items.length + ' autores' + (lidoBooks ? ' · ' + lidoBooks + (lidoBooks === 1 ? ' lido' : ' lidos') : '');
 
     list.innerHTML = items.map(function(l) {
-      var pts = laureatePts(l);
-      var done = lidoCount(l) > 0;
+      var appBooks = appBooksForLaureate(l);
+      var done = lidoCount(l) > 0 || appBooks.some(function(b){ return b.status === 'read'; });
       var hasBooks = l.books.length > 0;
       var cls = done ? 'book-row done' : 'book-row';
       var eyebrow = (l.cat === 'c') ? ('Cotado' + (l.country ? ' · ' + l.country : '')) : ((l.nobel || '') + (l.country ? ' · ' + l.country : ''));
       var booksHtml = '';
       if (hasBooks) {
         booksHtml = '<div class="read-books">' + l.books.map(function(bk) {
-          var o5 = (bk.status === 'lido' && bk.over500) ? ' <span class="over500-tag">500+</span>' : '';
           var t = bk.title ? escHtml(bk.title) : '<span style="opacity:.6">(sem título)</span>';
-          var counts = countsPoint(bk);
           var stars = (bk.status === 'lido' && bk.rating) ? ' <span class="bk-stars">' + starString(bk.rating) + '</span>' : '';
-          var stag;
-          if (bk.status === 'lido') stag = counts ? '' : ' <span class="st-tag fora">fora da maratona</span>';
-          else stag = ' <span class="st-tag ' + bk.status + '">' + STATUS_LABEL[bk.status] + '</span>';
-          var pcls = counts ? 'read-line' : 'read-line pending';
-          return '<div class="' + pcls + '"><span class="bk-icon">' + statusIcon(bk.status) + '</span><span class="bk-title">' + t + '</span>' + o5 + stars + stag + '</div>';
+          var stag = (bk.status === 'lido') ? '' : ' <span class="st-tag ' + bk.status + '">' + STATUS_LABEL[bk.status] + '</span>';
+          var pcls = (bk.status === 'lido') ? 'read-line' : 'read-line pending';
+          return '<div class="' + pcls + '"><span class="bk-icon">' + statusIcon(bk.status) + '</span><span class="bk-title">' + t + '</span>' + stars + stag + '</div>';
         }).join('') + '</div>';
       }
+      var appHtml = appBooks.length ? appBooksHtml(appBooks) : '';
       return '<li class="' + cls + '" data-id="' + l.id + '">' +
         '<div class="cb">' + (done ? '✓' : '') + '</div>' +
         '<div class="info">' +
           '<div class="laur-eyebrow">' + escHtml(eyebrow) + '</div>' +
           '<div class="title-line">' + escHtml(l.author) + (countryFlag(l.country) ? ' <span class="flag" title="' + escHtml(l.country) + '">' + countryFlag(l.country) + '</span>' : '') + '</div>' +
           booksHtml +
+          appHtml +
         '</div>' +
-        '<div class="pts"></div>' +
         '<div class="actions">' +
           '<button class="btn-icon act-edit" title="Editar dados"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/><path d="M14 6l3 3"/></svg></button>' +
           '<button class="btn-icon del act-del" title="Excluir laureado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg></button>' +
@@ -896,11 +944,8 @@ function render() {
       '</li>';
     }).join('');
   });
-  updateScore();
   save();
 }
-
-function updateScore() { /* página atemporal — sem placar de pontos */ }
 
 /* ---------- BOOKS MODAL (register reads for a laureate) ---------- */
 var booksModalId = null;
@@ -915,7 +960,6 @@ function openBooks(id) {
   document.getElementById('books-list-label').textContent = 'Livros lidos deste ' + (l.cat === 'c' ? 'cotado' : 'laureado');
   renderBooksList();
   document.getElementById('bk-title').value = '';
-  document.getElementById('bk-over500').checked = false;
   document.getElementById('bk-status').value = 'lido';
   var bs = document.getElementById('bk-search'); if (bs) bs.value = l.author || '';
   var br = document.getElementById('bk-results'); if (br) { br.innerHTML = ''; br._items = null; }
@@ -931,7 +975,6 @@ function renderBooksList() {
     return;
   }
   ul.innerHTML = l.books.map(function(bk, i) {
-    var tag = (bk.status === 'lido' && bk.over500) ? ' <span class="over500-tag">500+</span>' : '';
     var t = bk.title ? escHtml(bk.title) : '(sem título)';
     var seg = ['tbr','lendo','lido'].map(function(s) {
       return '<button data-idx="' + i + '" data-s="' + s + '"' + (bk.status === s ? ' class="active"' : '') + '>' + statusIcon(s) + '<span>' + STATUS_LABEL[s] + '</span></button>';
@@ -943,7 +986,7 @@ function renderBooksList() {
       extra = '<div class="star-rate"><span class="sr-label">Sua nota</span>' + stars + '</div>';
     }
     return '<li>' +
-      '<div class="bk-top"><span class="bk-name">' + t + '</span>' + tag +
+      '<div class="bk-top"><span class="bk-name">' + t + '</span>' +
         '<button class="btn-icon del bk-remove" data-idx="' + i + '" title="Remover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
       '<div class="status-seg">' + seg + '</div>' +
       extra +
@@ -957,12 +1000,10 @@ function addBook() {
   var input = document.getElementById('bk-title');
   var title = input.value.trim();
   if (!title) { input.focus(); return; }
-  var over500 = document.getElementById('bk-over500').checked;
   var status = document.getElementById('bk-status').value || 'lido';
-  var book = { title: title, over500: over500, obs: '', status: status, rating: 0 };
+  var book = { title: title, obs: '', status: status, rating: 0 };
   l.books.push(book);
   input.value = '';
-  document.getElementById('bk-over500').checked = false;
   input.focus();
   renderBooksList();
   render();
@@ -1113,14 +1154,15 @@ function renderPicker(q) {
     ul.innerHTML = '<li class="picker-empty" style="cursor:default;border:none;background:none">Nenhum laureado encontrado.</li>';
     return;
   }
-  var catName = { a: 'A', b: 'B', c: 'Cotado' };
-  var catCol = { a: 'var(--cat-a)', b: 'var(--cat-b)', c: 'var(--cat-c)' };
   ul.innerHTML = matches.map(function(l) {
     var metaParts = [l.nobel, l.country].filter(Boolean).join(' · ');
     var n = l.books.length ? ' · ' + l.books.length + '✓' : '';
+    var isCot = l.cat === 'c';
+    var badge = isCot ? 'Cotado' : 'Laureado';
+    var badgeCol = isCot ? 'var(--color-text-muted)' : 'var(--color-primary)';
     return '<li data-id="' + l.id + '">' +
       '<span class="p-name">' + escHtml(l.author) + (countryFlag(l.country) ? ' ' + countryFlag(l.country) : '') + '<br><span class="p-meta">' + escHtml(metaParts) + n + '</span></span>' +
-      '<span class="p-badge" style="background:' + catCol[l.cat] + '">' + catName[l.cat] + '</span>' +
+      '<span class="p-badge" style="background:' + badgeCol + '">' + badge + '</span>' +
     '</li>';
   }).join('');
 }
@@ -1152,76 +1194,6 @@ function confirmDelete() {
 function closeConfirm() {
   document.getElementById('confirm-modal').classList.remove('open');
   deleteCtx = null;
-}
-
-/* ---------- EXPORT RESULTADO (relatório legível) ---------- */
-var CAT_LABEL = {
-  a: 'Categoria A · premiados há mais de 50 anos (3 pts)',
-  b: 'Categoria B · premiados há menos de 50 anos (2 pts)',
-  c: 'Cotados (1 pt)'
-};
-
-function buildReport() {
-  var lidoBooks = 0, basePoints = 0;
-  var hasCat = { a: false, b: false, c: false };
-  laureates.forEach(function(l) {
-    l.books.forEach(function(bk) {
-      if (!countsPoint(bk)) return;
-      lidoBooks++; basePoints += bookPts(l.cat, bk.over500); hasCat[l.cat] = true;
-    });
-  });
-  var allCats = hasCat.a && hasCat.b && hasCat.c;
-  var mult = allCats ? 2 : 1;
-  var total = basePoints * mult;
-
-  var L = [];
-  L.push('MARATONA NOBEL 2026 — RESULTADO');
-  L.push('Idealização, curadoria e pontos: Jamile e João');
-  L.push('');
-  L.push('Livros lidos (contam): ' + lidoBooks);
-  L.push('Pontos base: ' + basePoints);
-  L.push('Multiplicador: ' + mult + 'x' + (allCats ? ' (1 de cada categoria)' : ''));
-  L.push('TOTAL: ' + total + ' pontos');
-  L.push('----------------------------------------');
-  ['a','b','c'].forEach(function(cat) {
-    var read = laureates.filter(function(l) { return l.cat === cat && l.books.some(countsPoint); });
-    if (!read.length) return;
-    L.push('');
-    L.push(CAT_LABEL[cat].toUpperCase());
-    read.forEach(function(l) {
-      l.books.filter(countsPoint).forEach(function(bk) {
-        var p = bookPts(cat, bk.over500);
-        var st = bk.rating ? ' · ' + bk.rating + '★' : '';
-        L.push('  • ' + l.author + ' — ' + (bk.title || '(sem título)') + (bk.over500 ? ' [500+]' : '') + ' — ' + p + ' pt' + (p !== 1 ? 's' : '') + st);
-      });
-    });
-  });
-  function shelf(pred, label) {
-    var rows = [];
-    laureates.forEach(function(l) {
-      l.books.filter(pred).forEach(function(bk) {
-        var st = (bk.status === 'lido' && bk.rating) ? ' · ' + bk.rating + '★' : '';
-        rows.push('  • ' + l.author + ' — ' + (bk.title || '(sem título)') + st);
-      });
-    });
-    if (rows.length) { L.push(''); L.push(label.toUpperCase() + ' (não pontua)'); rows.forEach(function(r){ L.push(r); }); }
-  }
-  shelf(function(b){ return b.status === 'lendo'; }, 'Lendo');
-  shelf(function(b){ return b.status === 'tbr'; }, 'Quero ler');
-  shelf(function(b){ return b.status === 'lido' && b.naMaratona === false; }, 'Lido (fora da maratona)');
-  if (lidoBooks === 0) { L.push(''); L.push('(nenhum livro lido na maratona ainda)'); }
-  L.push('');
-  return L.join('\n');
-}
-
-function exportReport() {
-  var blob = new Blob([buildReport()], { type: 'text/plain;charset=utf-8' });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = 'maratona-nobel-2026-resultado.txt';
-  a.click();
-  URL.revokeObjectURL(url);
 }
 
 /* ---------- EXPORT / IMPORT ---------- */
@@ -1299,7 +1271,6 @@ function wire() {
     var it = (ul._items || [])[parseInt(li.getAttribute('data-i'), 10)];
     if (!it) return;
     document.getElementById('bk-title').value = it.title;
-    document.getElementById('bk-over500').checked = (it.pages || 0) > 500;
     ul.innerHTML = ''; ul._items = null;
     document.getElementById('bk-title').focus();
   });
@@ -1480,7 +1451,6 @@ function mergeData(localArr, cloudArr){
       if (!byKey[k]) { l.books.push(b); byKey[k] = b; }
       else {
         if (statusRank(b.status) > statusRank(byKey[k].status)) byKey[k].status = b.status;
-        if (b.over500) byKey[k].over500 = true;
         if ((b.rating || 0) > (byKey[k].rating || 0)) byKey[k].rating = b.rating;
         if (byKey[k].naMaratona === false && b.naMaratona !== false) byKey[k].naMaratona = true;
       }
@@ -1535,7 +1505,7 @@ async function verifyCode(){
   try { var r=await SB.auth.verifyOtp({ email: pendingEmail, token: token, type:'email' }); if(r.error) throw r.error; pendingEmail=''; await afterLogin(); }
   catch(e){ msg('Código inválido ou expirado.', true); }
 }
-async function signOut(){ try{ await SB.auth.signOut(); }catch(e){} user=null; render(); }
+async function signOut(){ try{ await SB.auth.signOut(); }catch(e){} user=null; window.__maratona.setAppLibrary([]); render(); }
 
 async function pull(){
   try {
@@ -1558,7 +1528,21 @@ async function push(){
 function schedulePush(){ if(!user||applying) return; if(pushTimer) clearTimeout(pushTimer); pushTimer=setTimeout(push,1200); }
 window.__onMaratonaChange = schedulePush;
 
-async function afterLogin(){ render(); var ok=await pull(); if(ok) msg('Sincronizado ✓'); }
+// LENTE (somente leitura): lê a biblioteca do app (marginalia_state) e a entrega
+// pra página mostrar, sob cada laureado, o que a leitora já tem na estante.
+// NÃO escreve nada em marginalia_state — a escrita-de-volta virá numa fase própria.
+async function pullAppLibrary(){
+  if (!user) return;
+  try {
+    var r = await SB.from('marginalia_state').select('data').eq('user_id', user.id).maybeSingle();
+    if (r.error) return;
+    var st = r.data && r.data.data;
+    var books = (st && Array.isArray(st.books)) ? st.books : [];
+    window.__maratona.setAppLibrary(books);
+  } catch(e){ /* silencioso: a lente é um extra, não pode quebrar a página */ }
+}
+
+async function afterLogin(){ render(); var ok=await pull(); if(ok) msg('Sincronizado ✓'); pullAppLibrary(); }
 
 async function init(){
   if (panel) panel.style.display = '';
@@ -1568,7 +1552,7 @@ async function init(){
   SB.auth.onAuthStateChange(function(_e, session){
     var u = session && session.user;
     if (u && (!user || user.id!==u.id)) { user=u; afterLogin(); }
-    else if (!u && user) { user=null; render(); }
+    else if (!u && user) { user=null; window.__maratona.setAppLibrary([]); render(); }
   });
 }
 init();
