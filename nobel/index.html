@@ -511,9 +511,9 @@ footer .brand a:hover{text-decoration:underline}
       <input id="bk-title" type="text" placeholder="Título do livro">
       <label for="bk-status">Situação</label>
       <select id="bk-status">
-        <option value="lido">Lido</option>
-        <option value="lendo">Lendo</option>
         <option value="tbr">Quero ler</option>
+        <option value="lendo">Lendo</option>
+        <option value="lido">Lido</option>
       </select>
       <div class="check-row">
         <input type="checkbox" id="bk-owned" checked>
@@ -990,7 +990,7 @@ function openBooks(id) {
   document.getElementById('books-list-label').textContent = 'Os livros deste ' + (l.cat === 'c' ? 'cotado' : 'laureado') + ' na sua biblioteca';
   renderBooksList();
   document.getElementById('bk-title').value = '';
-  document.getElementById('bk-status').value = 'lido';
+  document.getElementById('bk-status').value = 'tbr';
   var bs = document.getElementById('bk-search'); if (bs) bs.value = l.author || '';
   var br = document.getElementById('bk-results'); if (br) { br.innerHTML = ''; br._items = null; }
   document.getElementById('books-modal').classList.add('open');
@@ -1064,7 +1064,7 @@ function addBook() {
   var input = document.getElementById('bk-title');
   var title = input.value.trim();
   if (!title) { input.focus(); return; }
-  var status = document.getElementById('bk-status').value || 'lido'; // marca de leitura
+  var status = document.getElementById('bk-status').value || 'tbr'; // marca de leitura (padrão: quero ler)
   var ownEl = document.getElementById('bk-owned');
   var owned = ownEl ? !!ownEl.checked : true; // marcado = tenho (acervo); desmarcado = desejo
   var ny = (String(l.nobel || '').match(/\d{4}/) || [])[0];
