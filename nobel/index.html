@@ -155,9 +155,11 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .read-line{font-size:var(--text-sm);color:var(--color-text);line-height:1.4;display:flex;align-items:center;gap:.4em;flex-wrap:wrap}
 .read-line .bk-icon{color:var(--color-primary);flex-shrink:0;font-size:.85em}
 .read-line .bk-title{font-style:italic}
-.app-books{margin-top:var(--space-2);padding-top:var(--space-2);border-top:1px dashed var(--color-border)}
-.app-books-label{font-family:var(--font-body);font-size:.62rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--color-primary);opacity:.85;margin-bottom:2px}
-.app-line .bk-icon{opacity:.7}
+.read-line.dormant{opacity:.62}
+.read-line.dormant .bk-icon{color:var(--color-text-muted)}
+.st-tag.dorme{background:var(--color-surface-3,rgba(0,0,0,.06));color:var(--color-text-muted)}
+.dorme-hint{font-size:.72rem;color:var(--color-text-muted);font-style:italic;margin-top:var(--space-1)}
+li.dormant .bk-name{opacity:.7}
 .book-row .pts{font-family:var(--font-display);font-size:var(--text-sm);color:var(--color-text-faint);flex-shrink:0;min-width:42px;text-align:right;font-weight:500}
 .book-row.done .pts{color:var(--color-primary);font-weight:600}
 .book-row .laur-eyebrow{font-family:var(--font-body);font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--cat-a);font-weight:700;margin-bottom:3px}
@@ -870,32 +872,47 @@ function authorMatches(bookAuthor, laureateAuthor) {
 // (lido/lendo/quero); adormecidos (status null, ex.: os importados do Nobel) NÃO
 // aparecem — seriam ruído.
 var APP_STATUS_LABEL = { read: 'Lido', reading: 'Lendo', paused: 'Lendo', tbr: 'Quero ler' };
+// mapeamento entre o status da /nobel/ e o status do app (fonte única = Biblioteca)
+function appToNobel(s) { return s === 'read' ? 'lido' : (s === 'reading' || s === 'paused') ? 'lendo' : 'tbr'; }
+// é um livro "adormecido" no acervo: tenho (owned) mas sem status de leitura.
+function isDormant(b) { return (b.status == null) && (b.owned !== false); }
+function rankOf(s) { return s === 'read' ? 0 : (s === 'reading' || s === 'paused') ? 1 : s === 'tbr' ? 2 : 3; }
+// FONTE ÚNICA: os livros de cada laureado vêm da Biblioteca do app (marginalia_state),
+// casados por autor. Inclui os que estão numa prateleira (lido/lendo/quero) E os
+// adormecidos do acervo (decisão da Mariana). Ordena lido → lendo → quero → adormecido.
 function appBooksForLaureate(l) {
   var lib = window.__appLibrary || [];
   if (!lib.length) return [];
   var seen = {};
-  // não repetir títulos que já estão na camada editável (l.books) do nobel_state
-  (l.books || []).forEach(function(b){ seen[nrm(b.title)] = true; });
   var out = [];
   lib.forEach(function(b) {
-    if (!b || !APP_STATUS_LABEL[b.status]) return;
+    if (!b) return;
+    if (!APP_STATUS_LABEL[b.status] && !isDormant(b)) return; // fora: desejos sem posse, etc.
     if (!authorMatches(b.author, l.author)) return;
     var k = nrm(b.title);
     if (k && seen[k]) return;
     seen[k] = true;
     out.push(b);
   });
+  out.sort(function(a, b){
+    var d = rankOf(a.status) - rankOf(b.status);
+    return d !== 0 ? d : (a.title || '').localeCompare(b.title || '', 'pt-BR');
+  });
   return out;
 }
+var MOON_ICO = '<svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 109.8 9.8z"/></svg>';
 function appBooksHtml(list) {
-  var rows = list.map(function(b) {
+  return '<div class="read-books">' + list.map(function(b) {
     var t = b.title ? escHtml(b.title) : '<span style="opacity:.6">(sem título)</span>';
+    if (isDormant(b)) {
+      return '<div class="read-line dormant"><span class="bk-icon">' + MOON_ICO + '</span><span class="bk-title">' + t + '</span> <span class="st-tag dorme">no acervo</span></div>';
+    }
+    var ns = appToNobel(b.status); // lido / lendo / tbr
     var stars = (b.status === 'read' && b.rating) ? ' <span class="bk-stars">' + starString(b.rating) + '</span>' : '';
-    var lab = APP_STATUS_LABEL[b.status] || '';
-    var stag = (b.status === 'read') ? '' : ' <span class="st-tag ' + (b.status === 'tbr' ? 'tbr' : 'lendo') + '">' + lab + '</span>';
-    return '<div class="read-line app-line"><span class="bk-icon">☁</span><span class="bk-title">' + t + '</span>' + stars + stag + '</div>';
-  }).join('');
-  return '<div class="read-books app-books"><div class="app-books-label">Na sua biblioteca</div>' + rows + '</div>';
+    var stag = (ns === 'lido') ? '' : ' <span class="st-tag ' + ns + '">' + STATUS_LABEL[ns] + '</span>';
+    var pcls = (ns === 'lido') ? 'read-line' : 'read-line pending';
+    return '<div class="' + pcls + '"><span class="bk-icon">' + statusIcon(ns) + '</span><span class="bk-title">' + t + '</span>' + stars + stag + '</div>';
+  }).join('') + '</div>';
 }
 
 /* ---------- RENDER ---------- */
@@ -905,36 +922,23 @@ function render() {
     var cat = grp[0];
     var list = document.getElementById('list-' + cat);
     var items = laureates.filter(grp[1]);
-    // conta lidos do nobel_state + lidos vindos da biblioteca do app (lente).
-    // appBooksForLaureate já deduplica contra l.books, então não há contagem dobrada.
-    function readCount(l){ return lidoCount(l) + appBooksForLaureate(l).filter(function(b){ return b.status === 'read'; }).length; }
+    // FONTE ÚNICA: conta apenas o que está na Biblioteca do app (lidos).
+    function readCount(l){ return appBooksForLaureate(l).filter(function(b){ return b.status === 'read'; }).length; }
     var readAuthors = items.filter(function(l){ return readCount(l) > 0; }).length;
     var lidoBooks = items.reduce(function(s, l){ return s + readCount(l); }, 0);
     document.getElementById('count-' + cat).textContent = readAuthors + '/' + items.length + ' autores' + (lidoBooks ? ' · ' + lidoBooks + (lidoBooks === 1 ? ' lido' : ' lidos') : '');
 
     list.innerHTML = items.map(function(l) {
       var appBooks = appBooksForLaureate(l);
-      var done = lidoCount(l) > 0 || appBooks.some(function(b){ return b.status === 'read'; });
-      var hasBooks = l.books.length > 0;
+      var done = appBooks.some(function(b){ return b.status === 'read'; });
       var cls = done ? 'book-row done' : 'book-row';
       var eyebrow = (l.cat === 'c') ? ('Cotado' + (l.country ? ' · ' + l.country : '')) : ((l.nobel || '') + (l.country ? ' · ' + l.country : ''));
-      var booksHtml = '';
-      if (hasBooks) {
-        booksHtml = '<div class="read-books">' + l.books.map(function(bk) {
-          var t = bk.title ? escHtml(bk.title) : '<span style="opacity:.6">(sem título)</span>';
-          var stars = (bk.status === 'lido' && bk.rating) ? ' <span class="bk-stars">' + starString(bk.rating) + '</span>' : '';
-          var stag = (bk.status === 'lido') ? '' : ' <span class="st-tag ' + bk.status + '">' + STATUS_LABEL[bk.status] + '</span>';
-          var pcls = (bk.status === 'lido') ? 'read-line' : 'read-line pending';
-          return '<div class="' + pcls + '"><span class="bk-icon">' + statusIcon(bk.status) + '</span><span class="bk-title">' + t + '</span>' + stars + stag + '</div>';
-        }).join('') + '</div>';
-      }
       var appHtml = appBooks.length ? appBooksHtml(appBooks) : '';
       return '<li class="' + cls + '" data-id="' + l.id + '">' +
         '<div class="cb">' + (done ? '✓' : '') + '</div>' +
         '<div class="info">' +
           '<div class="laur-eyebrow">' + escHtml(eyebrow) + '</div>' +
           '<div class="title-line">' + escHtml(l.author) + (countryFlag(l.country) ? ' <span class="flag" title="' + escHtml(l.country) + '">' + countryFlag(l.country) + '</span>' : '') + '</div>' +
-          booksHtml +
           appHtml +
         '</div>' +
         '<div class="actions">' +
@@ -957,7 +961,7 @@ function openBooks(id) {
   document.getElementById('books-title').textContent = l.author;
   var metaParts = [l.nobel, l.country].filter(Boolean).join(' · ');
   document.getElementById('books-sub').textContent = metaParts || (l.cat === 'c' ? 'Cotado ao Nobel' : 'Laureado');
-  document.getElementById('books-list-label').textContent = 'Livros lidos deste ' + (l.cat === 'c' ? 'cotado' : 'laureado');
+  document.getElementById('books-list-label').textContent = 'Os livros deste ' + (l.cat === 'c' ? 'cotado' : 'laureado') + ' na sua biblioteca';
   renderBooksList();
   document.getElementById('bk-title').value = '';
   document.getElementById('bk-status').value = 'lido';
@@ -970,24 +974,38 @@ function openBooks(id) {
 function renderBooksList() {
   var l = findLaureate(booksModalId);
   var ul = document.getElementById('books-read');
-  if (!l || !l.books.length) {
-    ul.innerHTML = '<li class="bk-empty">Nenhum livro ainda. Busque ou digite abaixo e escolha a situação.</li>';
+  if (!l) { ul.innerHTML = ''; return; }
+  // FONTE ÚNICA: a lista vem da Biblioteca do app (precisa estar logada pra escrever).
+  if (!window.__appWrite || !window.__appWrite.ready()) {
+    ul.innerHTML = '<li class="bk-empty">Entre com seu e-mail na seção “Sincronização” (fim da página) para registrar suas leituras — elas ficam na sua biblioteca do app.</li>';
     return;
   }
-  ul.innerHTML = l.books.map(function(bk, i) {
+  var books = appBooksForLaureate(l);
+  if (!books.length) {
+    ul.innerHTML = '<li class="bk-empty">Nenhum livro deste autor na sua biblioteca ainda. Busque ou digite abaixo e escolha a situação.</li>';
+    return;
+  }
+  ul.innerHTML = books.map(function(bk) {
+    var dormant = isDormant(bk);
+    var ns = dormant ? '' : appToNobel(bk.status); // '' = nenhum segmento ativo
     var t = bk.title ? escHtml(bk.title) : '(sem título)';
+    var id = escHtml(bk.id);
     var seg = ['tbr','lendo','lido'].map(function(s) {
-      return '<button data-idx="' + i + '" data-s="' + s + '"' + (bk.status === s ? ' class="active"' : '') + '>' + statusIcon(s) + '<span>' + STATUS_LABEL[s] + '</span></button>';
+      return '<button data-bookid="' + id + '" data-s="' + s + '"' + (ns === s ? ' class="active"' : '') + '>' + statusIcon(s) + '<span>' + STATUS_LABEL[s] + '</span></button>';
     }).join('');
     var extra = '';
-    if (bk.status === 'lido') {
+    if (dormant) {
+      extra = '<div class="dorme-hint">No seu acervo, adormecido. Escolha uma situação para despertá-lo.</div>';
+    } else if (bk.status === 'read') {
       var rating = bk.rating || 0;
-      var stars = [1,2,3,4,5].map(function(n) { return '<button class="star' + (n <= rating ? ' on' : '') + '" data-idx="' + i + '" data-r="' + n + '">★</button>'; }).join('');
+      var stars = [1,2,3,4,5].map(function(n) { return '<button class="star' + (n <= rating ? ' on' : '') + '" data-bookid="' + id + '" data-r="' + n + '">★</button>'; }).join('');
       extra = '<div class="star-rate"><span class="sr-label">Sua nota</span>' + stars + '</div>';
     }
-    return '<li>' +
-      '<div class="bk-top"><span class="bk-name">' + t + '</span>' +
-        '<button class="btn-icon del bk-remove" data-idx="' + i + '" title="Remover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
+    // adormecido não mostra o "X" (não está numa estante de onde tirar)
+    var removeBtn = dormant ? '' :
+      '<button class="btn-icon del bk-remove" data-bookid="' + id + '" title="Tirar da estante (volta a dormir no acervo)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
+    return '<li' + (dormant ? ' class="dormant"' : '') + '>' +
+      '<div class="bk-top"><span class="bk-name">' + t + '</span>' + removeBtn + '</div>' +
       '<div class="status-seg">' + seg + '</div>' +
       extra +
     '</li>';
@@ -997,16 +1015,20 @@ function renderBooksList() {
 function addBook() {
   var l = findLaureate(booksModalId);
   if (!l) return;
+  if (!window.__appWrite || !window.__appWrite.ready()) {
+    alert('Entre com seu e-mail (seção “Sincronização”, no fim da página) para registrar suas leituras na sua biblioteca.');
+    return;
+  }
   var input = document.getElementById('bk-title');
   var title = input.value.trim();
   if (!title) { input.focus(); return; }
-  var status = document.getElementById('bk-status').value || 'lido';
-  var book = { title: title, obs: '', status: status, rating: 0 };
-  l.books.push(book);
+  var status = document.getElementById('bk-status').value || 'lido'; // status da /nobel/
+  var ny = (String(l.nobel || '').match(/\d{4}/) || [])[0];
+  var nobelInfo = (l.cat !== 'c' && ny) ? { ano: parseInt(ny, 10), pais: (l.country || '').split('/')[0].trim() } : null;
+  window.__appWrite.addRead({ title: title, author: l.author, nobelStatus: status, nobel: nobelInfo });
   input.value = '';
   input.focus();
   renderBooksList();
-  render();
 }
 
 function closeBooks() {
@@ -1275,25 +1297,19 @@ function wire() {
     document.getElementById('bk-title').focus();
   });
   document.getElementById('books-read').addEventListener('click', function(e) {
-    var l = findLaureate(booksModalId);
-    if (!l) return;
+    if (!window.__appWrite || !window.__appWrite.ready()) return;
     var rm = e.target.closest('.bk-remove');
-    if (rm) { l.books.splice(parseInt(rm.getAttribute('data-idx'), 10), 1); renderBooksList(); render(); return; }
+    if (rm) { window.__appWrite.removeFromShelf(rm.getAttribute('data-bookid')); renderBooksList(); return; }
     var sb = e.target.closest('.status-seg button');
     if (sb) {
-      var idx = parseInt(sb.getAttribute('data-idx'), 10);
-      var s = sb.getAttribute('data-s');
-      if (l.books[idx]) {
-        l.books[idx].status = s;
-        renderBooksList(); render();
-      }
+      window.__appWrite.setStatus(sb.getAttribute('data-bookid'), sb.getAttribute('data-s'));
+      renderBooksList();
       return;
     }
     var star = e.target.closest('.star-rate .star');
     if (star) {
-      var si = parseInt(star.getAttribute('data-idx'), 10);
-      var r = parseInt(star.getAttribute('data-r'), 10);
-      if (l.books[si]) { l.books[si].rating = (l.books[si].rating === r ? 0 : r); renderBooksList(); render(); }
+      window.__appWrite.setRating(star.getAttribute('data-bookid'), parseInt(star.getAttribute('data-r'), 10));
+      renderBooksList();
     }
   });
   document.getElementById('bk-edit-laureate').addEventListener('click', function() {
@@ -1430,6 +1446,7 @@ var SB = supabase.createClient(
 var TABLE = 'nobel_state';
 
 var user = null, applying = false, pushTimer = null, pendingEmail = '';
+var appState = null, appPushTimer = null; // estado COMPLETO da Biblioteca do app (fonte única)
 var panel = document.getElementById('sync-panel');
 var body = document.getElementById('sync-body');
 
@@ -1505,7 +1522,7 @@ async function verifyCode(){
   try { var r=await SB.auth.verifyOtp({ email: pendingEmail, token: token, type:'email' }); if(r.error) throw r.error; pendingEmail=''; await afterLogin(); }
   catch(e){ msg('Código inválido ou expirado.', true); }
 }
-async function signOut(){ try{ await SB.auth.signOut(); }catch(e){} user=null; window.__maratona.setAppLibrary([]); render(); }
+async function signOut(){ try{ await SB.auth.signOut(); }catch(e){} user=null; appState=null; window.__maratona.setAppLibrary([]); render(); }
 
 async function pull(){
   try {
@@ -1528,19 +1545,84 @@ async function push(){
 function schedulePush(){ if(!user||applying) return; if(pushTimer) clearTimeout(pushTimer); pushTimer=setTimeout(push,1200); }
 window.__onMaratonaChange = schedulePush;
 
-// LENTE (somente leitura): lê a biblioteca do app (marginalia_state) e a entrega
-// pra página mostrar, sob cada laureado, o que a leitora já tem na estante.
-// NÃO escreve nada em marginalia_state — a escrita-de-volta virá numa fase própria.
+// FONTE ÚNICA: a /nobel/ lê E escreve a Biblioteca do app (marginalia_state).
+// Guarda o ESTADO COMPLETO (appState) pra preservar todos os outros campos no push.
 async function pullAppLibrary(){
   if (!user) return;
   try {
     var r = await SB.from('marginalia_state').select('data').eq('user_id', user.id).maybeSingle();
     if (r.error) return;
-    var st = r.data && r.data.data;
-    var books = (st && Array.isArray(st.books)) ? st.books : [];
-    window.__maratona.setAppLibrary(books);
-  } catch(e){ /* silencioso: a lente é um extra, não pode quebrar a página */ }
+    appState = (r.data && r.data.data) || { books: [] };
+    if (!Array.isArray(appState.books)) appState.books = [];
+    window.__maratona.setAppLibrary(appState.books);
+  } catch(e){ /* silencioso: não pode quebrar a página */ }
 }
+
+// Push do estado completo da Biblioteca. SEGURO: debounced; NUNCA envia coleção
+// de livros vazia (trava anti-wipe no servidor é a rede final); cada livro alterado
+// já leva updatedAt (carimbado em __appWrite), então o app concilia por-item no open.
+async function pushAppState(){
+  if (!user || !appState || !Array.isArray(appState.books) || !appState.books.length) return;
+  try {
+    appState.updatedAt = new Date().toISOString();
+    var r = await SB.from('marginalia_state').upsert({ user_id: user.id, data: appState, updated_at: appState.updatedAt }, { onConflict: 'user_id' });
+    if (!r.error) msg('Salvo na sua biblioteca ✓');
+  } catch(e){ /* silencioso */ }
+}
+function scheduleAppPush(){ if(!user||!appState) return; if(appPushTimer) clearTimeout(appPushTimer); appPushTimer=setTimeout(pushAppState, 1200); }
+
+// helpers de status entre /nobel/ e o app
+function nobelToApp(s){ return s === 'lido' ? 'read' : (s === 'lendo' ? 'reading' : 'tbr'); }
+function nrmLite(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
+
+// API de escrita usada pelo modal da /nobel/. Toda mudança: aplica no appState,
+// carimba updatedAt no livro, atualiza a lente (re-render) e agenda o push.
+window.__appWrite = {
+  ready: function(){ return !!(user && appState); },
+  _find: function(id){ return (appState && appState.books || []).find(function(b){ return b.id === id; }); },
+  _after: function(){ window.__maratona.setAppLibrary(appState.books); scheduleAppPush(); },
+  setStatus: function(id, nobelStatus){
+    var b = this._find(id); if (!b) return;
+    var st = nobelToApp(nobelStatus);
+    b.status = st;
+    if (st === 'read' && !b.finishedAt) b.finishedAt = new Date().toISOString();
+    if (st === 'reading' && !b.readingSince) b.readingSince = new Date().toISOString();
+    b.updatedAt = new Date().toISOString();
+    this._after();
+  },
+  setRating: function(id, r){
+    var b = this._find(id); if (!b) return;
+    b.rating = (b.rating === r ? 0 : r);
+    b.updatedAt = new Date().toISOString();
+    this._after();
+  },
+  removeFromShelf: function(id){ // não apaga: volta a dormir no acervo (status null)
+    var b = this._find(id); if (!b) return;
+    b.status = null;
+    b.updatedAt = new Date().toISOString();
+    this._after();
+  },
+  addRead: function(o){
+    if (!appState) return;
+    if (!Array.isArray(appState.books)) appState.books = [];
+    var nt = nrmLite(o.title), na = nrmLite(o.author);
+    var existing = appState.books.find(function(b){ return nrmLite(b.title) === nt && nrmLite(b.author) === na; });
+    var st = nobelToApp(o.nobelStatus);
+    if (existing) { // já tenho o livro: só ajusta o status (não duplica)
+      existing.status = st;
+      if (st === 'read' && !existing.finishedAt) existing.finishedAt = new Date().toISOString();
+      existing.updatedAt = new Date().toISOString();
+      this._after(); return;
+    }
+    var id = (o.title || 'livro').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').slice(0,30) + '-' + Date.now().toString(36).slice(-4);
+    var b = { id: id, title: (o.title||'').trim(), author: (o.author||'').trim(), status: st, cover: null, owned: true, addedAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    if (st === 'read') b.finishedAt = new Date().toISOString();
+    if (st === 'reading') b.readingSince = new Date().toISOString();
+    if (o.nobel) b.nobel = o.nobel;
+    appState.books.push(b);
+    this._after();
+  }
+};
 
 async function afterLogin(){ render(); var ok=await pull(); if(ok) msg('Sincronizado ✓'); pullAppLibrary(); }
 
@@ -1552,7 +1634,7 @@ async function init(){
   SB.auth.onAuthStateChange(function(_e, session){
     var u = session && session.user;
     if (u && (!user || user.id!==u.id)) { user=u; afterLogin(); }
-    else if (!u && user) { user=null; window.__maratona.setAppLibrary([]); render(); }
+    else if (!u && user) { user=null; appState=null; window.__maratona.setAppLibrary([]); render(); }
   });
 }
 init();
