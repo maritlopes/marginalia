@@ -220,6 +220,11 @@ li.dormant .bk-name{opacity:.7}
 .status-seg button.active[data-s="tbr"]{background:var(--color-text-muted);border-color:var(--color-text-muted);color:#fff}
 .status-seg button.active[data-s="lendo"]{background:var(--cat-b);border-color:var(--cat-b);color:#fff}
 .status-seg button.active[data-s="lido"]{background:var(--cat-c);border-color:var(--cat-c);color:#fff}
+.own-seg{display:flex;gap:4px;margin-top:5px}
+.own-seg button{flex:1;font-size:.68rem;padding:.3rem .2rem;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-bg);color:var(--color-text-muted);cursor:pointer;transition:all var(--transition)}
+.own-seg button:hover{border-color:var(--color-text-muted)}
+.own-seg button.active{background:var(--color-primary);border-color:var(--color-primary);color:#fff}
+.books-read li.onshelf{opacity:.85}
 .st-tag{font-family:var(--font-body);font-size:.62rem;font-weight:600;letter-spacing:.02em;padding:.05rem .4rem;border-radius:var(--radius-sm);white-space:nowrap}
 .st-tag.tbr{background:var(--color-surface-3);color:var(--color-text-muted)}
 .st-tag.lendo{background:color-mix(in srgb, var(--cat-b) 18%, transparent);color:var(--cat-b)}
@@ -501,6 +506,10 @@ footer .brand a:hover{text-decoration:underline}
         <option value="lendo">Lendo</option>
         <option value="tbr">Quero ler</option>
       </select>
+      <div class="check-row">
+        <input type="checkbox" id="bk-owned" checked>
+        <label for="bk-owned">Tenho este livro (vai pro acervo) — desmarque se for só desejo</label>
+      </div>
       <div class="btn-row">
         <button class="btn-save" id="bk-add">Adicionar livro</button>
       </div>
@@ -871,31 +880,38 @@ function authorMatches(bookAuthor, laureateAuthor) {
 // status do app → rótulo da estante. Mostra só o que está numa prateleira ativa
 // (lido/lendo/quero); adormecidos (status null, ex.: os importados do Nobel) NÃO
 // aparecem — seriam ruído.
-var APP_STATUS_LABEL = { read: 'Lido', reading: 'Lendo', paused: 'Lendo', tbr: 'Quero ler' };
-// mapeamento entre o status da /nobel/ e o status do app (fonte única = Biblioteca)
 function appToNobel(s) { return s === 'read' ? 'lido' : (s === 'reading' || s === 'paused') ? 'lendo' : 'tbr'; }
-// é um livro "adormecido" no acervo: tenho (owned) mas sem status de leitura.
-function isDormant(b) { return (b.status == null) && (b.owned !== false); }
-function rankOf(s) { return s === 'read' ? 0 : (s === 'reading' || s === 'paused') ? 1 : s === 'tbr' ? 2 : 3; }
-// FONTE ÚNICA: os livros de cada laureado vêm da Biblioteca do app (marginalia_state),
-// casados por autor. Inclui os que estão numa prateleira (lido/lendo/quero) E os
-// adormecidos do acervo (decisão da Mariana). Ordena lido → lendo → quero → adormecido.
+function bkOnShelf(b) { return !!b && ['reading','paused','tbr','read'].indexOf(b.status) !== -1; }
+function bkOwned(b)   { return !!b && b.owned !== false; }
+// ESTADO EFETIVO p/ a /nobel/ (decisão Mariana 2026-06-17):
+//  · na Estante (status real)  → exibe o status real, com "· na estante" (gerido no app)
+//  · no Acervo com MARCA       → exibe a marca de leitura (quero ler/lendo/lido) "no acervo"
+//  · no Acervo sem marca       → só "no acervo" (adormecido)
+//  · sem posse                 → "desejo" (lista de desejos)
+function effState(b) {
+  if (bkOnShelf(b)) return { kind: 'shelf', ns: appToNobel(b.status) };
+  if (!bkOwned(b))  return { kind: 'desejo' };
+  if (b.mark)       return { kind: 'mark', ns: appToNobel(b.mark) };
+  return { kind: 'dorme' };
+}
+function effRank(b){ var e=effState(b); if(e.kind==='desejo')return 4; if(e.kind==='dorme')return 3; return e.ns==='lido'?0:(e.ns==='lendo'?1:2); }
+function effIsRead(b){ var e=effState(b); return (e.kind==='shelf'||e.kind==='mark') && e.ns==='lido'; }
+// Os livros de cada laureado vêm da Biblioteca, casados por autor — TODOS os
+// estados (estante, acervo, desejo). Ordena lido → lendo → quero → adormecido → desejo.
 function appBooksForLaureate(l) {
   var lib = window.__appLibrary || [];
   if (!lib.length) return [];
   var seen = {};
   var out = [];
   lib.forEach(function(b) {
-    if (!b) return;
-    if (!APP_STATUS_LABEL[b.status] && !isDormant(b)) return; // fora: desejos sem posse, etc.
-    if (!authorMatches(b.author, l.author)) return;
+    if (!b || !authorMatches(b.author, l.author)) return;
     var k = nrm(b.title);
     if (k && seen[k]) return;
     seen[k] = true;
     out.push(b);
   });
   out.sort(function(a, b){
-    var d = rankOf(a.status) - rankOf(b.status);
+    var d = effRank(a) - effRank(b);
     return d !== 0 ? d : (a.title || '').localeCompare(b.title || '', 'pt-BR');
   });
   return out;
@@ -904,14 +920,15 @@ var MOON_ICO = '<svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="curr
 function appBooksHtml(list) {
   return '<div class="read-books">' + list.map(function(b) {
     var t = b.title ? escHtml(b.title) : '<span style="opacity:.6">(sem título)</span>';
-    if (isDormant(b)) {
-      return '<div class="read-line dormant"><span class="bk-icon">' + MOON_ICO + '</span><span class="bk-title">' + t + '</span> <span class="st-tag dorme">no acervo</span></div>';
-    }
-    var ns = appToNobel(b.status); // lido / lendo / tbr
-    var stars = (b.status === 'read' && b.rating) ? ' <span class="bk-stars">' + starString(b.rating) + '</span>' : '';
+    var e = effState(b);
+    if (e.kind === 'dorme')  return '<div class="read-line dormant"><span class="bk-icon">' + MOON_ICO + '</span><span class="bk-title">' + t + '</span> <span class="st-tag dorme">no acervo</span></div>';
+    if (e.kind === 'desejo') return '<div class="read-line dormant"><span class="bk-icon">' + MOON_ICO + '</span><span class="bk-title">' + t + '</span> <span class="st-tag dorme">desejo</span></div>';
+    var ns = e.ns; // lido / lendo / tbr
+    var stars = (ns === 'lido' && b.rating) ? ' <span class="bk-stars">' + starString(b.rating) + '</span>' : '';
     var stag = (ns === 'lido') ? '' : ' <span class="st-tag ' + ns + '">' + STATUS_LABEL[ns] + '</span>';
+    var locTag = (e.kind === 'mark') ? ' <span class="st-tag dorme">no acervo</span>' : '';
     var pcls = (ns === 'lido') ? 'read-line' : 'read-line pending';
-    return '<div class="' + pcls + '"><span class="bk-icon">' + statusIcon(ns) + '</span><span class="bk-title">' + t + '</span>' + stars + stag + '</div>';
+    return '<div class="' + pcls + '"><span class="bk-icon">' + statusIcon(ns) + '</span><span class="bk-title">' + t + '</span>' + stars + stag + locTag + '</div>';
   }).join('') + '</div>';
 }
 
@@ -922,15 +939,15 @@ function render() {
     var cat = grp[0];
     var list = document.getElementById('list-' + cat);
     var items = laureates.filter(grp[1]);
-    // FONTE ÚNICA: conta apenas o que está na Biblioteca do app (lidos).
-    function readCount(l){ return appBooksForLaureate(l).filter(function(b){ return b.status === 'read'; }).length; }
+    // conta os lidos (na estante OU marcados lido no acervo).
+    function readCount(l){ return appBooksForLaureate(l).filter(effIsRead).length; }
     var readAuthors = items.filter(function(l){ return readCount(l) > 0; }).length;
     var lidoBooks = items.reduce(function(s, l){ return s + readCount(l); }, 0);
     document.getElementById('count-' + cat).textContent = readAuthors + '/' + items.length + ' autores' + (lidoBooks ? ' · ' + lidoBooks + (lidoBooks === 1 ? ' lido' : ' lidos') : '');
 
     list.innerHTML = items.map(function(l) {
       var appBooks = appBooksForLaureate(l);
-      var done = appBooks.some(function(b){ return b.status === 'read'; });
+      var done = appBooks.some(effIsRead);
       var cls = done ? 'book-row done' : 'book-row';
       var eyebrow = (l.cat === 'c') ? ('Cotado' + (l.country ? ' · ' + l.country : '')) : ((l.nobel || '') + (l.country ? ' · ' + l.country : ''));
       var appHtml = appBooks.length ? appBooksHtml(appBooks) : '';
@@ -986,28 +1003,44 @@ function renderBooksList() {
     return;
   }
   ul.innerHTML = books.map(function(bk) {
-    var dormant = isDormant(bk);
-    var ns = dormant ? '' : appToNobel(bk.status); // '' = nenhum segmento ativo
+    var e = effState(bk);
     var t = bk.title ? escHtml(bk.title) : '(sem título)';
     var id = escHtml(bk.id);
+
+    // JÁ na Estante: só leitura aqui (gerido no app, com capa). Não duplica controle.
+    if (e.kind === 'shelf') {
+      var lbl = STATUS_LABEL[e.ns];
+      var st = (e.ns === 'lido' && bk.rating) ? ' ' + starString(bk.rating) : '';
+      return '<li class="onshelf"><div class="bk-top"><span class="bk-name">' + t + '</span>' +
+        '<span class="st-tag ' + (e.ns === 'lido' ? 'lendo' : e.ns) + '">na estante · ' + lbl + st + '</span></div>' +
+        '<div class="dorme-hint">Esta leitura está na sua Estante — ajuste no app.</div></li>';
+    }
+
+    // No ACERVO ou DESEJO: a marca é editável (nunca vai pra Estante).
+    var ns = (e.kind === 'mark') ? e.ns : ''; // '' = nenhum segmento ativo
+    var owned = bkOwned(bk);
     var seg = ['tbr','lendo','lido'].map(function(s) {
-      return '<button data-bookid="' + id + '" data-s="' + s + '"' + (ns === s ? ' class="active"' : '') + '>' + statusIcon(s) + '<span>' + STATUS_LABEL[s] + '</span></button>';
+      return '<button data-act="mark" data-bookid="' + id + '" data-s="' + s + '"' + (ns === s ? ' class="active"' : '') + '>' + statusIcon(s) + '<span>' + STATUS_LABEL[s] + '</span></button>';
     }).join('');
+    var ownSeg = '<div class="own-seg">' +
+      '<button data-act="own" data-bookid="' + id + '" data-own="1"' + (owned ? ' class="active"' : '') + '>Tenho (acervo)</button>' +
+      '<button data-act="own" data-bookid="' + id + '" data-own="0"' + (!owned ? ' class="active"' : '') + '>Desejo</button></div>';
     var extra = '';
-    if (dormant) {
-      extra = '<div class="dorme-hint">No seu acervo, adormecido. Escolha uma situação para despertá-lo.</div>';
-    } else if (bk.status === 'read') {
+    if (e.kind === 'dorme') {
+      extra = '<div class="dorme-hint">No seu acervo, sem marca. Escolha quero ler · lendo · lido.</div>';
+    } else if (e.ns === 'lido') {
       var rating = bk.rating || 0;
       var stars = [1,2,3,4,5].map(function(n) { return '<button class="star' + (n <= rating ? ' on' : '') + '" data-bookid="' + id + '" data-r="' + n + '">★</button>'; }).join('');
       extra = '<div class="star-rate"><span class="sr-label">Sua nota</span>' + stars + '</div>';
     }
-    // adormecido não mostra o "X" (não está numa estante de onde tirar)
-    var removeBtn = dormant ? '' :
-      '<button class="btn-icon del bk-remove" data-bookid="' + id + '" title="Tirar da estante (volta a dormir no acervo)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
-    return '<li' + (dormant ? ' class="dormant"' : '') + '>' +
+    // X = tirar a marca de leitura (continua no acervo). Só faz sentido se houver marca.
+    var removeBtn = (e.kind === 'mark')
+      ? '<button class="btn-icon del bk-remove" data-bookid="' + id + '" title="Tirar a marca de leitura"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button>'
+      : '';
+    return '<li' + (e.kind !== 'mark' ? ' class="dormant"' : '') + '>' +
       '<div class="bk-top"><span class="bk-name">' + t + '</span>' + removeBtn + '</div>' +
       '<div class="status-seg">' + seg + '</div>' +
-      extra +
+      ownSeg + extra +
     '</li>';
   }).join('');
 }
@@ -1022,10 +1055,12 @@ function addBook() {
   var input = document.getElementById('bk-title');
   var title = input.value.trim();
   if (!title) { input.focus(); return; }
-  var status = document.getElementById('bk-status').value || 'lido'; // status da /nobel/
+  var status = document.getElementById('bk-status').value || 'lido'; // marca de leitura
+  var ownEl = document.getElementById('bk-owned');
+  var owned = ownEl ? !!ownEl.checked : true; // marcado = tenho (acervo); desmarcado = desejo
   var ny = (String(l.nobel || '').match(/\d{4}/) || [])[0];
   var nobelInfo = (l.cat !== 'c' && ny) ? { ano: parseInt(ny, 10), pais: (l.country || '').split('/')[0].trim() } : null;
-  window.__appWrite.addRead({ title: title, author: l.author, nobelStatus: status, nobel: nobelInfo });
+  window.__appWrite.addRead({ title: title, author: l.author, nobelStatus: status, owned: owned, nobel: nobelInfo });
   input.value = '';
   input.focus();
   renderBooksList();
@@ -1299,13 +1334,11 @@ function wire() {
   document.getElementById('books-read').addEventListener('click', function(e) {
     if (!window.__appWrite || !window.__appWrite.ready()) return;
     var rm = e.target.closest('.bk-remove');
-    if (rm) { window.__appWrite.removeFromShelf(rm.getAttribute('data-bookid')); renderBooksList(); return; }
+    if (rm) { window.__appWrite.clearMark(rm.getAttribute('data-bookid')); renderBooksList(); return; }
+    var own = e.target.closest('.own-seg button');
+    if (own) { window.__appWrite.setOwned(own.getAttribute('data-bookid'), own.getAttribute('data-own') === '1'); renderBooksList(); return; }
     var sb = e.target.closest('.status-seg button');
-    if (sb) {
-      window.__appWrite.setStatus(sb.getAttribute('data-bookid'), sb.getAttribute('data-s'));
-      renderBooksList();
-      return;
-    }
+    if (sb) { window.__appWrite.setMark(sb.getAttribute('data-bookid'), sb.getAttribute('data-s')); renderBooksList(); return; }
     var star = e.target.closest('.star-rate .star');
     if (star) {
       window.__appWrite.setRating(star.getAttribute('data-bookid'), parseInt(star.getAttribute('data-r'), 10));
@@ -1575,18 +1608,34 @@ function scheduleAppPush(){ if(!user||!appState) return; if(appPushTimer) clearT
 function nobelToApp(s){ return s === 'lido' ? 'read' : (s === 'lendo' ? 'reading' : 'tbr'); }
 function nrmLite(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
 
-// API de escrita usada pelo modal da /nobel/. Toda mudança: aplica no appState,
-// carimba updatedAt no livro, atualiza a lente (re-render) e agenda o push.
+// API de escrita usada pelo modal da /nobel/.
+// REGRA DE OURO (decisão da Mariana 2026-06-17): a /nobel/ NUNCA mexe no `status`
+// (que controla a Estante). Ela só escreve a MARCA DE LEITURA do ACERVO (`mark`:
+// tbr/reading/read) e a posse (`owned`: tenho × desejo). O livro vai pro acervo
+// adormecido com a etiqueta; entra na Estante (com capa) só quando ela "tira a
+// poeira" no app. Livros que JÁ estão na Estante (onShelf) a /nobel/ só exibe.
+function onShelfApp(b){ return b && ['reading','paused','tbr','read'].indexOf(b.status) !== -1; }
 window.__appWrite = {
   ready: function(){ return !!(user && appState); },
   _find: function(id){ return (appState && appState.books || []).find(function(b){ return b.id === id; }); },
   _after: function(){ window.__maratona.setAppLibrary(appState.books); scheduleAppPush(); },
-  setStatus: function(id, nobelStatus){
+  // define a marca de leitura no acervo (não toca status/Estante)
+  setMark: function(id, nobelStatus){
+    var b = this._find(id); if (!b || onShelfApp(b)) return; // onShelf é gerido na Estante
+    b.mark = nobelToApp(nobelStatus); // tbr / reading / read
+    if (b.owned === false) b.owned = true; // marcou leitura num desejo → passa a ter (acervo)
+    b.updatedAt = new Date().toISOString();
+    this._after();
+  },
+  clearMark: function(id){ // tira a etiqueta (continua no acervo, adormecido)
     var b = this._find(id); if (!b) return;
-    var st = nobelToApp(nobelStatus);
-    b.status = st;
-    if (st === 'read' && !b.finishedAt) b.finishedAt = new Date().toISOString();
-    if (st === 'reading' && !b.readingSince) b.readingSince = new Date().toISOString();
+    b.mark = null;
+    b.updatedAt = new Date().toISOString();
+    this._after();
+  },
+  setOwned: function(id, owned){ // tenho (acervo) × desejo (lista de desejos)
+    var b = this._find(id); if (!b) return;
+    b.owned = !!owned;
     b.updatedAt = new Date().toISOString();
     this._after();
   },
@@ -1596,28 +1645,23 @@ window.__appWrite = {
     b.updatedAt = new Date().toISOString();
     this._after();
   },
-  removeFromShelf: function(id){ // não apaga: volta a dormir no acervo (status null)
-    var b = this._find(id); if (!b) return;
-    b.status = null;
-    b.updatedAt = new Date().toISOString();
-    this._after();
-  },
+  // adiciona um livro do laureado: vai pro ACERVO (owned:true) ou DESEJOS (owned:false),
+  // sempre adormecido (status:null) + a marca de leitura. Nunca pra Estante.
   addRead: function(o){
     if (!appState) return;
     if (!Array.isArray(appState.books)) appState.books = [];
     var nt = nrmLite(o.title), na = nrmLite(o.author);
+    var owned = (o.owned !== false);
+    var mk = nobelToApp(o.nobelStatus);
     var existing = appState.books.find(function(b){ return nrmLite(b.title) === nt && nrmLite(b.author) === na; });
-    var st = nobelToApp(o.nobelStatus);
-    if (existing) { // já tenho o livro: só ajusta o status (não duplica)
-      existing.status = st;
-      if (st === 'read' && !existing.finishedAt) existing.finishedAt = new Date().toISOString();
+    if (existing) { // já tenho/desejo o livro: ajusta marca e posse (não duplica, não toca status)
+      if (!onShelfApp(existing)) existing.mark = mk;
+      existing.owned = owned;
       existing.updatedAt = new Date().toISOString();
       this._after(); return;
     }
     var id = (o.title || 'livro').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').slice(0,30) + '-' + Date.now().toString(36).slice(-4);
-    var b = { id: id, title: (o.title||'').trim(), author: (o.author||'').trim(), status: st, cover: null, owned: true, addedAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-    if (st === 'read') b.finishedAt = new Date().toISOString();
-    if (st === 'reading') b.readingSince = new Date().toISOString();
+    var b = { id: id, title: (o.title||'').trim(), author: (o.author||'').trim(), status: null, mark: mk, cover: null, owned: owned, addedAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
     if (o.nobel) b.nobel = o.nobel;
     appState.books.push(b);
     this._after();
