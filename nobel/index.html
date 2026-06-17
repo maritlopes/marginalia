@@ -257,6 +257,15 @@ li.dormant .bk-name{opacity:.7}
 .bk-results .r-empty{color:var(--color-text-faint);font-size:var(--text-sm);padding:var(--space-2);cursor:default;border:none;background:none}
 .bk-hint{font-size:var(--text-xs);color:var(--color-text-faint);margin:0 0 var(--space-3)}
 .picker-input{margin-bottom:var(--space-3)}
+.laur-search{position:relative;margin:0 0 var(--space-5)}
+.laur-search-ic{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--color-text-muted);pointer-events:none}
+.laur-search input{width:100%;box-sizing:border-box;padding:.7rem 2.4rem .7rem 2.6rem;border:1px solid var(--color-border);border-radius:var(--radius-full);background:var(--color-surface);color:var(--color-text);font-family:var(--font-body);font-size:var(--text-base);outline:none;transition:border-color var(--transition)}
+.laur-search input:focus{border-color:var(--color-primary)}
+.laur-search input::-webkit-search-cancel-button{display:none}
+#laur-filter-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:30px;height:30px;border:0;background:transparent;color:var(--color-text-muted);font-size:1.4rem;line-height:1;cursor:pointer;border-radius:var(--radius-full);display:none}
+#laur-filter-clear:hover{color:var(--color-text);background:var(--color-surface-2)}
+.laur-search.has-q #laur-filter-clear{display:block}
+.laur-search-empty{text-align:center;color:var(--color-text-muted);font-style:italic;margin:var(--space-6) 0}
 .picker-results{list-style:none;max-height:46vh;overflow-y:auto;display:flex;flex-direction:column;gap:var(--space-2)}
 .picker-results li{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);cursor:pointer;transition:all var(--transition);background:var(--color-surface)}
 .picker-results li:hover{border-color:var(--color-primary);background:var(--color-surface-2)}
@@ -410,6 +419,14 @@ footer .brand a:hover{text-decoration:underline}
 
   <!-- (sem placar, sem regras de pontos — página atemporal) -->
   <p class="how-note" style="text-align:center;margin:0 0 1.5rem;color:var(--color-text-muted);font-style:italic">Uma estante particular à margem do Nobel: marque o que já leu, o que está lendo e o que ainda quer ler — e guarde a sua nota para cada livro.</p>
+
+  <!-- BUSCA (filtra a lista ao vivo, sem rolar) -->
+  <div class="laur-search">
+    <svg class="laur-search-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <input id="laur-filter" type="search" placeholder="Buscar laureado por nome, país ou ano…" autocomplete="off" aria-label="Buscar laureado">
+    <button id="laur-filter-clear" type="button" aria-label="Limpar busca" title="Limpar">&times;</button>
+  </div>
+  <p class="laur-search-empty" id="laur-search-empty" hidden>Nenhum laureado encontrado para essa busca.</p>
 
   <!-- LAUREADOS -->
   <section class="cat-section" data-cat="a" id="laureados">
@@ -975,8 +992,31 @@ function render() {
     }).join('');
   });
   save();
+  applyLaurFilter(); // re-aplica o filtro de busca após cada render
 }
 
+// Busca do topo: filtra as linhas de laureados/cotados ao vivo (nome, país, ano).
+var laurQuery = '';
+function applyLaurFilter() {
+  var q = nrm(laurQuery);
+  var anyVisible = false;
+  ['a','c'].forEach(function(cat) {
+    var list = document.getElementById('list-' + cat);
+    if (!list) return;
+    var rows = list.querySelectorAll('li.book-row');
+    var sectionHas = false;
+    rows.forEach(function(li) {
+      var hit = !q || nrm(li.textContent).indexOf(q) !== -1;
+      li.style.display = hit ? '' : 'none';
+      if (hit) { sectionHas = true; anyVisible = true; }
+    });
+    // ao filtrar, esconde a seção inteira (cabeçalho + botão) se nada casar
+    var section = list.closest('.cat-section');
+    if (section) section.style.display = (q && !sectionHas) ? 'none' : '';
+  });
+  var empty = document.getElementById('laur-search-empty');
+  if (empty) empty.hidden = !(q && !anyVisible);
+}
 /* ---------- BOOKS MODAL (register reads for a laureate) ---------- */
 var booksModalId = null;
 
@@ -1324,6 +1364,23 @@ function wire() {
     btn.addEventListener('click', function(){ openAdd(btn.getAttribute('data-add')); });
   });
   document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+
+  // busca do topo
+  var lf = document.getElementById('laur-filter');
+  var lfClear = document.getElementById('laur-filter-clear');
+  if (lf) {
+    lf.addEventListener('input', function() {
+      laurQuery = lf.value || '';
+      lf.parentElement.classList.toggle('has-q', !!laurQuery.trim());
+      applyLaurFilter();
+    });
+  }
+  if (lfClear) {
+    lfClear.addEventListener('click', function() {
+      laurQuery = ''; if (lf) { lf.value = ''; lf.parentElement.classList.remove('has-q'); lf.focus(); }
+      applyLaurFilter();
+    });
+  }
 
   // books modal
   document.getElementById('bk-add').addEventListener('click', addBook);
