@@ -13,6 +13,15 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
   const pct = typeof b.pct === 'number' ? b.pct : 0;
   const currentPage = b.currentPage || 0;
   const openEditor = () => { if (typeof window.__editBook === 'function') window.__editBook(b); };
+  // Devolver à estante → acervo: inverso do "tirar a poeira". O livro sai da
+  // estante (status → null) e volta a ser adormecido, guardando a marca de leitura
+  // equivalente (lido/lendo/quero) e a capa (não se perde). Reversível pelo ritual.
+  const guardarNoAcervo = () => {
+    if (typeof MG === 'undefined' || !MG.updateBook || !b.id) return;
+    const mk = b.status === 'read' ? 'read' : (b.status === 'reading' || b.status === 'paused') ? 'reading' : 'tbr';
+    MG.updateBook(b.id, { status: null, mark: mk });
+    onNav(back);
+  };
 
   // aba inicial normalmente 'sobre'; a "primeira porta" abre o livro já em 'ecos'
   // (window.__openBookTab) — lê uma vez e limpa, pra não afetar próximas aberturas.
@@ -144,6 +153,9 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
               <QuickCard icon="note" title="Escrever nota" sub={`${bookNotes.length} ${bookNotes.length === 1 ? 'nota' : 'notas'}`} primary onClick={() => { if (typeof window !== 'undefined') window.__editingNote = null; onNav('note'); }}/>
               <QuickCard icon="clock" title="Foco" sub="Sessão com timer" onClick={() => onNav('foco')}/>
               <QuickCard icon="pen" title="Editar livro" sub="Status, páginas, capa" onClick={openEditor}/>
+              {!isDemo && b.status && (
+                <QuickCard icon="moon" title="Devolver ao acervo" sub="Sai da estante, vira adormecido" onClick={guardarNoAcervo}/>
+              )}
             </div>
 
             {/* temas */}
@@ -3487,11 +3499,23 @@ function AlimentarPanel({ owned = true }) {
   const [mt, setMt] = React.useState('');
   const [ma, setMa] = React.useState('');
   const [done, setDone] = React.useState([]); // chaves inseridas nesta sessão do painel
+  // destino do livro ao inserir. O padrão segue o contexto (Acervo → adormecido,
+  // Desejos → desejo), mas a leitora escolhe a cada vez. "Estante" é a única que
+  // pede capa: insere adormecido e abre o "tirar a poeira" pra acender com capa.
+  const [dest, setDest] = React.useState(owned ? 'acervo' : 'desejo');
 
   const norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
   const keyOf = (t, a) => norm(t) + '|' + norm(a || '');
   const existing = new Set((window.BOOKS || []).map(b => keyOf(b.title, b.author)));
   const noun = owned ? 'acervo' : 'lista de desejos';
+  const DESTINOS = [
+    { id: 'estante', l: 'Estante',   sub: 'com capa',   ic: 'book' },
+    { id: 'quero',   l: 'Quero ler', sub: 'no acervo',  ic: 'bookmark' },
+    { id: 'acervo',  l: 'Acervo',    sub: 'adormecido', ic: 'moon' },
+    { id: 'lido',    l: 'Lido',      sub: 'no acervo',  ic: 'check' },
+    { id: 'desejo',  l: 'Desejo',    sub: 'lista',      ic: 'sparkle' },
+  ];
+  const destEntrou = { estante: 'na estante', quero: 'no acervo · quero ler', acervo: 'no acervo · adormecidos', lido: 'no acervo · lidos', desejo: 'na lista de desejos' };
 
   const search = async () => {
     if (!q.trim() || typeof Sources === 'undefined') return;
@@ -3510,13 +3534,29 @@ function AlimentarPanel({ owned = true }) {
     const k = keyOf(title, author);
     if (!String(title || '').trim() || existing.has(k) || done.includes(k)) return;
     const id = (title || 'livro').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30) + '-' + Date.now().toString(36).slice(-4);
-    MG.addBook({
+    const base = {
       id, title: String(title).trim(), author: String(author || '').trim(),
-      owned, status: null, cover: null,
       year: extra.year || null, pages: extra.pages || null, isbn: extra.isbn || null,
       tone: ['terra', 'olive', 'ochre', 'sage', 'ink'][Math.floor(Math.random() * 5)],
       addedAt: new Date().toISOString(),
-    });
+    };
+    // Estante (status real, COM capa): insere adormecido e abre o "tirar a poeira",
+    // que escolhe a capa e acende o livro na estante. Nunca cai sem capa na estante.
+    if (dest === 'estante') {
+      const book = { ...base, owned: true, status: null, mark: null, cover: null };
+      MG.addBook(book);
+      setDone(d => [...d, k]);
+      if (typeof window.__tirarPoeira === 'function') { window.__tirarPoeira(book); setOpen(false); }
+      return;
+    }
+    // Acervo (sem capa): posse + etiqueta de leitura conforme o destino.
+    const byDest = {
+      quero:  { owned: true,  status: null, mark: 'tbr' },
+      acervo: { owned: true,  status: null, mark: null },
+      lido:   { owned: true,  status: null, mark: 'read' },
+      desejo: { owned: false, status: null, mark: null },
+    };
+    MG.addBook({ ...base, cover: null, ...(byDest[dest] || byDest.acervo) });
     setDone(d => [...d, k]);
   };
 
@@ -3536,10 +3576,32 @@ function AlimentarPanel({ owned = true }) {
     <div style={{ padding: '14px 24px 0' }}>
       <div style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 14, padding: '14px 14px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 500 }}>Acrescentar ao {noun}</div>
+          <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 500 }}>Acrescentar um livro</div>
           <button onClick={() => { setOpen(false); setResults(null); setQ(''); setDone([]); }} style={{ background: 'transparent', border: 0, cursor: 'pointer', color: T.muted, padding: 4 }} aria-label="fechar">
             <Icon name="x" size={16}/>
           </button>
+        </div>
+
+        {/* destino — pra onde o livro vai ao ser inserido */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.muted, marginBottom: 7, fontWeight: 600 }}>Para onde vai</div>
+          <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginLeft: -2, marginRight: -2, paddingLeft: 2, paddingRight: 2 }}>
+            {DESTINOS.map(d => {
+              const on = dest === d.id;
+              return (
+                <button key={d.id} onClick={() => setDest(d.id)} style={{ flex: '1 0 auto', minWidth: 64, padding: '8px 9px', borderRadius: 11, border: `1px solid ${on ? T.terra : T.hairline}`, background: on ? T.terra : 'transparent', color: on ? T.cream : T.brown, fontFamily: T.sans, cursor: 'pointer', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                  <Icon name={d.ic} size={15} color={on ? T.cream : (d.id === 'estante' ? T.terra : T.brown)}/>
+                  <span style={{ fontSize: 11.5, fontWeight: 600, lineHeight: 1 }}>{d.l}</span>
+                  <span style={{ fontSize: 9, opacity: 0.8, lineHeight: 1 }}>{d.sub}</span>
+                </button>
+              );
+            })}
+          </div>
+          {dest === 'estante' && (
+            <div style={{ fontSize: 10.5, color: T.terraDeep, fontFamily: T.serif, fontStyle: 'italic', marginTop: 6 }}>
+              Ao adicionar, abre o "tirar a poeira" pra você escolher a capa.
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
@@ -3613,7 +3675,7 @@ function AlimentarPanel({ owned = true }) {
           <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 7, background: 'rgba(176,83,58,0.1)', borderRadius: 9, padding: '8px 11px' }}>
             <Icon name="check" size={14} color={T.terra}/>
             <span style={{ fontSize: 11.5, color: T.terraDeep, fontFamily: T.sans }}>
-              {done.length} {done.length === 1 ? 'livro entrou' : 'livros entraram'} {owned ? 'no acervo · adormecidos, sem capa' : 'na lista de desejos'}
+              {done.length} {done.length === 1 ? 'livro entrou' : 'livros entraram'} {destEntrou[dest] || 'no acervo'}
             </span>
           </div>
         )}

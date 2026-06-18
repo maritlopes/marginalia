@@ -526,16 +526,14 @@ footer .brand a:hover{text-decoration:underline}
       <p class="bk-hint">O título pode aparecer no idioma original — é só ajustar no campo abaixo.</p>
       <label for="bk-title">Título do livro</label>
       <input id="bk-title" type="text" placeholder="Título do livro">
-      <label for="bk-status">Situação</label>
-      <select id="bk-status">
-        <option value="tbr">Quero ler</option>
-        <option value="lendo">Lendo</option>
-        <option value="lido">Lido</option>
+      <label for="bk-dest">Para onde vai</label>
+      <select id="bk-dest">
+        <option value="quero">Quero ler · no acervo</option>
+        <option value="dorme">Só guardar · adormecido no acervo</option>
+        <option value="lido">Lido · no acervo</option>
+        <option value="desejo">Desejo · lista de desejos</option>
       </select>
-      <div class="check-row">
-        <input type="checkbox" id="bk-owned" checked>
-        <label for="bk-owned">Tenho este livro (vai pro acervo) — desmarque se for só desejo</label>
-      </div>
+      <p class="bk-hint">Para a Estante (a biblioteca com capa), use “tirar a poeira” no app.</p>
       <div class="btn-row">
         <button class="btn-save" id="bk-add">Adicionar livro</button>
       </div>
@@ -1030,7 +1028,7 @@ function openBooks(id) {
   document.getElementById('books-list-label').textContent = 'Os livros deste ' + (l.cat === 'c' ? 'cotado' : 'laureado') + ' na sua biblioteca';
   renderBooksList();
   document.getElementById('bk-title').value = '';
-  document.getElementById('bk-status').value = 'tbr';
+  document.getElementById('bk-dest').value = 'quero';
   var bs = document.getElementById('bk-search'); if (bs) bs.value = l.author || '';
   var br = document.getElementById('bk-results'); if (br) { br.innerHTML = ''; br._items = null; }
   document.getElementById('books-modal').classList.add('open');
@@ -1104,12 +1102,13 @@ function addBook() {
   var input = document.getElementById('bk-title');
   var title = input.value.trim();
   if (!title) { input.focus(); return; }
-  var status = document.getElementById('bk-status').value || 'tbr'; // marca de leitura (padrão: quero ler)
-  var ownEl = document.getElementById('bk-owned');
-  var owned = ownEl ? !!ownEl.checked : true; // marcado = tenho (acervo); desmarcado = desejo
+  // destino → posse (acervo × desejo) + marca de leitura no acervo (nunca toca a Estante)
+  var dest = document.getElementById('bk-dest').value || 'quero';
+  var owned = dest !== 'desejo';
+  var nobelStatus = dest === 'lido' ? 'lido' : (dest === 'dorme' || dest === 'desejo') ? 'dorme' : 'quero';
   var ny = (String(l.nobel || '').match(/\d{4}/) || [])[0];
   var nobelInfo = (l.cat !== 'c' && ny) ? { ano: parseInt(ny, 10), pais: (l.country || '').split('/')[0].trim() } : null;
-  window.__appWrite.addRead({ title: title, author: l.author, nobelStatus: status, owned: owned, nobel: nobelInfo });
+  window.__appWrite.addRead({ title: title, author: l.author, nobelStatus: nobelStatus, owned: owned, nobel: nobelInfo });
   input.value = '';
   input.focus();
   renderBooksList();
@@ -1671,7 +1670,7 @@ async function pushAppState(){
 function scheduleAppPush(){ if(!user||!appState) return; if(appPushTimer) clearTimeout(appPushTimer); appPushTimer=setTimeout(pushAppState, 1200); }
 
 // helpers de status entre /nobel/ e o app
-function nobelToApp(s){ return s === 'lido' ? 'read' : (s === 'lendo' ? 'reading' : 'tbr'); }
+function nobelToApp(s){ return s === 'lido' ? 'read' : (s === 'lendo' ? 'reading' : (s === 'dorme' ? null : 'tbr')); }
 function nrmLite(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
 
 // API de escrita usada pelo modal da /nobel/.
