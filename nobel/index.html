@@ -826,13 +826,7 @@ function load() {
 
 function normalize() {
   laureates.forEach(function(l) {
-    if (!Array.isArray(l.books)) l.books = [];
     if (typeof l.author !== 'string') l.author = l.title || '';
-    l.books.forEach(function(b) {
-      // compat: livro sem status era leitura concluída → 'lido'
-      if (b.status !== 'tbr' && b.status !== 'lendo' && b.status !== 'lido') b.status = 'lido';
-      if (typeof b.rating !== 'number') b.rating = 0;
-    });
   });
 }
 
@@ -866,11 +860,6 @@ function escHtml(s) {
   return d.innerHTML;
 }
 
-// página atemporal: "lido" é simplesmente lido (sem janela de maratona, sem ponto).
-function countsPoint(bk) { return bk.status === 'lido'; }
-function lidoCount(l) {
-  return l.books.filter(countsPoint).length;
-}
 function statusIcon(s) {
   if (s === 'lido') return '<svg class="st-ico medal-ico" aria-hidden="true"><use href="#medal"/></svg>';
   if (s === 'lendo') return '<svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5c3-1 6-1 9 1 3-2 6-2 9-1v13c-3-1-6-1-9 1-3-2-6-2-9-1z"/><path d="M12 6v13"/></svg>';
@@ -1261,12 +1250,11 @@ function renderPicker(q) {
   }
   ul.innerHTML = matches.map(function(l) {
     var metaParts = [l.nobel, l.country].filter(Boolean).join(' · ');
-    var n = l.books.length ? ' · ' + l.books.length + '✓' : '';
     var isCot = l.cat === 'c';
     var badge = isCot ? 'Cotado' : 'Laureado';
     var badgeCol = isCot ? 'var(--color-text-muted)' : 'var(--color-primary)';
     return '<li data-id="' + l.id + '">' +
-      '<span class="p-name">' + escHtml(l.author) + (countryFlag(l.country) ? ' ' + countryFlag(l.country) : '') + '<br><span class="p-meta">' + escHtml(metaParts) + n + '</span></span>' +
+      '<span class="p-name">' + escHtml(l.author) + (countryFlag(l.country) ? ' ' + countryFlag(l.country) : '') + '<br><span class="p-meta">' + escHtml(metaParts) + '</span></span>' +
       '<span class="p-badge" style="background:' + badgeCol + '">' + badge + '</span>' +
     '</li>';
   }).join('');
@@ -1549,27 +1537,14 @@ var panel = document.getElementById('sync-panel');
 var body = document.getElementById('sync-body');
 
 function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
-function bookKey(b){ return (b.title||'').trim().toLowerCase(); }
-function statusRank(s){ return s === 'lido' ? 2 : (s === 'lendo' ? 1 : 0); }
-
+// União dos laureados por id (a verdade das leituras vive no marginalia_state,
+// via lente — o antigo l.books foi aposentado na Fase C). Metadado do laureado é
+// o seed estático, então em conflito de id prevalece o local.
 function mergeData(localArr, cloudArr){
   var map = new Map();
   (localArr||[]).forEach(function(l){ map.set(l.id, JSON.parse(JSON.stringify(l))); });
   (cloudArr||[]).forEach(function(c){
-    if (!map.has(c.id)) { map.set(c.id, JSON.parse(JSON.stringify(c))); return; }
-    var l = map.get(c.id);
-    if (!Array.isArray(l.books)) l.books = [];
-    var byKey = {};
-    l.books.forEach(function(b){ byKey[bookKey(b)] = b; });
-    (c.books||[]).forEach(function(b){
-      var k = bookKey(b);
-      if (!byKey[k]) { l.books.push(b); byKey[k] = b; }
-      else {
-        if (statusRank(b.status) > statusRank(byKey[k].status)) byKey[k].status = b.status;
-        if ((b.rating || 0) > (byKey[k].rating || 0)) byKey[k].rating = b.rating;
-        if (byKey[k].naMaratona === false && b.naMaratona !== false) byKey[k].naMaratona = true;
-      }
-    });
+    if (!map.has(c.id)) map.set(c.id, JSON.parse(JSON.stringify(c)));
   });
   return Array.from(map.values());
 }

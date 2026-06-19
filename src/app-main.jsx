@@ -243,13 +243,12 @@ function MarginaliaApp() {
       case 'desafios':  return <ScreenMetas onNav={setRoute}/>;
       case 'grupos':    return <ScreenGruposCloud onNav={setRoute}/>;
       case 'foco':      return <ScreenFoco onNav={setRoute}/>;
-      case 'addBook':   return <ScreenAddBook onNav={setRoute}/>;
       default:          return <HomeComp onNav={setRoute}/>;
     }
   })();
 
-  // tab bar ativa em qualquer rota exceto Home (que tem sua própria) e note/addBook (full-screen)
-  const showTabs = !['note', 'addBook'].includes(route);
+  // tab bar ativa em qualquer rota exceto Home (que tem sua própria) e note (full-screen)
+  const showTabs = route !== 'note';
   const showFab = ['home', 'book', 'library'].includes(route);
 
   // mapa rota → tab ativa no tab bar
