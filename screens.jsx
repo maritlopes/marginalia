@@ -4283,6 +4283,33 @@ function buildLibraryDocHtml(books) {
   _libGroups(books).forEach(g => { body += `<h2>${esc(g.t)} (${g.arr.length})</h2><ul>` + sorted(g.arr).map(b => li(b, g.stars)).join('') + '</ul>'; });
   return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Minha biblioteca</title></head><body style="font-family:Georgia,'Times New Roman',serif;line-height:1.5">${body}</body></html>`;
 }
+// Situação de um livro (mesma semântica do _libGroups): desejo · lendo · quero
+// ler · lido · adormecido (no acervo, sem status). É a coluna-chave do CSV.
+function _bookSituacao(b) {
+  if (b && b.owned === false) return 'desejo';
+  const s = b && b.status;
+  if (s === 'reading' || s === 'paused') return 'lendo';
+  if (s === 'tbr') return 'quero ler';
+  if (s === 'read') return 'lido';
+  return 'adormecido';
+}
+// CSV (planilha): uma linha por livro, colunas título·autor·ano·situação·estrelas·nobel.
+// opts.onlyOwned → Minha biblioteca (tenho); opts.onlyDesejos → Lista de desejos.
+// Delimitador vírgula, fim de linha CRLF, campos com vírgula/aspas/quebra entre aspas
+// (o BOM UTF-8 vai no momento do download, pra o Excel não corromper os acentos).
+function buildLibraryCsv(books, opts = {}) {
+  const esc = (v) => { const s = String(v == null ? '' : v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  let rows = [...(books || [])];
+  if (opts.onlyOwned) rows = rows.filter(b => b.owned !== false);
+  if (opts.onlyDesejos) rows = rows.filter(b => b.owned === false);
+  rows.sort((x, y) => (x.title || '').localeCompare(y.title || '', 'pt-BR'));
+  const lines = ['título,autor,ano,situação,estrelas,nobel'];
+  rows.forEach(b => {
+    const nobel = b.nobel ? ('Nobel' + (b.nobel.ano ? ' ' + b.nobel.ano : '')) : '';
+    lines.push([esc(b.title), esc(b.author), esc(b.year), esc(_bookSituacao(b)), esc(b.rating || ''), esc(nobel)].join(','));
+  });
+  return lines.join('\r\n');
+}
 
 function BackupPanel() {
   const fileRef = React.useRef(null);
@@ -4393,6 +4420,18 @@ function BackupPanel() {
     _download('﻿' + buildLibraryDocHtml(books), 'application/msword', `marginalia-biblioteca-${d}.doc`);
     flash('Biblioteca exportada em Word (.doc).');
   };
+  const baixarBibliotecaCsv = () => {
+    const books = _bibVazia(); if (!books) return;
+    const d = new Date().toISOString().slice(0, 10);
+    _download('﻿' + buildLibraryCsv(books, { onlyOwned: true }), 'text/csv;charset=utf-8', `marginalia-biblioteca-${d}.csv`);
+    flash('Minha biblioteca exportada em CSV (planilha).');
+  };
+  const baixarDesejosCsv = () => {
+    const books = _bibVazia(); if (!books) return;
+    const d = new Date().toISOString().slice(0, 10);
+    _download('﻿' + buildLibraryCsv(books, { onlyDesejos: true }), 'text/csv;charset=utf-8', `marginalia-desejos-${d}.csv`);
+    flash('Lista de desejos exportada em CSV (planilha).');
+  };
 
   const btn = (extra = {}) => ({
     flex: 1, padding: '11px 12px', borderRadius: 10, cursor: 'pointer',
@@ -4454,9 +4493,17 @@ function BackupPanel() {
           Seus livros em um documento, agrupados por lendo · quero ler · lidos · adormecidos ·
           desejos. Em Markdown (para o Obsidian) ou Word (.doc), pronto para imprimir ou guardar.
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
           <button onClick={baixarBibliotecaMd} style={btn()}>↓ Biblioteca .md</button>
           <button onClick={baixarBibliotecaDoc} style={btn()}>↓ Biblioteca .doc</button>
+        </div>
+        <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.45, marginBottom: 10 }}>
+          Ou em planilha (.csv) — uma linha por livro (título · autor · ano · situação ·
+          estrelas · Nobel), para abrir no Excel, Sheets ou Numbers e ordenar à vontade.
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={baixarBibliotecaCsv} style={btn()}>↓ Minha biblioteca .csv</button>
+          <button onClick={baixarDesejosCsv} style={btn()}>↓ Desejos .csv</button>
         </div>
       </div>
 
