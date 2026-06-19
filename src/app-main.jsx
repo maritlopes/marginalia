@@ -133,6 +133,7 @@ function MarginaliaApp() {
   const [showWelcome, setShowWelcome] = React.useState(false);
   const [showChegada, setShowChegada] = React.useState(false);
   const [dustBook, setDustBook] = React.useState(null);
+  const [showAlimentar, setShowAlimentar] = React.useState(false);
   const [, forceRender] = React.useReducer(x => x + 1, 0);
 
   // modo web desktop: navegador (não instalado) em tela larga → frame de site (nav no topo)
@@ -162,6 +163,7 @@ function MarginaliaApp() {
     window.__openAccount = () => setShowAccount(true);
     window.__welcomeNewMember = () => setShowWelcome(true);
     window.__tirarPoeira = (book) => setDustBook(book); // ritual: desperta um adormecido do acervo
+    window.__alimentar = () => setShowAlimentar(true); // painel unificado de adicionar (o "+")
     window.__abrirChegada = () => setShowChegada(true); // primeira porta (rever a apresentação)
     window.__setRoute = setRoute; // útil para deep-linking e debug
     return () => {
@@ -169,6 +171,7 @@ function MarginaliaApp() {
       delete window.__openGrupo; delete window.__shareNote; delete window.__shareRecommendation;
       delete window.__editChallenge; delete window.__openAccount; delete window.__welcomeNewMember;
       delete window.__tirarPoeira; delete window.__abrirChegada; delete window.__setRoute;
+      delete window.__alimentar;
     };
   }, []);
 
@@ -284,7 +287,7 @@ function MarginaliaApp() {
       {showFab && (
         <button
           aria-label="Adicionar livro"
-          onClick={() => setEditingBook({})}
+          onClick={() => setShowAlimentar(true)}
           style={{
             position: 'absolute', right: 18, bottom: 96, zIndex: 70,
             width: 52, height: 52, borderRadius: '50%',
@@ -313,6 +316,9 @@ function MarginaliaApp() {
           book={editingBook.id ? editingBook : null}
           onClose={() => setEditingBook(null)}
         />
+      )}
+      {showAlimentar && typeof AlimentarSheet !== 'undefined' && (
+        <AlimentarSheet onClose={() => setShowAlimentar(false)}/>
       )}
       {dustBook !== null && typeof TirarPoeiraSheet !== 'undefined' && (
         <TirarPoeiraSheet

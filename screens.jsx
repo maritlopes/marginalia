@@ -3416,7 +3416,7 @@ function EstanteView({ all, V, onNav = () => {} }) {
               Estes livros são só uma amostra, para você ver a Marginália por dentro. Acrescente o primeiro livro <em>seu</em> — os exemplos saem de cena e a estante passa a ser sua.
             </div>
             <button
-              onClick={() => { if (typeof window.__editBook === 'function') window.__editBook({}); }}
+              onClick={() => { if (typeof window.__alimentar === 'function') window.__alimentar(); else if (typeof window.__editBook === 'function') window.__editBook({}); }}
               style={{ padding: '11px 20px', borderRadius: 10, border: 0, background: T.ink, color: T.cream, fontFamily: T.sans, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
               Começar a minha estante
             </button>
@@ -3486,12 +3486,15 @@ function CatalogRow({ b, showStatus = false, right = null }) {
   );
 }
 
-// ── Painel "alimentar": busca por autor/título e insere SEM capa, OU à mão.
-// owned=true → catálogo (Minha biblioteca); owned=false → Lista de desejos.
+// ── Corpo compartilhado do "alimentar": busca por autor/título e insere SEM
+// capa, OU à mão. owned=true → acervo (Minha biblioteca); owned=false → desejos.
 // Fica aberto após inserir, pra emendar vários. A capa só nasce depois, no
 // ritual "tirar a poeira" (a estante é a única visão com capa).
-function AlimentarPanel({ owned = true }) {
-  const [open, setOpen] = React.useState(false);
+// Reusado por dois invólucros: AlimentarPanel (inline, no Acervo/Desejos) e
+// AlimentarSheet (overlay aberto pelo "+" da página principal). `onClose` fecha
+// o invólucro (colapsa o inline ou dispensa o sheet) — também é o que dispara
+// quando o destino "Estante" abre o "tirar a poeira".
+function AlimentarForm({ owned = true, defaultDest, onClose = () => {} }) {
   const [mode, setMode] = React.useState('autor'); // autor | titulo | mao
   const [q, setQ] = React.useState('');
   const [busy, setBusy] = React.useState(false);
@@ -3500,9 +3503,10 @@ function AlimentarPanel({ owned = true }) {
   const [ma, setMa] = React.useState('');
   const [done, setDone] = React.useState([]); // chaves inseridas nesta sessão do painel
   // destino do livro ao inserir. O padrão segue o contexto (Acervo → adormecido,
-  // Desejos → desejo), mas a leitora escolhe a cada vez. "Estante" é a única que
-  // pede capa: insere adormecido e abre o "tirar a poeira" pra acender com capa.
-  const [dest, setDest] = React.useState(owned ? 'acervo' : 'desejo');
+  // Desejos → desejo, página principal → estante), mas a leitora escolhe a cada
+  // vez. "Estante" é a única que pede capa: insere adormecido e abre o "tirar a
+  // poeira" pra acender com capa.
+  const [dest, setDest] = React.useState(defaultDest || (owned ? 'acervo' : 'desejo'));
 
   const norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
   const keyOf = (t, a) => norm(t) + '|' + norm(a || '');
@@ -3546,7 +3550,7 @@ function AlimentarPanel({ owned = true }) {
       const book = { ...base, owned: true, status: null, mark: null, cover: null };
       MG.addBook(book);
       setDone(d => [...d, k]);
-      if (typeof window.__tirarPoeira === 'function') { window.__tirarPoeira(book); setOpen(false); }
+      if (typeof window.__tirarPoeira === 'function') { window.__tirarPoeira(book); onClose(); }
       return;
     }
     // Acervo (sem capa): posse + etiqueta de leitura conforme o destino.
@@ -3562,22 +3566,11 @@ function AlimentarPanel({ owned = true }) {
 
   const insertManual = () => { if (mt.trim()) { insert(mt, ma); setMt(''); setMa(''); } };
 
-  if (!open) {
-    return (
-      <div style={{ padding: '14px 24px 0' }}>
-        <button onClick={() => setOpen(true)} style={{ width: '100%', padding: '12px', borderRadius: 12, background: T.terra, color: T.cream, border: 0, fontFamily: T.sans, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
-          <Icon name="plus" size={16} color={T.cream}/> {owned ? 'Acrescentar ao acervo' : 'Acrescentar um desejo'}
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div style={{ padding: '14px 24px 0' }}>
-      <div style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 14, padding: '14px 14px 16px' }}>
+    <div style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 14, padding: '14px 14px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 500 }}>Acrescentar um livro</div>
-          <button onClick={() => { setOpen(false); setResults(null); setQ(''); setDone([]); }} style={{ background: 'transparent', border: 0, cursor: 'pointer', color: T.muted, padding: 4 }} aria-label="fechar">
+          <button onClick={() => { setResults(null); setQ(''); setDone([]); onClose(); }} style={{ background: 'transparent', border: 0, cursor: 'pointer', color: T.muted, padding: 4 }} aria-label="fechar">
             <Icon name="x" size={16}/>
           </button>
         </div>
@@ -3679,6 +3672,39 @@ function AlimentarPanel({ owned = true }) {
             </span>
           </div>
         )}
+    </div>
+  );
+}
+
+// Invólucro inline (no Acervo/Desejos): botão que expande o formulário no lugar.
+function AlimentarPanel({ owned = true }) {
+  const [open, setOpen] = React.useState(false);
+  if (!open) {
+    return (
+      <div style={{ padding: '14px 24px 0' }}>
+        <button onClick={() => setOpen(true)} style={{ width: '100%', padding: '12px', borderRadius: 12, background: T.terra, color: T.cream, border: 0, fontFamily: T.sans, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
+          <Icon name="plus" size={16} color={T.cream}/> {owned ? 'Acrescentar ao acervo' : 'Acrescentar um desejo'}
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div style={{ padding: '14px 24px 0' }}>
+      <AlimentarForm owned={owned} onClose={() => setOpen(false)}/>
+    </div>
+  );
+}
+
+// Invólucro em overlay (aberto pelo "+" da página principal): o MESMO formulário
+// num bottom-sheet. Destino padrão "Estante" — preserva o gesto histórico do "+"
+// (acrescentar à estante, com capa pelo "tirar a poeira"), mas agora pelo painel
+// unificado de busca + destino, igual ao do Acervo e da /nobel/.
+function AlimentarSheet({ onClose = () => {} }) {
+  return (
+    <div onClick={onClose} style={{ position: 'absolute', inset: 0, zIndex: 80, background: 'rgba(30,26,22,0.45)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: T.bone, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: '10px 16px 28px', maxHeight: '88%', overflowY: 'auto', boxShadow: '0 -8px 30px rgba(0,0,0,0.25)' }}>
+        <div style={{ width: 38, height: 4, borderRadius: 99, background: T.hairline, margin: '4px auto 12px' }}/>
+        <AlimentarForm owned={true} defaultDest="estante" onClose={onClose}/>
       </div>
     </div>
   );
@@ -5167,4 +5193,5 @@ Object.assign(window, {
   // declarada não vira global sozinha; precisa estar neste export
   AccountSheet, ScreenAguardandoApp, ScreenGruposCloud, ScreenGrupoDetalheCloud,
   EmailLoginCard, WelcomeNewMember, TirarPoeiraSheet, ChegadaSequence,
+  AlimentarSheet,
 });
