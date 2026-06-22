@@ -225,6 +225,21 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .situar-tempos[hidden]{display:none}
 .situar-tempos .situar-field{flex:1 1 150px}
 .situar-note{font-size:var(--text-xs);color:var(--color-text-faint);font-style:italic;margin-top:var(--space-3);text-align:left}
+.situar-3t{display:flex;justify-content:space-between;gap:var(--space-2);margin:var(--space-5) 0 var(--space-3);position:relative}
+.situar-3t::before{content:'';position:absolute;left:16%;right:16%;top:6px;height:1px;background:var(--color-border)}
+.situar-3t-pt{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;position:relative}
+.situar-3t-dot{width:11px;height:11px;border-radius:var(--radius-full);background:var(--color-primary);margin-bottom:7px}
+.situar-3t-pt.t-nv .situar-3t-dot{background:#CDA089}
+.situar-3t-pt.t-le .situar-3t-dot{background:#5E6B4F}
+.situar-3t-lbl{font-size:.6rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--color-text-faint)}
+.situar-3t-val{font-family:var(--font-display);font-weight:500;font-size:var(--text-base);color:var(--color-text)}
+.situar-3t-sub{font-size:var(--text-xs);color:var(--color-text-faint)}
+.situar-payoff{font-family:var(--font-display);font-style:italic;font-size:var(--text-base);color:var(--color-text-muted);line-height:1.5;text-align:center;margin:0 auto var(--space-2);max-width:52ch}
+.situar-prose-toggle{display:block;margin:var(--space-4) auto 0;background:none;border:0;color:var(--color-primary);font-size:var(--text-xs);font-weight:600;font-family:var(--font-body);cursor:pointer}
+.situar-prose{margin-top:var(--space-2)}
+.situar-prose[hidden]{display:none}
+.situar-prose-lbl{font-size:.72rem;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;color:var(--color-primary);margin:12px 0 2px}
+.situar-prose-txt{font-family:var(--font-serif,Georgia,serif);font-size:1rem;line-height:1.55;margin:0 0 6px;color:var(--color-text)}
 @media(max-width:640px){
 .situar{padding:0 var(--space-4)}
 .hoje{padding:0 var(--space-4)}
@@ -318,6 +333,9 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
     <div class="situar-result" id="situarResult" hidden></div>
   </div>
 </section>
+<!-- CARTÃO "Para onde você quer viajar?" DESATIVADO 2026-06-22 (declutter da Mariana):
+     era redundante com os chips "IR PARA:" do topo. Código dormente e reversível —
+     basta descomentar (o JS de #hojeForm é guardado por if(hojeForm), inerte sem isto).
 <section class="hoje" id="hoje">
   <div class="situar-card" id="hojeCard">
     <h2 class="situar-title"><i data-lucide="plane"></i> Para onde você quer viajar?</h2>
@@ -329,6 +347,8 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
     <div class="hoje-result" id="hojeResult" hidden></div>
   </div>
 </section>
+-->
+<!-- /CARTÃO viajar desativado -->
 <main class="timeline-wrapper" id="main-content">
 
 <section class="era-section era-anchor" id="era-antigo">
@@ -6747,18 +6767,40 @@ if(typeof lucide!=='undefined')lucide.createIcons();
       head.appendChild(el('em','',(prose&&prose.autor)?titulo+' · '+prose.autor:titulo));
       result.appendChild(head);
     }
-    /* a PROSA — a mesma pequena história do "Tempo da obra" no app (sem o tempo do leitor) */
+    /* TRÊS TEMPOS — a tirinha (narrativa · escrita · você lê) e a frase que dá voz ao leitor */
+    const _nowY=new Date().getFullYear();
+    const _lAlvo=parseAlvo(document.getElementById('situarLeitor').value);
+    const _ly=(_lAlvo!==null)?_lAlvo:_nowY;
+    const _tm={}; tempos.forEach(x=>{ _tm[x.tempo.key]=x; });
+    if(_tm.narrador||_tm.narrativa){
+      const _pts=[];
+      if(_tm.narrativa) _pts.push({lbl:'A narrativa',val:_tm.narrativa.anoStr,cls:'t-nv'});
+      if(_tm.narrador)  _pts.push({lbl:'A escrita',val:_tm.narrador.anoStr,cls:'t-es'});
+      _pts.push({lbl:'Você lê',val:(_ly>0?String(_ly):Math.abs(_ly)+' a.C.'),sub:(_ly===_nowY?'hoje':''),cls:'t-le'});
+      const strip=el('div','situar-3t');
+      _pts.forEach(p=>{
+        const c=el('div','situar-3t-pt '+p.cls);
+        c.appendChild(el('span','situar-3t-dot'));
+        c.appendChild(el('span','situar-3t-lbl',p.lbl));
+        c.appendChild(el('span','situar-3t-val',p.val));
+        if(p.sub) c.appendChild(el('span','situar-3t-sub',p.sub));
+        strip.appendChild(c);
+      });
+      result.appendChild(strip);
+      const _seg=[];
+      if(_tm.narrador){ const d=_ly-_tm.narrador.alvo; if(d>0) _seg.push('a '+fmtAnos(d)+' de quando '+((prose&&prose.autor)?prose.autor+' escreveu':'a obra foi escrita')); }
+      if(_tm.narrativa){ const d=_ly-_tm.narrativa.alvo; if(d>0) _seg.push('a '+fmtAnos(d)+' de quando a história se passa'); }
+      if(_seg.length) result.appendChild(el('p','situar-payoff','Você lê '+_seg.join(' — ')+'.'));
+    }
+    /* as três prosas — recolhidas atrás de um toque, pra não poluir a leitura */
     if(prose&&(prose.narrativaTxt||prose.narradorTxt)){
-      const mk=(label,txt)=>{
-        if(!txt) return;
-        const l=document.createElement('p');l.textContent=label;
-        l.style.cssText='font-size:.72rem;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;color:var(--color-primary,#B0533A);margin:12px 0 2px;';
-        const p=document.createElement('p');p.textContent=txt;
-        p.style.cssText='font-family:var(--font-serif,Georgia,serif);font-size:1rem;line-height:1.55;margin:0 0 6px;';
-        result.appendChild(l);result.appendChild(p);
-      };
+      const box=el('div','situar-prose'); box.hidden=true;
+      const mk=(label,txt)=>{ if(!txt) return; box.appendChild(el('p','situar-prose-lbl',label)); box.appendChild(el('p','situar-prose-txt',txt)); };
       mk('A narrativa',prose.narrativaTxt);
       mk('O narrador · a escrita',prose.narradorTxt);
+      const tg=el('button','situar-prose-toggle','aprofundar ▾'); tg.type='button';
+      tg.addEventListener('click',()=>{ box.hidden=!box.hidden; tg.textContent=box.hidden?'aprofundar ▾':'recolher ▴'; });
+      result.appendChild(tg); result.appendChild(box);
     }
     if(!tempos.length){
       if(!prose) result.appendChild(el('p','situar-empty',titulo?(nota||'Não consegui situar "'+titulo+'" — abra os três tempos e me diga você.'):'Diga ao menos o livro — ou abra os três tempos e escolha um ano (1869, século XII, 44 a.C.).'));
