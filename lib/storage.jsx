@@ -358,7 +358,7 @@ const MG = {
 // As capas aparecem com no máximo ~120px de largura; 360px preserva
 // nitidez em telas retina (3x). Capa embutida grande estoura o limite
 // de localStorage do iOS (~5 MB) e a Biblioteca não persiste no iPad.
-function compressCover(src, maxW = 360, maxH = 540, quality = 0.8) {
+function compressCover(src, maxW = 300, maxH = 450, quality = 0.62) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -385,17 +385,17 @@ MG.compressCover = compressCover;
 // Roda no aparelho que tem as capas (Mac/celular); o push leva o slim à
 // nuvem e o iPad passa a conseguir persistir a Biblioteca.
 MG.slimLegacyCovers = async function () {
-  const FAT = 60000; // chars de base64 ≈ 45 KB de imagem
+  const FAT = 18000, SLIM_VER = 2;
   const books = this.getBooks([]);
   // coverSlim marca capa já recomprimida — evita reprocessar a cada abertura
   // quando a miniatura ainda fica acima do limiar (imagens que comprimem mal)
-  const fat = books.filter(b => b && !b.coverSlim && typeof b.cover === 'string'
-    && b.cover.startsWith('data:') && b.cover.length > FAT);
+  const fat = books.filter(b => b && typeof b.cover === 'string'
+    && b.cover.startsWith('data:') && b.cover.length > FAT && b.coverSlim !== SLIM_VER);
   let done = 0;
   for (const b of fat) {
     try {
       const slim = await compressCover(b.cover);
-      if (slim && slim.length < b.cover.length) { this.updateBook(b.id, { cover: slim, coverSlim: true }); done++; }
+      if (slim && slim.length < b.cover.length) { this.updateBook(b.id, { cover: slim, coverSlim: SLIM_VER }); done++; } else { this.updateBook(b.id, { coverSlim: SLIM_VER }); }
     } catch (e) { console.warn('[Marginália] capa não recomprimida:', b.title, e); }
   }
   if (done) console.info('[Marginália] capas recomprimidas:', done);
