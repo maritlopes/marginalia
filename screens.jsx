@@ -3962,8 +3962,14 @@ function ScreenRetrospectiva({ onNav = () => {} }) {
   const media = avaliados.length ? (avaliados.reduce((s, b) => s + Number(b.rating || 0), 0) / avaliados.length) : null;
   const nobels = doAno.filter(b => b.nobel).length;
   const autores = [...new Set(doAno.map(b => (b.author || '').trim()).filter(Boolean))];
+  // páginas do ano = a soma das páginas dos LIVROS lidos (o que ela atravessou);
+  // se algum livro do ano não tem contagem, o número ganha um "+" (é pelo menos isso).
+  // O diário ("Li hoje") é outra medida — aparece como linha secundária.
+  const comPaginas = doAno.filter(b => Number(b.pages) > 0);
+  const paginas = comPaginas.reduce((s, b) => s + Number(b.pages), 0);
+  const paginasIncompletas = comPaginas.length < doAno.length;
   const log = (typeof MG !== 'undefined' && MG.getReadingLog) ? MG.getReadingLog() : [];
-  const paginas = log.filter(e => String(e.date || '').startsWith(String(ano))).reduce((s, e) => s + (e.pages || 0), 0);
+  const paginasDiario = log.filter(e => String(e.date || '').startsWith(String(ano))).reduce((s, e) => s + (e.pages || 0), 0);
 
   const statBox = (num, label) => (
     <div style={{ flex: 1, background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '12px 8px', textAlign: 'center' }}>
@@ -4011,11 +4017,16 @@ function ScreenRetrospectiva({ onNav = () => {} }) {
               {statBox(doAno.length, doAno.length === 1 ? 'livro lido' : 'livros lidos')}
               {statBox(autores.length, autores.length === 1 ? 'voz' : 'vozes')}
               {nobels > 0 && statBox(nobels, 'Nobel')}
-              {paginas > 0 && statBox(paginas, 'páginas')}
+              {paginas > 0 && statBox(paginas.toLocaleString('pt-BR') + (paginasIncompletas ? '+' : ''), 'páginas')}
             </div>
             {media !== null && (
               <div style={{ marginTop: 10, fontFamily: T.sans, fontSize: 12, color: T.brown, textAlign: 'center' }}>
                 média das suas estrelas: <span style={{ color: T.terra, fontWeight: 600 }}>{media.toFixed(1).replace('.', ',')} ★</span>
+              </div>
+            )}
+            {paginasDiario > 0 && (
+              <div style={{ marginTop: 4, fontFamily: T.sans, fontSize: 11, color: T.muted, textAlign: 'center' }}>
+                no seu diário de leitura: {paginasDiario.toLocaleString('pt-BR')} páginas registradas em {ano}
               </div>
             )}
 
