@@ -133,7 +133,15 @@ const MG = {
   removeBook(bookId) {
     const stored = this.getBooks([]);
     const gone = stored.find(b => b.id === bookId);
-    const next = stored.filter(b => b.id !== bookId);
+    // TOMBSTONE, não deleção: o merge da nuvem é união por id e "nunca apaga" —
+    // um item removido de verdade REAPARECERIA quando outro aparelho (que ainda
+    // o tem) sincronizasse. Marcar deleted:true com carimbo novo faz a remoção
+    // VENCER no unionById e se propagar a todos os aparelhos. A UI filtra os
+    // tombstones em _refreshLive (data.jsx). A capa é descartada para o
+    // tombstone não pesar no payload.
+    const next = stored.map(b => b.id === bookId
+      ? { id: b.id, title: b.title, author: b.author, deleted: true, cover: null, status: null, mark: null, updatedAt: new Date().toISOString() }
+      : b);
     this.setBooks(next);
     // remove também as notas desse livro (por id; notas antigas, pelo título)
     if (gone) {
@@ -414,7 +422,7 @@ MG.detectNobelInLibrary = function () {
   const books = this.getBooks([]);
   let done = 0;
   for (const b of books) {
-    if (!b || b.nobel) continue;
+    if (!b || b.nobel || b.deleted) continue;
     const nobel = window.nobelForAuthor(b.author);
     if (nobel) { this.updateBook(b.id, { nobel }); done++; }
   }

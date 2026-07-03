@@ -2040,7 +2040,7 @@ function ScreenMetas({ onNav = () => {} }) {
           Suas metas
         </div>
         <div style={{ fontFamily: T.serif, fontSize: 30, fontWeight: 400, letterSpacing: -0.6, lineHeight: 1.05 }}>
-          Reading <span style={{ fontStyle: 'italic', color: T.terra }}>challenges</span>
+          Desafios <span style={{ fontStyle: 'italic', color: T.terra }}>de leitura</span>
         </div>
         <div style={{ fontSize: 13, color: T.brown, marginTop: 8, lineHeight: 1.45, fontFamily: T.serif }}>
           Pequenos contratos com você mesma. Sem ostentação.
@@ -3550,9 +3550,21 @@ function CatalogoView({ all, V, onNav = () => {} }) {
   const dormemCount = V.dormem.length;
 
   const q = query.trim().toLowerCase();
-  let list = filter === 'dormem' ? V.dormem : catalogo;
-  if (q) list = list.filter(b => (b.title || '').toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q));
-  list = [...list].sort((a, b) => (a.title || '').localeCompare(b.title || '', 'pt-BR'));
+  // memoizado: com centenas de livros no acervo, filtrar + ordenar a cada
+  // render (cada tecla da busca) pesa no celular
+  const list = React.useMemo(() => {
+    let l = filter === 'dormem' ? V.dormem : catalogo;
+    if (q) l = l.filter(b => (b.title || '').toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q));
+    return [...l].sort((a, b) => (a.title || '').localeCompare(b.title || '', 'pt-BR'));
+  }, [catalogo, V.dormem, filter, q]);
+
+  // paginação: renderizar centenas de linhas de uma vez trava a abertura da
+  // página no iPhone; mostra em levas de 60 com "mostrar mais"
+  const PAGE = 60;
+  const [shown, setShown] = React.useState(PAGE);
+  React.useEffect(() => { setShown(PAGE); }, [filter, q]);
+  const visible = list.slice(0, shown);
+  const restantes = list.length - visible.length;
 
   return (
     <>
@@ -3595,7 +3607,7 @@ function CatalogoView({ all, V, onNav = () => {} }) {
           <div style={{ padding: '30px 0', textAlign: 'center', color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>
             {q ? `Nada encontrado para "${q}".` : 'O acervo está vazio. Acrescente seus livros acima — título e autor já bastam.'}
           </div>
-        ) : list.map(b => {
+        ) : visible.map(b => {
           const dormant = (typeof window.bookDormant === 'function') ? window.bookDormant(b) : false;
           return (
             <CatalogRow key={b.id} b={b} showStatus right={dormant ? (
@@ -3606,6 +3618,12 @@ function CatalogoView({ all, V, onNav = () => {} }) {
             ) : null}/>
           );
         })}
+        {restantes > 0 && (
+          <button onClick={() => setShown(s => s + PAGE)}
+            style={{ width: '100%', marginTop: 10, padding: '11px 0', background: 'transparent', border: `1px solid ${T.hairline}`, borderRadius: 12, color: T.brown, fontFamily: T.sans, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <Icon name="chevron" size={13}/> mostrar mais {Math.min(PAGE, restantes)} de {restantes}
+          </button>
+        )}
       </div>
     </>
   );

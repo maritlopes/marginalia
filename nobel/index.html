@@ -842,9 +842,10 @@ window.__maratona = {
     if (!Array.isArray(arr)) return;
     laureates = arr; normalize(); recomputeNextId(); render();
   },
-  // a camada de sync chama isto depois de carregar a biblioteca do app (lente)
+  // a camada de sync chama isto depois de carregar a biblioteca do app (lente).
+  // Tombstones (deleted:true — livros removidos no app) ficam fora da lente.
   setAppLibrary: function (books) {
-    window.__appLibrary = Array.isArray(books) ? books : [];
+    window.__appLibrary = Array.isArray(books) ? books.filter(function(b){ return b && !b.deleted; }) : [];
     render();
   }
 };
@@ -1644,6 +1645,15 @@ async function pushAppState(){
 }
 function scheduleAppPush(){ if(!user||!appState) return; if(appPushTimer) clearTimeout(appPushTimer); appPushTimer=setTimeout(pushAppState, 1200); }
 
+// Se a leitora fechar a aba ou trocar de app com um push ainda agendado
+// (debounce de 1,2s), despacha na hora — senão a marcação se perde.
+function flushPushes(){
+  if (pushTimer) { clearTimeout(pushTimer); pushTimer = null; push(); }
+  if (appPushTimer) { clearTimeout(appPushTimer); appPushTimer = null; pushAppState(); }
+}
+document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') flushPushes(); });
+window.addEventListener('pagehide', flushPushes);
+
 // helpers de status entre /nobel/ e o app
 function nobelToApp(s){ return s === 'lido' ? 'read' : (s === 'lendo' ? 'reading' : (s === 'dorme' ? null : 'tbr')); }
 function nrmLite(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
@@ -1656,7 +1666,7 @@ function nrmLite(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-
 // poeira" no app. Livros que JÁ estão na Estante (onShelf) a /nobel/ só exibe.
 function onShelfApp(b){ return b && ['reading','paused','tbr','read'].indexOf(b.status) !== -1; }
 window.__appWrite = {
-  ready: function(){ return !!(user && appState); },
+  ready: function(){ return !!(user && appState && Array.isArray(appState.books)); },
   _find: function(id){ return (appState && appState.books || []).find(function(b){ return b.id === id; }); },
   _after: function(){ window.__maratona.setAppLibrary(appState.books); scheduleAppPush(); },
   // define a marca de leitura no acervo (não toca status/Estante)
@@ -1693,7 +1703,7 @@ window.__appWrite = {
     var nt = nrmLite(o.title), na = nrmLite(o.author);
     var owned = (o.owned !== false);
     var mk = nobelToApp(o.nobelStatus);
-    var existing = appState.books.find(function(b){ return nrmLite(b.title) === nt && nrmLite(b.author) === na; });
+    var existing = appState.books.find(function(b){ return !b.deleted && nrmLite(b.title) === nt && nrmLite(b.author) === na; });
     if (existing) { // já tenho/desejo o livro: ajusta marca e posse (não duplica, não toca status)
       if (!onShelfApp(existing)) existing.mark = mk;
       existing.owned = owned;

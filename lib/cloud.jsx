@@ -62,6 +62,20 @@
     pushTimer = setTimeout(push, 1500);
   }
 
+  // Se o app for pro fundo (troca de app no iPhone, fechar a aba) com um push
+  // ainda agendado, despacha na hora — senão a edição fica só neste aparelho
+  // até a próxima abertura, e pode perder pro merge de outro aparelho.
+  function flushPush() {
+    if (!pushTimer) return;
+    clearTimeout(pushTimer);
+    pushTimer = null;
+    push();
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushPush();
+  });
+  window.addEventListener('pagehide', flushPush);
+
   // Mesclagem SEGURA por união: nunca apaga itens de um lado.
   // Livros/notas/desafios são unidos por id; em conflito, prevalece a versão
   // do estado com updatedAt mais recente. Progresso/prefs também mesclados.

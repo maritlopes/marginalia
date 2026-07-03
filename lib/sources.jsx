@@ -25,6 +25,15 @@ function _cacheSet(k, v) {
   try { sessionStorage.setItem('mg:src:' + k, JSON.stringify(v)); } catch {}
 }
 
+// fetch com prazo: se a API externa estiver fora do ar ou lenta, aborta em 8s
+// em vez de deixar a leitora esperando indefinidamente (os chamadores já
+// tratam a falha como "sem resultado").
+function _fetchTimeout(url, ms = 8000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(t));
+}
+
 const Sources = {
   // ─── OPEN LIBRARY ───────────────────────────────────────────
   // Capa por ISBN: usa o endpoint covers.openlibrary.org direto via <img src>
@@ -41,7 +50,8 @@ const Sources = {
     const cached = _cacheGet(k);
     if (cached) return cached;
     try {
-      const res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
+      const res = await _fetchTimeout(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
       const book = data['ISBN:' + isbn];
       if (!book) { _cacheSet(k, null); return null; }
@@ -74,7 +84,8 @@ const Sources = {
     try {
       let url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=${limit}&printType=books&country=BR`;
       if (GOOGLE_BOOKS_KEY) url += '&key=' + GOOGLE_BOOKS_KEY;
-      const res = await fetch(url);
+      const res = await _fetchTimeout(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
       results = (data.items || []).map(it => {
         const v = it.volumeInfo || {};
@@ -121,7 +132,8 @@ const Sources = {
     try {
       let url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent('inauthor:"' + name + '"')}&maxResults=40&printType=books&orderBy=relevance&country=BR`;
       if (GOOGLE_BOOKS_KEY) url += '&key=' + GOOGLE_BOOKS_KEY;
-      const res = await fetch(url);
+      const res = await _fetchTimeout(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
       results = (data.items || []).map(it => {
         const v = it.volumeInfo || {};
@@ -147,7 +159,8 @@ const Sources = {
     // reserva: Open Library por autor
     if (!results.length) {
       try {
-        const res = await fetch(`https://openlibrary.org/search.json?author=${encodeURIComponent(name)}&limit=${limit}&fields=title,author_name,first_publish_year`);
+        const res = await _fetchTimeout(`https://openlibrary.org/search.json?author=${encodeURIComponent(name)}&limit=${limit}&fields=title,author_name,first_publish_year`);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
         const seen = new Set();
         results = (data.docs || []).map(d => ({
@@ -161,7 +174,8 @@ const Sources = {
 
   // reserva: busca por título no Open Library
   async _searchOpenLibrary(query, limit = 8) {
-    const res = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=${limit}&fields=title,author_name,first_publish_year,isbn,cover_i,number_of_pages_median,publisher,key`);
+    const res = await _fetchTimeout(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=${limit}&fields=title,author_name,first_publish_year,isbn,cover_i,number_of_pages_median,publisher,key`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     return (data.docs || []).map(d => ({
       title: d.title,
@@ -183,7 +197,7 @@ const Sources = {
     const cached = _cacheGet(k);
     if (cached !== undefined) return cached;
     try {
-      const res = await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`);
+      const res = await _fetchTimeout(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`);
       if (!res.ok) {
         // fallback para inglês se PT não tem
         if (lang === 'pt') return this.authorSummary(name, 'en');

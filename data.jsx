@@ -498,7 +498,9 @@ const BOOKS_SEED = BOOKS;
 // Re-execute _refreshLive() depois de addNote/addBook para propagar ao próximo render.
 function _refreshLive() {
   if (typeof MG !== 'undefined' && MG.getNotes) {
-    const storedBooks = MG.getBooks([]);
+    // tombstones (deleted:true) ficam no estado só para o sync propagar a
+    // remoção aos outros aparelhos — nunca aparecem na interface nem nos exports
+    const storedBooks = MG.getBooks([]).filter(b => b && !b.deleted);
     const storedNotes = MG.getNotes([]);
     if (storedBooks.length === 0) {
       // Estante ainda vazia: mostramos os livros de exemplo como vitrine,
@@ -511,7 +513,8 @@ function _refreshLive() {
       // (os exemplos desaparecem). Um seed que ela tenha editado/adotado
       // continua aparecendo, com as edições aplicadas.
       const storedById = new Map(storedBooks.map(b => [b.id, b]));
-      const newBooks = storedBooks.filter(b => !BOOKS_SEED.some(s => s.id === b.id));
+      const seedIds = new Set(BOOKS_SEED.map(s => s.id));
+      const newBooks = storedBooks.filter(b => !seedIds.has(b.id));
       const adoptedSeeds = BOOKS_SEED
         .filter(s => storedById.has(s.id))
         .map(s => ({ ...s, ...storedById.get(s.id) }));
