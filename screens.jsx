@@ -3545,18 +3545,47 @@ function AlimentarSheet({ onClose = () => {} }) {
 // ── Visão 2: Minha biblioteca (catálogo físico, SEM capa, buscável) ──
 function CatalogoView({ all, V, onNav = () => {} }) {
   const [query, setQuery] = React.useState('');
-  const [filter, setFilter] = React.useState('all'); // all | dormem
+  const [filter, setFilter] = React.useState('all'); // all | dormem | quero | lendo | lido
   const catalogo = V.catalogo;
   const dormemCount = V.dormem.length;
+
+  // situação efetiva no acervo: o status real (estante) ou a marca de leitura
+  // (etiqueta dos adormecidos, ex.: marcada na /nobel/)
+  const marcas = React.useMemo(() => {
+    const m = { quero: [], lendo: [], lido: [] };
+    for (const b of catalogo) {
+      const s = b.status || ((typeof window.bookMark === 'function') ? window.bookMark(b) : b.mark);
+      if (s === 'tbr') m.quero.push(b);
+      else if (s === 'reading' || s === 'paused') m.lendo.push(b);
+      else if (s === 'read') m.lido.push(b);
+    }
+    return m;
+  }, [catalogo]);
 
   const q = query.trim().toLowerCase();
   // memoizado: com centenas de livros no acervo, filtrar + ordenar a cada
   // render (cada tecla da busca) pesa no celular
   const list = React.useMemo(() => {
-    let l = filter === 'dormem' ? V.dormem : catalogo;
+    let l = catalogo;
+    if (filter === 'dormem') l = V.dormem;
+    else if (filter === 'quero') l = marcas.quero;
+    else if (filter === 'lendo') l = marcas.lendo;
+    else if (filter === 'lido') l = marcas.lido;
     if (q) l = l.filter(b => (b.title || '').toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q));
     return [...l].sort((a, b) => (a.title || '').localeCompare(b.title || '', 'pt-BR'));
-  }, [catalogo, V.dormem, filter, q]);
+  }, [catalogo, V.dormem, marcas, filter, q]);
+
+  // "Qual livro desperto hoje?" — sorteia um adormecido para tirar a poeira
+  const [sorteado, setSorteado] = React.useState(null);
+  const sortear = () => {
+    const pool = V.dormem.filter(b => !sorteado || b.id !== sorteado.id);
+    if (!pool.length) return;
+    setSorteado(pool[Math.floor(Math.random() * pool.length)]);
+  };
+  const dormeDesde = (b) => {
+    const y = b && b.addedAt ? String(b.addedAt).slice(0, 4) : null;
+    return y ? `adormecido no seu acervo desde ${y}` : 'à espera da sua vez';
+  };
 
   // paginação: renderizar centenas de linhas de uma vez trava a abertura da
   // página no iPhone; mostra em levas de 60 com "mostrar mais"
@@ -3590,17 +3619,52 @@ function CatalogoView({ all, V, onNav = () => {} }) {
         <input value={query} onChange={e => setQuery(e.target.value)} placeholder="buscar título ou autor…"
           style={{ width: '100%', padding: '10px 14px 10px 38px', border: `1px solid ${T.hairline}`, borderRadius: 999, background: T.paper, color: T.ink, fontFamily: T.sans, fontSize: 13, outline: 'none' }}/>
       </div>
-      <div style={{ padding: '10px 24px 0', display: 'flex', gap: 6 }}>
-        {[{ id: 'all', l: 'Todos' }, { id: 'dormem', l: 'Os adormecidos' }].map(f => {
-          if (f.id === 'dormem' && dormemCount === 0) return null;
+      <div style={{ padding: '10px 24px 0', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {[
+          { id: 'all', l: 'Todos', n: catalogo.length },
+          { id: 'dormem', l: 'Os adormecidos', n: dormemCount },
+          { id: 'quero', l: 'Quero ler', n: marcas.quero.length },
+          { id: 'lendo', l: 'Lendo', n: marcas.lendo.length },
+          { id: 'lido', l: 'Lidos', n: marcas.lido.length },
+        ].map(f => {
+          if (f.id !== 'all' && f.n === 0) return null;
           const active = filter === f.id;
           return (
             <button key={f.id} onClick={() => setFilter(f.id)} style={{ padding: '8px 12px', borderRadius: 999, background: active ? T.ink : 'transparent', color: active ? T.cream : T.brown, border: `1px solid ${active ? T.ink : T.hairline}`, fontFamily: T.sans, fontSize: 12, fontWeight: 500, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              {f.id === 'dormem' && <Icon name="moon" size={12} color={active ? T.cream : T.muted}/>}{f.l}
+              {f.id === 'dormem' && <Icon name="moon" size={12} color={active ? T.cream : T.muted}/>}
+              {f.l}{f.id !== 'all' && <span style={{ fontSize: 10.5, opacity: 0.7 }}>{f.n}</span>}
             </button>
           );
         })}
       </div>
+
+      {/* sorteio dos adormecidos — "qual livro desperto hoje?" */}
+      {dormemCount > 0 && (
+        <div style={{ padding: '12px 24px 0' }}>
+          {!sorteado ? (
+            <button onClick={sortear} style={{ width: '100%', padding: '11px 14px', background: 'transparent', border: `1px dashed ${T.terra}`, borderRadius: 12, color: T.terra, fontFamily: T.serif, fontStyle: 'italic', fontSize: 13.5, cursor: 'pointer', textAlign: 'left' }}>
+              ✨ Qual livro desperto hoje? — me sugira um
+            </button>
+          ) : (
+            <div style={{ background: T.paper, border: `1px solid ${T.hairline}`, borderRadius: 14, padding: '14px 16px' }}>
+              <div style={{ fontSize: 9.5, letterSpacing: 1.6, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 8 }}>✨ Do fundo da estante</div>
+              <div style={{ fontFamily: T.serif, fontSize: 18, lineHeight: 1.2, color: T.ink }}>{sorteado.title}</div>
+              {sorteado.author && <div style={{ fontFamily: T.sans, fontSize: 12.5, color: T.brown, marginTop: 3 }}>{sorteado.author}</div>}
+              <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 12, color: T.muted, marginTop: 6 }}>{dormeDesde(sorteado)}</div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 12, alignItems: 'center' }}>
+                <button onClick={() => { const b = sorteado; setSorteado(null); if (typeof window.__tirarPoeira === 'function') window.__tirarPoeira(b); }}
+                  style={{ background: T.terra, border: 0, color: T.cream, borderRadius: 999, padding: '8px 14px', fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Icon name="wind" size={13} color={T.cream}/> tirar a poeira
+                </button>
+                <button onClick={sortear} style={{ background: 'transparent', border: `1px solid ${T.hairline}`, color: T.brown, borderRadius: 999, padding: '8px 14px', fontFamily: T.sans, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
+                  me sugira outro
+                </button>
+                <button onClick={() => setSorteado(null)} title="deixar dormir" style={{ background: 'transparent', border: 0, color: T.muted, fontSize: 16, cursor: 'pointer', marginLeft: 'auto', padding: '4px 6px' }}>×</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div style={{ padding: '12px 24px 0' }}>
         {list.length === 0 ? (

@@ -48,7 +48,13 @@ function save(state) {
     // agenda envio à nuvem, se a sincronização estiver ativa
     if (typeof window.__onLocalSave === 'function') window.__onLocalSave();
   } catch (e) {
-    console.warn('[Marginália] erro ao salvar:', e);
+    // falha ao persistir (armazenamento cheio?) NÃO pode ser silenciosa: a
+    // leitora acharia que salvou e perderia a edição ao fechar. Avisa no
+    // status da nuvem (visível na Conta). NÃO agenda push aqui — o push lê o
+    // localStorage (que ficou com o estado VELHO) e regrediria a nuvem.
+    console.error('[Marginália] FALHA ao salvar neste aparelho:', e);
+    window.__cloudStatus = '⚠️ Não consegui gravar neste aparelho (armazenamento cheio?) — a última edição pode se perder';
+    if (typeof window.__rerender === 'function') window.__rerender();
   }
 }
 
