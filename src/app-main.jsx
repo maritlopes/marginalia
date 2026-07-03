@@ -238,6 +238,7 @@ function MarginaliaApp() {
       case 'metas':     return <ScreenMetas onNav={setRoute}/>;
       case 'library':   return <ScreenLibrary onNav={setRoute}/>;
       case 'acervo':    return <ScreenAcervo onNav={setRoute}/>;
+      case 'retrospectiva': return <ScreenRetrospectiva onNav={setRoute}/>;
       case 'book':      return <ScreenBookDetail book={detailBook} onNav={setRoute} back={bookReturn}/>;
       case 'note':      return <ScreenNoteEditor onNav={setRoute}/>;
       case 'desafios':  return <ScreenMetas onNav={setRoute}/>;
@@ -253,7 +254,7 @@ function MarginaliaApp() {
 
   // mapa rota → tab ativa no tab bar
   const tabForRoute = {
-    library: 'library', book: 'library', acervo: 'library',
+    library: 'library', book: 'library', acervo: 'library', retrospectiva: 'library',
     desafios: 'desafios', metas: 'desafios',
     grupos: 'grupos',
   };

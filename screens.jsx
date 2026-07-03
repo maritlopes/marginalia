@@ -3069,6 +3069,21 @@ function ScreenLibrary({ onNav = () => {} }) {
           </span>
           <Icon name="arrowRight" size={16} color={T.terra}/>
         </button>
+        {/* cartão-link pra retrospectiva (some na vitrine de exemplos) */}
+        {!(typeof window !== 'undefined' && window.__demoShelf) && (
+          <button onClick={() => onNav('retrospectiva')} style={{
+            width: '100%', marginTop: 8, display: 'flex', alignItems: 'center', gap: 12,
+            background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12,
+            padding: '12px 14px', cursor: 'pointer', textAlign: 'left',
+          }}>
+            <span style={{ width: 34, height: 34, borderRadius: 9, background: 'rgba(176,83,58,0.12)', color: T.terra, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 16 }}>✨</span>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'block', fontFamily: T.serif, fontSize: 15, fontWeight: 500, color: T.ink }}>Seu ano em livros</span>
+              <span style={{ display: 'block', fontSize: 11.5, color: T.muted }}>retrospectiva de leitura</span>
+            </span>
+            <Icon name="arrowRight" size={16} color={T.terra}/>
+          </button>
+        )}
       </div>
       {tab === 'estante' && <EstanteView all={all} V={V} onNav={onNav}/>}
       {tab === 'desejos' && <DesejosView all={all} V={V} onNav={onNav}/>}
@@ -3917,6 +3932,125 @@ function ScreenAcervo({ onNav = () => {} }) {
         </button>
       </div>
       <CatalogoView all={all} V={V} onNav={onNav}/>
+    </div>
+  );
+}
+
+// ── Retrospectiva — "Seu ano em livros" ──────────────────────
+// Conta os lidos POR ANO: finishedAt (data real) ou readIn (só o ano, para
+// leituras cuja data exata não existe — nunca se inventa data). Lidos sem
+// ano nenhum ficam fora da conta, citados num rodapé discreto.
+function ScreenRetrospectiva({ onNav = () => {} }) {
+  const all = (window.BOOKS || []).filter(b => b && !b.deleted);
+  const isRead = (b) => b.status === 'read'
+    || (((typeof window.bookMark === 'function') ? window.bookMark(b) : b.mark) === 'read');
+  const yearOf = (b) => {
+    if (b.finishedAt) { const y = parseInt(String(b.finishedAt).slice(0, 4), 10); if (y) return y; }
+    if (b.readIn) { const y = parseInt(b.readIn, 10); if (y) return y; }
+    return null;
+  };
+  const lidos = all.filter(isRead);
+  const anoAtual = new Date().getFullYear();
+  const anos = [...new Set(lidos.map(yearOf).filter(Boolean))].sort((a, b) => b - a);
+  const [ano, setAno] = React.useState(anos.includes(anoAtual) ? anoAtual : (anos[0] || anoAtual));
+
+  const doAno = React.useMemo(() =>
+    lidos.filter(b => yearOf(b) === ano).sort((a, b) => (a.title || '').localeCompare(b.title || '', 'pt-BR')),
+  [lidos, ano]);
+  const semAno = lidos.filter(b => yearOf(b) === null).length;
+  const avaliados = doAno.filter(b => Number(b.rating) > 0);
+  const media = avaliados.length ? (avaliados.reduce((s, b) => s + Number(b.rating || 0), 0) / avaliados.length) : null;
+  const nobels = doAno.filter(b => b.nobel).length;
+  const autores = [...new Set(doAno.map(b => (b.author || '').trim()).filter(Boolean))];
+  const log = (typeof MG !== 'undefined' && MG.getReadingLog) ? MG.getReadingLog() : [];
+  const paginas = log.filter(e => String(e.date || '').startsWith(String(ano))).reduce((s, e) => s + (e.pages || 0), 0);
+
+  const statBox = (num, label) => (
+    <div style={{ flex: 1, background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '12px 8px', textAlign: 'center' }}>
+      <div style={{ fontFamily: T.serif, fontSize: 24, color: T.terra, lineHeight: 1 }}>{num}</div>
+      <div style={{ fontSize: 9.5, letterSpacing: 1.2, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginTop: 5 }}>{label}</div>
+    </div>
+  );
+
+  return (
+    <div style={{ width: '100%', height: '100%', background: T.bone, overflow: 'auto', paddingBottom: 120 }}>
+      <div style={{ padding: '56px 24px 0' }}>
+        <button onClick={() => onNav('library')} style={{
+          background: 'transparent', border: 0, cursor: 'pointer',
+          fontFamily: T.sans, fontSize: 12, color: T.brown, fontWeight: 600,
+          letterSpacing: 0.4, textTransform: 'uppercase',
+          display: 'flex', alignItems: 'center', gap: 6, padding: 0,
+        }}>
+          <Icon name="arrowLeft" size={16}/> Biblioteca
+        </button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 18, marginBottom: 6 }}>
+          <div style={{ fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, fontWeight: 600 }}>✨ Retrospectiva</div>
+          <BrandMark size={22}/>
+        </div>
+        <div style={{ fontFamily: T.serif, fontSize: 28, fontWeight: 400, letterSpacing: -0.6, lineHeight: 1.05 }}>
+          Seu ano em <span style={{ fontStyle: 'italic', color: T.terra }}>livros</span>
+        </div>
+        <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 12.5, color: T.terra, marginTop: 6 }}>
+          "O que você atravessou — e o que atravessou você."
+        </div>
+        {anos.length > 1 && (
+          <div style={{ display: 'flex', gap: 6, marginTop: 12, flexWrap: 'wrap' }}>
+            {anos.map(y => (
+              <button key={y} onClick={() => setAno(y)} style={{ padding: '7px 12px', borderRadius: 999, background: ano === y ? T.ink : 'transparent', color: ano === y ? T.cream : T.brown, border: `1px solid ${ano === y ? T.ink : T.hairline}`, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{y}</button>
+            ))}
+          </div>
+        )}
+
+        {doAno.length === 0 ? (
+          <div style={{ padding: '36px 0', textAlign: 'center', color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>
+            Nenhum livro concluído em {ano} — ainda. A estante espera.
+          </div>
+        ) : (
+          <>
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              {statBox(doAno.length, doAno.length === 1 ? 'livro lido' : 'livros lidos')}
+              {statBox(autores.length, autores.length === 1 ? 'voz' : 'vozes')}
+              {nobels > 0 && statBox(nobels, 'Nobel')}
+              {paginas > 0 && statBox(paginas, 'páginas')}
+            </div>
+            {media !== null && (
+              <div style={{ marginTop: 10, fontFamily: T.sans, fontSize: 12, color: T.brown, textAlign: 'center' }}>
+                média das suas estrelas: <span style={{ color: T.terra, fontWeight: 600 }}>{media.toFixed(1).replace('.', ',')} ★</span>
+              </div>
+            )}
+
+            <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.muted, fontWeight: 700, margin: '22px 0 4px' }}>
+              As leituras de {ano}
+            </div>
+            {doAno.map(b => (
+              <div key={b.id} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '10px 0', borderBottom: `1px solid ${T.hairline}` }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: T.serif, fontSize: 15, color: T.ink, lineHeight: 1.25 }}>
+                    {b.title}{b.nobel && <img src="/nobel-medal.png" alt="Nobel" style={{ width: 13, height: 13, marginLeft: 6, verticalAlign: 'baseline', opacity: 0.9 }}/>}
+                  </div>
+                  {b.author && <div style={{ fontFamily: T.sans, fontSize: 11.5, color: T.muted, marginTop: 2 }}>{b.author}</div>}
+                </div>
+                {Number(b.rating) > 0 && (
+                  <div style={{ color: T.ochre, fontSize: 12, letterSpacing: 1, flexShrink: 0 }}>{'★'.repeat(Number(b.rating))}</div>
+                )}
+              </div>
+            ))}
+
+            {autores.length > 1 && (
+              <div style={{ marginTop: 18, fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, color: T.brown, lineHeight: 1.6 }}>
+                As vozes que acompanharam você: {autores.join(' · ')}.
+              </div>
+            )}
+          </>
+        )}
+
+        {semAno > 0 && (
+          <div style={{ marginTop: 22, fontSize: 11.5, color: T.muted, fontFamily: T.sans, lineHeight: 1.5 }}>
+            {semAno} {semAno === 1 ? 'outro livro lido vive' : 'outros livros lidos vivem'} no acervo sem ano marcado —{' '}
+            <button onClick={() => onNav('acervo')} style={{ background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11.5, fontFamily: T.sans, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>ver no acervo</button>.
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -5144,7 +5278,7 @@ function ShareRecommendationSheet({ book, onClose = () => {} }) {
 
 Object.assign(window, {
   ScreenBookDetail, ScreenNoteEditor,
-  ScreenLibrary, ScreenAcervo, ScreenFoco,
+  ScreenLibrary, ScreenAcervo, ScreenRetrospectiva, ScreenFoco,
   ScreenMetas, ChallengeCard, ChallengeSuggestion, ChallengeEditorSheet, FieldLabel,
   BookEditorSheet, LibrarySection, Stat, BrandMark, ShareNoteSheet,
   ShareRecommendationSheet, StarRating, MinhaAvaliacao,
