@@ -673,6 +673,21 @@ function HomeVariantA({ onNav = () => {} }) {
           );
         })()}
 
+        {/* GUIA — convite pro passeio por todas as funcionalidades do app */}
+        <button onClick={() => { if (typeof window.__abrirGuia === 'function') window.__abrirGuia(); }} style={{
+          width: '100%', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14,
+          padding: '14px 16px', background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, marginBottom: 22,
+        }}>
+          <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(176,83,58,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Icon name="compass" size={20} color={T.terra}/>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: T.serif, fontSize: 15.5, fontWeight: 500, color: T.ink, lineHeight: 1.2 }}>✦ Guia da Marginália</div>
+            <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 12, color: T.brown, marginTop: 3 }}>Um passeio por tudo que o app faz — passo a passo.</div>
+          </div>
+          <div style={{ color: T.terra, fontSize: 16, flexShrink: 0 }}>→</div>
+        </button>
+
         {/* PORTAL — convite para a linha do tempo (linha amiga) */}
         <a href="/linha-do-tempo/" style={{ textDecoration: 'none', display: 'block', marginBottom: 22 }}>
           <div style={{
