@@ -132,6 +132,7 @@ function MarginaliaApp() {
   const [showAccount, setShowAccount] = React.useState(false);
   const [showWelcome, setShowWelcome] = React.useState(false);
   const [showChegada, setShowChegada] = React.useState(false);
+  const [showGuia, setShowGuia] = React.useState(false);
   const [dustBook, setDustBook] = React.useState(null);
   const [showAlimentar, setShowAlimentar] = React.useState(false);
   const [, forceRender] = React.useReducer(x => x + 1, 0);
@@ -165,13 +166,14 @@ function MarginaliaApp() {
     window.__tirarPoeira = (book) => setDustBook(book); // ritual: desperta um adormecido do acervo
     window.__alimentar = () => setShowAlimentar(true); // painel unificado de adicionar (o "+")
     window.__abrirChegada = () => setShowChegada(true); // primeira porta (rever a apresentação)
+    window.__abrirGuia = () => setShowGuia(true); // guia do app (tutorial passo a passo)
     window.__setRoute = setRoute; // útil para deep-linking e debug
     return () => {
       delete window.__rerender; delete window.__editBook; delete window.__openBook;
       delete window.__openGrupo; delete window.__shareNote; delete window.__shareRecommendation;
       delete window.__editChallenge; delete window.__openAccount; delete window.__welcomeNewMember;
       delete window.__tirarPoeira; delete window.__abrirChegada; delete window.__setRoute;
-      delete window.__alimentar;
+      delete window.__alimentar; delete window.__abrirGuia;
     };
   }, []);
 
@@ -310,6 +312,9 @@ function MarginaliaApp() {
       )}
       {showChegada && typeof ChegadaSequence !== 'undefined' && (
         <ChegadaSequence onClose={() => setShowChegada(false)}/>
+      )}
+      {showGuia && typeof GuiaMarginalia !== 'undefined' && (
+        <GuiaMarginalia onClose={() => setShowGuia(false)}/>
       )}
       {editingBook !== null && (
         <BookEditorSheet

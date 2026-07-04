@@ -1184,6 +1184,139 @@ function ChegadaSequence({ onClose = () => {} }) {
         <button onClick={() => fechar(false)} style={{ width: '100%', padding: '11px', borderRadius: 12, border: 0, background: 'transparent', color: T.brown, fontFamily: T.sans, fontSize: 13, cursor: 'pointer' }}>
           Explorar primeiro
         </button>
+        <button onClick={() => { fechar(false); if (typeof window.__abrirGuia === 'function') setTimeout(() => window.__abrirGuia(), 120); }} style={{ width: '100%', padding: '9px', borderRadius: 12, border: 0, background: 'transparent', color: T.terra, fontFamily: T.sans, fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
+          ✦ Conhecer o app inteiro — guia rápido
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── GUIA DA MARGINÁLIA — passeio didático por todas as funcionalidades, passo a
+// passo, na voz da casa. Sem gating: abre quantas vezes a leitora quiser, pelo
+// botão "✦ Guia do app" (Conta, rodapé da Biblioteca / avatar da Home) ou pelo
+// link na Primeira porta. Cada passo pode ter um "experimentar" que fecha o guia
+// e leva direto à tela/ação ensinada.
+function GuiaMarginalia({ onClose = () => {} }) {
+  const [i, setI] = React.useState(0);
+
+  const irRota = (rota) => { onClose(); if (typeof window.__setRoute === 'function') setTimeout(() => window.__setRoute(rota), 80); };
+  const abrirMais = () => { onClose(); setTimeout(() => { if (typeof window.__alimentar === 'function') window.__alimentar(); }, 120); };
+
+  const passos = [
+    {
+      icon: 'compass', titulo: 'Um passeio pela Marginália',
+      corpo: 'Cada livro é uma porta — e você nunca lê sozinha. Este guia percorre o app inteiro, canto a canto, em doze passos curtos. Pode fechar e voltar quando quiser: ele mora na sua Conta.',
+      chips: ['Hoje', 'Biblioteca', 'Desafios', 'Círculos'],
+      nota: 'As quatro áreas do app, na barra de navegação — mais o botão "+" para acrescentar livros.',
+    },
+    {
+      icon: 'home', titulo: 'Hoje — sua página principal',
+      corpo: 'O Radar literário abre o dia (efemérides, prêmios, achados); os cartões de Curadoria trazem conexões e contextos; e o "Para guardar" deixa uma frase para levar. Seu livro em leitura aparece aqui, com o progresso e o diário "Li hoje".',
+      nota: 'Toque na bolinha com suas iniciais, no topo, para chegar à sua conta.',
+    },
+    {
+      icon: 'plus', titulo: 'Acrescentar livros — o botão "+"',
+      corpo: 'Busque por título ou por autor (ou preencha a ficha à mão) e escolha para onde o livro vai: Estante, Quero ler, Acervo, Lido ou Desejo. O painel fica aberto para você emendar vários de uma vez.',
+      tenta: { rotulo: 'Experimentar o "+" agora', acao: abrirMais },
+    },
+    {
+      icon: 'book', titulo: 'Estante — o que pede presença agora',
+      corpo: 'A estante da Biblioteca é curta e com capa, de propósito: o que você está lendo, o que quer ler logo e os lidos recentes. Ela não é o acervo inteiro — é a mesa de cabeceira.',
+      nota: 'Se houver laureado do Nobel na estante, o filtro 🏅 aparece sozinho.',
+      tenta: { rotulo: 'Abrir a Biblioteca', acao: () => irRota('library') },
+    },
+    {
+      icon: 'moon', titulo: 'Acervo — "minha biblioteca, meu mundo"',
+      corpo: 'Todos os seus livros, numa lista leve e buscável — inclusive os adormecidos, que esperam a vez sem capa e sem pressa. Filtre por situação (adormecidos · quero ler · lendo · lidos) e, na dúvida, peça o sorteio: "✨ Qual livro desperto hoje?".',
+      nota: 'O cartão "Meu acervo" fica na Biblioteca. A lista de Desejos guarda o que você ainda quer comprar — e "comprei" leva o livro ao acervo.',
+      tenta: { rotulo: 'Abrir o Acervo', acao: () => irRota('acervo') },
+    },
+    {
+      icon: 'wind', titulo: 'Tirar a poeira — o ritual',
+      corpo: 'Para despertar um adormecido, toque em "tirar a poeira": você escolhe a situação (quero ler · lendo · já li) e a capa nasce nesse momento — o livro sobe para a Estante. O caminho inverso também existe: "Devolver ao acervo", na página do livro.',
+    },
+    {
+      icon: 'sparkle', titulo: 'Ecos — a alma da Marginália',
+      corpo: 'Na página de um livro, a aba Ecos abre pontes com filosofia, música, arte, cinema e história. Toque em "✨ Gerar ecos" para a curadoria buscar as ressonâncias da obra — e em "aprofundar" para mergulhar numa delas.',
+      nota: 'Algumas obras têm ecos escolhidos à mão pela curadora.',
+    },
+    {
+      icon: 'clock', titulo: 'O tempo da obra',
+      corpo: 'Todo livro tem três tempos: o de quem escreveu, o da história e o seu. A aba Sobre mostra os três — e a Linha do Tempo da Civilização deixa você viajar entre eles, situando o livro entre a filosofia, a arte e a ciência da época.',
+    },
+    {
+      icon: 'pen', titulo: 'Margem — suas notas',
+      corpo: 'Na aba Notas, escreva na margem do livro: impressões, trechos, perguntas. As notas são suas — dá para editar, apagar e, se quiser, compartilhar num círculo. O caderno de leitura se forma aos poucos, nota a nota.',
+    },
+    {
+      icon: 'flame', titulo: 'Desafios & Foco',
+      corpo: 'Crie desafios de leitura no seu ritmo e registre as páginas do dia no "Li hoje". E quando quiser silêncio, o modo Foco é um relógio de leitura (25 a 50 minutos) para afundar no livro sem o telefone puxar você.',
+      tenta: { rotulo: 'Abrir os Desafios', acao: () => irRota('desafios') },
+    },
+    {
+      icon: 'user', titulo: 'Círculos — a camada social, discreta',
+      corpo: 'Os círculos são grupos pequenos, por convite: um mural para recados, notas compartilhadas e recomendações entre quem lê junto. Nada de feed infinito — é conversa de clube de leitura.',
+      tenta: { rotulo: 'Abrir os Círculos', acao: () => irRota('grupos') },
+    },
+    {
+      icon: 'globe', titulo: 'Nobel, seu ano & sincronizar',
+      corpo: 'Livro de laureado ganha a medalha 🏅 sozinho, e a página Nobel guarda a estante dos prêmios. Em "✨ Seu ano em livros", a Retrospectiva conta o que você atravessou. E, entrando com seu e-mail (código de 6 dígitos, sem senha), tudo sincroniza entre celular, tablet e computador.',
+      nota: 'No rodapé da Biblioteca dá para exportar sua biblioteca (planilha, Word, Obsidian), rever a primeira porta e reabrir este guia.',
+    },
+  ];
+
+  const p = passos[i];
+  const ultimo = i === passos.length - 1;
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, zIndex: 95, background: T.bone, overflow: 'auto', fontFamily: T.sans, color: T.ink }}>
+      <div style={{ maxWidth: 460, margin: '0 auto', minHeight: '100%', display: 'flex', flexDirection: 'column', padding: '30px 26px 26px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+          <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.terra, fontWeight: 700 }}>
+            Guia da Marginália · {i + 1} de {passos.length}
+          </div>
+          <button onClick={onClose} style={{ background: 'transparent', border: 0, color: T.muted, fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>fechar</button>
+        </div>
+
+        <div style={{ flex: 1 }}>
+          <div style={{ width: 54, height: 54, borderRadius: '50%', background: 'rgba(176,83,58,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+            {typeof Icon !== 'undefined' ? <Icon name={p.icon} size={26} color={T.terra}/> : null}
+          </div>
+          <div style={{ fontFamily: T.serif, fontSize: 23, fontWeight: 500, letterSpacing: -0.4, lineHeight: 1.15, marginBottom: 12 }}>{p.titulo}</div>
+          <div style={{ fontFamily: T.serif, fontSize: 15, lineHeight: 1.62, color: T.brown, marginBottom: 14 }}>{p.corpo}</div>
+          {p.chips && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+              {p.chips.map(c => (
+                <span key={c} style={{ padding: '6px 12px', borderRadius: 999, border: `1px solid ${T.hairline}`, background: T.cream, fontFamily: T.sans, fontSize: 12, fontWeight: 600, color: T.ink }}>{c}</span>
+              ))}
+            </div>
+          )}
+          {p.nota && (
+            <div style={{ fontSize: 12, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.5, marginBottom: 12 }}>{p.nota}</div>
+          )}
+          {p.tenta && (
+            <button onClick={p.tenta.acao} style={{ padding: '10px 14px', borderRadius: 10, border: `1px solid ${T.terra}`, background: 'transparent', color: T.terra, fontFamily: T.sans, fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
+              {p.tenta.rotulo} →
+            </button>
+          )}
+        </div>
+
+        <div style={{ marginTop: 26 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 16 }}>
+            {passos.map((_, k) => (
+              <button key={k} onClick={() => setI(k)} aria-label={'passo ' + (k + 1)} style={{ width: k === i ? 18 : 7, height: 7, borderRadius: 99, border: 0, padding: 0, cursor: 'pointer', background: k === i ? T.terra : T.hairline, transition: 'width 200ms' }}/>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            {i > 0 && (
+              <button onClick={() => setI(i - 1)} style={{ flex: 1, padding: '13px', borderRadius: 12, border: `1px solid ${T.hairline}`, background: 'transparent', color: T.brown, fontFamily: T.sans, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Voltar</button>
+            )}
+            <button onClick={() => (ultimo ? onClose() : setI(i + 1))} style={{ flex: 2, padding: '13px', borderRadius: 12, border: 0, background: T.ink, color: T.cream, fontFamily: T.sans, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+              {ultimo ? 'Começar a ler' : 'Continuar'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -4255,6 +4388,13 @@ function CloudAccount({ showAdmin = true } = {}) {
             <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 6 }}>
               A apresentação de boas-vindas — como a Marginália lê um livro.
             </div>
+            <button onClick={() => { if (typeof window !== 'undefined' && typeof window.__abrirGuia === 'function') window.__abrirGuia(); }} style={{
+              marginTop: 12, padding: '9px 14px', borderRadius: 10, border: `1px solid ${T.hairline}`,
+              background: 'transparent', color: T.terra, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            }}>✦ Guia do app — passo a passo</button>
+            <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 6 }}>
+              Um passeio por tudo: do Radar aos Ecos, da Estante ao Acervo.
+            </div>
           </div>
         </>
       ) : (
@@ -5299,5 +5439,5 @@ Object.assign(window, {
   // declarada não vira global sozinha; precisa estar neste export
   AccountSheet, ScreenAguardandoApp, ScreenGruposCloud, ScreenGrupoDetalheCloud,
   EmailLoginCard, WelcomeNewMember, TirarPoeiraSheet, ChegadaSequence,
-  AlimentarSheet,
+  AlimentarSheet, GuiaMarginalia,
 });
