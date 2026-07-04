@@ -1206,7 +1206,7 @@ function GuiaMarginalia({ onClose = () => {} }) {
   const passos = [
     {
       icon: 'compass', titulo: 'Um passeio pela Marginália',
-      corpo: 'Cada livro é uma porta — e você nunca lê sozinha. Este guia percorre o app inteiro, canto a canto, em doze passos curtos. Pode fechar e voltar quando quiser: ele mora na sua Conta.',
+      corpo: 'Cada livro é uma porta — e você nunca lê sozinha. Este guia percorre o app inteiro, canto a canto, em treze passos curtos. Pode fechar e voltar quando quiser: ele mora na página Hoje e na sua Conta.',
       chips: ['Hoje', 'Biblioteca', 'Desafios', 'Círculos'],
       nota: 'As quatro áreas do app, na barra de navegação — mais o botão "+" para acrescentar livros.',
     },
@@ -1214,6 +1214,11 @@ function GuiaMarginalia({ onClose = () => {} }) {
       icon: 'home', titulo: 'Hoje — sua página principal',
       corpo: 'O Radar literário abre o dia (efemérides, prêmios, achados); os cartões de Curadoria trazem conexões e contextos; e o "Para guardar" deixa uma frase para levar. Seu livro em leitura aparece aqui, com o progresso e o diário "Li hoje".',
       nota: 'Toque na bolinha com suas iniciais, no topo, para chegar à sua conta.',
+    },
+    {
+      icon: 'user', titulo: 'Entre na sua conta — para não perder nada',
+      corpo: 'Sem conta, seus livros e notas vivem só neste aparelho — e podem se perder se o navegador limpar os dados. Entrando com seu e-mail, tudo fica guardado na nuvem e sincroniza entre celular, tablet e computador. Você recebe um código de 6 dígitos — sem senha para decorar.',
+      nota: 'O login fica na bolinha com suas iniciais (topo da página Hoje) e no rodapé da Biblioteca, em "Sincronização na nuvem".',
     },
     {
       icon: 'plus', titulo: 'Acrescentar livros — o botão "+"',
@@ -1255,14 +1260,14 @@ function GuiaMarginalia({ onClose = () => {} }) {
       tenta: { rotulo: 'Abrir os Desafios', acao: () => irRota('desafios') },
     },
     {
-      icon: 'user', titulo: 'Círculos — a camada social, discreta',
+      icon: 'share', titulo: 'Círculos — a camada social, discreta',
       corpo: 'Os círculos são grupos pequenos, por convite: um mural para recados, notas compartilhadas e recomendações entre quem lê junto. Nada de feed infinito — é conversa de clube de leitura.',
       tenta: { rotulo: 'Abrir os Círculos', acao: () => irRota('grupos') },
     },
     {
-      icon: 'globe', titulo: 'Nobel, seu ano & sincronizar',
-      corpo: 'Livro de laureado ganha a medalha 🏅 sozinho, e a página Nobel guarda a estante dos prêmios. Em "✨ Seu ano em livros", a Retrospectiva conta o que você atravessou. E, entrando com seu e-mail (código de 6 dígitos, sem senha), tudo sincroniza entre celular, tablet e computador.',
-      nota: 'No rodapé da Biblioteca dá para exportar sua biblioteca (planilha, Word, Obsidian), rever a primeira porta e reabrir este guia.',
+      icon: 'globe', titulo: 'Nobel, seu ano & suas cópias',
+      corpo: 'Livro de laureado ganha a medalha 🏅 sozinho, e a página Nobel guarda a estante dos prêmios. Em "✨ Seu ano em livros", a Retrospectiva conta o que você atravessou. E, no rodapé da Biblioteca, dá para exportar sua biblioteca inteira (planilha, Word, Obsidian) — mais uma cópia sua, fora do app.',
+      nota: 'Ali também dá para rever a primeira porta e reabrir este guia quando quiser.',
     },
   ];
 
