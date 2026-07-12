@@ -1,6 +1,44 @@
 // screens.jsx — full prototype screens (non-home)
 
 // ─────────────────────────────────────────────────────────────
+// Datas de leitura (início/fim) — formatação e legenda da estante
+// Parse por string (sem new Date) pra fuso horário não deslocar o dia.
+// ─────────────────────────────────────────────────────────────
+const MESES_CURTOS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+function fmtDataLeitura(v, omitYear = false) {
+  const m = String(v || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  const mes = MESES_CURTOS[parseInt(m[2], 10) - 1];
+  if (!mes) return null;
+  return `${parseInt(m[3], 10)} ${mes}${omitYear ? '' : ' ' + m[1]}`;
+}
+// legenda das datas na estante: lendo/pausado → "desde …"; lido → "início — fim"
+// (livro sem data fica sem legenda — nunca inventamos data)
+function shelfDatesLabel(b) {
+  const iniRaw = b.startedAt || b.readingSince;
+  if (b.status === 'read') {
+    const fim = fmtDataLeitura(b.finishedAt);
+    const sameYear = iniRaw && b.finishedAt && String(iniRaw).slice(0, 4) === String(b.finishedAt).slice(0, 4);
+    const ini = fmtDataLeitura(iniRaw, sameYear);
+    if (ini && fim) return `${ini} — ${fim}`;
+    if (fim) return `terminado em ${fim}`;
+    if (ini) return `iniciado em ${ini}`;
+    if (b.readIn) return `lido em ${b.readIn}`;
+    return null;
+  }
+  if (b.status === 'reading' || b.status === 'paused') {
+    const ini = fmtDataLeitura(iniRaw);
+    return ini ? `desde ${ini}` : null;
+  }
+  return null;
+}
+// data de hoje no fuso local (toISOString é UTC — à noite no Brasil já é "amanhã")
+function hojeLocalISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// ─────────────────────────────────────────────────────────────
 // Book detail — deep reading view with progress, chapters, theme
 // ─────────────────────────────────────────────────────────────
 function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () => {}, back = 'home' }) {
@@ -85,10 +123,13 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
                 {b.author}{b.nobel && <NobelMark nobel={b.nobel} size={14}/>}
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 14, fontSize: 10, color: T.muted, letterSpacing: 0.4 }}>
+            <div style={{ display: 'flex', gap: 14, fontSize: 10, color: T.muted, letterSpacing: 0.4, flexWrap: 'wrap' }}>
               <div><span style={{ color: T.ink, fontWeight: 600 }}>{b.pages || '—'}</span> pág</div>
               <div><span style={{ color: T.ink, fontWeight: 600 }}>{bookNotes.length}</span> notas</div>
-              <div><span style={{ color: T.ink, fontWeight: 600 }}>{b.started || '—'}</span> início</div>
+              <div><span style={{ color: T.ink, fontWeight: 600 }}>{fmtDataLeitura(b.startedAt || b.readingSince) || b.started || '—'}</span> início</div>
+              {(fmtDataLeitura(b.finishedAt) || b.readIn) ? (
+                <div><span style={{ color: T.ink, fontWeight: 600 }}>{fmtDataLeitura(b.finishedAt) || b.readIn}</span> fim</div>
+              ) : null}
             </div>
             {b.rating > 0 && (
               <div style={{ marginTop: 8 }}>
@@ -3941,8 +3982,10 @@ function TirarPoeiraSheet({ book, onClose }) {
       cover: cover || b.cover || null,
       owned: true, // permanece no acervo — a posse é verdade, não muda
       ...(b.mark ? { mark: null } : {}), // a marca virou status real — não precisa mais
-      ...(status === 'reading' ? { readingSince: new Date().toISOString() } : {}),
-      ...(status === 'read' ? { finishedAt: new Date().toISOString().slice(0, 10), pct: 100 } : {}),
+      ...(status === 'reading' ? { readingSince: new Date().toISOString(), startedAt: hojeLocalISO() } : {}),
+      // "Já li" NÃO carimba data — despertar não é terminar (lido sem data >
+      // data falsa); a data real, se lembrada, entra depois em Editar livro
+      ...(status === 'read' ? { pct: 100 } : {}),
     };
     MG.updateBook(b.id, patch);
     onClose();
@@ -4774,6 +4817,11 @@ function LibrarySection({ section, view }) {
               <div style={{ fontSize: 9, color: T.muted, fontStyle: 'italic', fontFamily: T.serif }}>
                 {b.author}{b.nobel && <NobelMark nobel={b.nobel} size={10}/>}
               </div>
+              {shelfDatesLabel(b) && (
+                <div style={{ fontSize: 8.5, color: T.muted, fontFamily: T.sans, letterSpacing: 0.2, fontVariantNumeric: 'tabular-nums' }}>
+                  {shelfDatesLabel(b)}
+                </div>
+              )}
               {typeof b.pct === 'number' && b.pct > 0 && b.pct < 100 && (
                 <LinearProgress pct={b.pct} height={2}/>
               )}
@@ -4798,6 +4846,11 @@ function LibrarySection({ section, view }) {
                 <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 11, color: T.brown, marginTop: 2 }}>
                   {b.author}{b.nobel && <NobelMark nobel={b.nobel} size={11}/>}
                 </div>
+                {shelfDatesLabel(b) && (
+                  <div style={{ fontSize: 10, color: T.muted, marginTop: 2, fontFamily: T.sans, letterSpacing: 0.2, fontVariantNumeric: 'tabular-nums' }}>
+                    {shelfDatesLabel(b)}
+                  </div>
+                )}
                 {typeof b.pct === 'number' && b.pct > 0 && b.pct < 100 && (
                   <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <LinearProgress pct={b.pct} height={2} style={{ flex: 1 }}/>
@@ -4831,6 +4884,9 @@ function BookEditorSheet({ book = null, onClose = () => {} }) {
   const [status, setStatus] = React.useState(book?.status || 'tbr');
   const [currentPage, setCurrentPage] = React.useState(book?.currentPage || '');
   const [cover, setCover] = React.useState(book?.cover || '');
+  // datas de leitura (YYYY-MM-DD) — em branco = sem data; nunca inventamos
+  const [startedAt, setStartedAt] = React.useState(String(book?.startedAt || book?.readingSince || '').slice(0, 10));
+  const [finishedAt, setFinishedAt] = React.useState(String(book?.finishedAt || '').slice(0, 10));
   const [urlInput, setUrlInput] = React.useState('');
   const [uploadError, setUploadError] = React.useState(null);
   const fileRef = React.useRef(null);
@@ -4916,6 +4972,9 @@ function BookEditorSheet({ book = null, onClose = () => {} }) {
 
   const handleSave = () => {
     if (!title.trim()) { setUploadError('Título é obrigatório.'); return; }
+    if (startedAt && finishedAt && status === 'read' && finishedAt < startedAt) {
+      setUploadError('O fim da leitura vem antes do início — confira as datas.'); return;
+    }
     if (typeof MG === 'undefined' || !MG.addBook) { onClose(); return; }
     const pagesNum = parseInt(pages) || null;
     const cpNum = Math.max(0, parseInt(currentPage) || 0);
@@ -4932,8 +4991,12 @@ function BookEditorSheet({ book = null, onClose = () => {} }) {
       tone,
       status,
       cover: cover || null,
+      // datas de leitura — o que a leitora informou (ou limpou); TBR não tem datas
+      startedAt: status === 'tbr' ? null : (startedAt || null),
+      finishedAt: status === 'read' ? (finishedAt || null) : null,
       // marca quando virou "Lendo", para a home priorizar o mais recente
-      ...(status === 'reading' ? { readingSince: new Date().toISOString() } : {}),
+      // (só na 1ª vez — reeditar um livro em leitura não muda a ordem)
+      ...(status === 'reading' && !book?.readingSince ? { readingSince: new Date().toISOString() } : {}),
     };
     let novo = null;
     if (isEdit) {
@@ -5116,7 +5179,13 @@ function BookEditorSheet({ book = null, onClose = () => {} }) {
               { id: 'paused',  l: 'Pausado', c: T.muted },
               { id: 'read',    l: 'Lido',  c: T.olive },
             ].map(s => (
-              <button key={s.id} onClick={() => setStatus(s.id)} style={{
+              <button key={s.id} onClick={() => {
+                setStatus(s.id);
+                // sugere hoje quando o gesto é "estou começando/terminando agora" —
+                // visível e apagável (nunca gravamos data escondida)
+                if (s.id === 'reading' && !startedAt) setStartedAt(hojeLocalISO());
+                if (s.id === 'read' && !finishedAt && (book?.status === 'reading' || book?.status === 'paused')) setFinishedAt(hojeLocalISO());
+              }} style={{
                 padding: '8px 14px', borderRadius: 999,
                 background: status === s.id ? s.c : 'transparent',
                 color: status === s.id ? T.cream : T.brown,
@@ -5126,6 +5195,21 @@ function BookEditorSheet({ book = null, onClose = () => {} }) {
             ))}
           </div>
         </div>
+
+        {/* datas de leitura — aparecem conforme o status; em branco = sem data */}
+        {status !== 'tbr' && (
+          <>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <FieldRow label="Início da leitura" value={startedAt} onChange={setStartedAt} small type="date"/>
+              {status === 'read' && (
+                <FieldRow label="Fim da leitura" value={finishedAt} onChange={setFinishedAt} small type="date"/>
+              )}
+            </div>
+            <div style={{ fontSize: 10.5, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', margin: '-6px 0 12px', lineHeight: 1.4 }}>
+              Não lembra? Deixe em branco — melhor sem data do que com data errada.
+            </div>
+          </>
+        )}
 
         {/* metadata fields */}
         <FieldRow label="Título" value={title} onChange={setTitle} placeholder="ex.: Mefisto"/>
