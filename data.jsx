@@ -576,7 +576,10 @@ const FRASES_MARCANTES = [
 // Cada item: {kind, headline_pt, headline_en, sub_pt, sub_en, accent}
 // kind: 'premio' | 'lancamento' | 'efemeride' | 'reedicao' | 'citacao' | 'resenha'
 // ─────────────────────────────────────────────────────────────
-// Atualizado semanalmente (rotina de segunda) — semana de 2 a 8 de junho de 2026.
+// Semente enxuta e ATEMPORAL (revisada 2026-07-27): só efemérides perenes
+// (aparecem apenas no mês do fato — ver curInSeason). Prêmios, citações e
+// lançamentos vivem na nuvem (curadoria_items), onde são renovados e retirados
+// sem deploy. NÃO acrescentar aqui item que envelhece (ano de prêmio, "há N anos").
 const HOJE_BANNER = [
   {
     id: 'h1', kind: 'efemeride', accent: 'olive',
@@ -587,24 +590,10 @@ const HOJE_BANNER = [
   },
   {
     id: 'h2', kind: 'efemeride', accent: 'plum',
-    headline_pt: '3 de junho · há 102 anos, a morte de Kafka (1924)',
-    headline_en: 'June 3 · 102 years since Kafka’s death (1924)',
+    headline_pt: '3 de junho · morte de Franz Kafka (1924)',
+    headline_en: 'June 3 · death of Franz Kafka (1924)',
     sub_pt: 'O Processo, O Castelo, A Metamorfose.',
     sub_en: 'The Trial, The Castle, The Metamorphosis.',
-  },
-  {
-    id: 'h3', kind: 'premio', accent: 'ochre',
-    headline_pt: 'Prêmio Jabuti 2026: inscrições encerradas',
-    headline_en: 'Jabuti Award 2026: entries are closed',
-    sub_pt: 'Finalistas e vencedores saem no segundo semestre.',
-    sub_en: 'Finalists and winners come in the second half of the year.',
-  },
-  {
-    id: 'h4', kind: 'citacao', accent: 'terra',
-    headline_pt: '"Que outros se gabem das páginas que escreveram; eu me orgulho das que li."',
-    headline_en: '"Let others boast of the pages they have written; I take pride in those I have read."',
-    sub_pt: 'Jorge Luis Borges',
-    sub_en: 'Jorge Luis Borges',
   },
   {
     id: 'h5', kind: 'efemeride', accent: 'rose',
@@ -612,13 +601,6 @@ const HOJE_BANNER = [
     headline_en: 'June 5 · Federico García Lorca (1898)',
     sub_pt: 'Poesia e teatro que pulsam até hoje.',
     sub_en: 'Poetry and theatre that still pulse today.',
-  },
-  {
-    id: 'h6', kind: 'lancamento', accent: 'sage',
-    headline_pt: 'Junho nas livrarias: biografia de Dercy Gonçalves',
-    headline_en: 'June in bookstores: a biography of Dercy Gonçalves',
-    sub_pt: 'Por Adriana Negreiros · Objetiva.',
-    sub_en: 'By Adriana Negreiros · Objetiva.',
   },
   {
     id: 'h7', kind: 'efemeride', accent: 'plum',
@@ -633,13 +615,6 @@ const HOJE_BANNER = [
     headline_en: 'October 31 · Drummond, the poet of Itabira, is born (1902)',
     sub_pt: '"No meio do caminho tinha uma pedra."',
     sub_en: '"In the middle of the road there was a stone."',
-  },
-  {
-    id: 'h9', kind: 'citacao', accent: 'sage',
-    headline_pt: '"Eu canto porque o instante existe e a minha vida está completa."',
-    headline_en: '"I sing because the moment exists and my life is complete."',
-    sub_pt: 'Cecília Meireles',
-    sub_en: 'Cecília Meireles',
   },
 ];
 
@@ -689,11 +664,6 @@ const CURADORIA = [
     title_en: 'Read "The Devil to Pay in the Backlands"? Cross into "Os Sertões"',
     desc_pt: 'O sertão mítico de Guimarães Rosa e o sertão histórico de Euclides da Cunha — duas faces do mesmo Brasil profundo.',
     desc_en: 'Guimarães Rosa’s mythic backlands and Euclides da Cunha’s historical one — two faces of Brazil’s deep interior.' },
-  { id: 'c8', kind: 'premio', anchor_pt: 'no radar', anchor_en: 'on the radar',
-    title_pt: 'Nobel de Literatura 2025: László Krasznahorkai',
-    title_en: '2025 Nobel Prize in Literature: László Krasznahorkai',
-    desc_pt: 'O húngaro das frases-rio, premiado por uma obra que, em meio ao terror apocalíptico, reafirma a arte.',
-    desc_en: 'The Hungarian of river-long sentences, honored for work that, amid apocalyptic terror, reaffirms art.' },
   { id: 'c9', kind: 'efemeride', date: '09 dez',
     title_pt: 'Clarice Lispector morre na véspera de seu aniversário',
     title_en: 'Clarice Lispector dies on the eve of her birthday',
