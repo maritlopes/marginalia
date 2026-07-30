@@ -32,7 +32,7 @@ jobs:
       - run: npm run build
       - name: Copiar paginas estaticas e assets
         run: |
-          cp -R clube linha-do-tempo maratona-nobel nobel app _card-maratona lib frames dist/
+          cp -R clube linha-do-tempo maratona-nobel nobel viagem-no-tempo app _card-maratona lib frames dist/
           cp *.png icon.svg manifest.json sw.js CNAME Marginalia.html dist/
           cp tokens.jsx data.jsx home-variants.jsx screens.jsx dist/
       - uses: actions/upload-pages-artifact@v3
