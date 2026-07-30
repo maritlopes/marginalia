@@ -716,6 +716,33 @@ function HomeVariantA({ onNav = () => {} }) {
           </div>
         </a>
 
+        {/* PORTAL — convite para a Travessia (viagem via ficção, página irmã) */}
+        <a href="/viagem-no-tempo/" style={{ textDecoration: 'none', display: 'block', marginBottom: 22 }}>
+          <div style={{
+            background: T.ink, color: T.cream, borderRadius: 14, padding: '18px 18px 16px',
+            position: 'relative', overflow: 'hidden',
+          }}>
+            <div style={{ position: 'absolute', right: -10, top: -6, opacity: 0.14, pointerEvents: 'none' }}>
+              <svg viewBox="0 0 24 24" width="104" height="104" fill="none" style={{ transform: 'rotate(14deg)' }}>
+                <path d="m21 3-7 19-3.5-8.5L2 10Z" stroke={T.cream} strokeWidth="1.2" strokeLinejoin="round"/>
+                <path d="M21 3 10.5 13.5" stroke={T.cream} strokeWidth="1.2" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <div style={{ fontSize: 9, letterSpacing: 1.8, textTransform: 'uppercase', color: T.ochre, fontWeight: 700, marginBottom: 8 }}>
+              ✦ Portal · viagem via ficção
+            </div>
+            <div style={{ fontFamily: T.serif, fontSize: 20, fontWeight: 500, lineHeight: 1.15, marginBottom: 8 }}>
+              Travessia
+            </div>
+            <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, lineHeight: 1.5, color: 'rgba(247,241,228,0.82)', marginBottom: 12, maxWidth: '92%' }}>
+              Doze estações pela história, com a ficção como máquina do tempo — sem prazo, no seu ritmo. Passaporte com carimbos de chegada e a mala com os seus livros.
+            </div>
+            <div style={{ fontSize: 11, letterSpacing: 0.6, fontWeight: 700, color: T.ochre, textTransform: 'uppercase' }}>
+              Embarcar →
+            </div>
+          </div>
+        </a>
+
         {/* PORTAL — convite para o Nobel de Literatura (página irmã) */}
         <a href="/nobel/" style={{ textDecoration: 'none', display: 'block', marginBottom: 22 }}>
           <div style={{
