@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#EFE8DA">
-<meta name="description" content="Viagem no Tempo via Ficção — um projeto de leitura do Marginália: doze estações pela Linha do Tempo da Civilização, no seu tempo.">
-<title>Viagem no Tempo · Marginália</title>
+<meta name="description" content="Travessia — uma viagem via ficção: doze estações pela história, no seu tempo. Um projeto de leitura do Marginália.">
+<title>Travessia · Marginália</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -65,20 +65,35 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .how{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6);margin:var(--space-4) 0}
 .how h2{font-family:var(--font-display);font-weight:600;font-size:var(--text-lg);margin-bottom:var(--space-3)}
 .how ul{list-style:none;display:flex;flex-direction:column;gap:var(--space-3)}
-.how li{display:flex;gap:var(--space-3);font-size:var(--text-sm);line-height:1.6;color:var(--color-text-muted)}
-.how li::before{content:'✦';color:var(--color-primary);flex-shrink:0}
+.how li{position:relative;padding-left:22px;font-size:var(--text-sm);line-height:1.6;color:var(--color-text-muted)}
+.how li::before{content:'✦';position:absolute;left:0;top:0;color:var(--color-primary)}
 h2.sec{font-family:var(--font-display);font-weight:600;font-size:var(--text-xl);margin:var(--space-10) 0 var(--space-2)}
 .sec-sub{font-size:var(--text-sm);color:var(--color-text-muted);margin-bottom:var(--space-5)}
-/* PASSAPORTE */
-.passaporte{background:linear-gradient(160deg,#312920,#4a3826);border-radius:var(--radius-lg);padding:var(--space-6);box-shadow:var(--shadow-md)}
-.stamps{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:var(--space-3)}
-.stamp{aspect-ratio:1;border:2px dashed #8a7350;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#c9b488;text-align:center;padding:6px;cursor:pointer;transition:all var(--transition);background:transparent}
-.stamp:hover{border-color:#c9b488}
-.stamp .m{font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;font-weight:700}
-.stamp .e{font-family:var(--font-display);font-size:.7rem;font-style:italic;margin-top:2px;line-height:1.2}
-.stamp .d{font-size:.58rem;margin-top:2px;opacity:.85}
-.stamp.done{border:2px solid var(--carimbo);background:rgba(194,135,31,.18);color:#F7F1E4;transform:rotate(-4deg)}
-.pass-note{color:#c9b488;font-size:var(--text-xs);font-style:italic;margin-top:var(--space-4)}
+/* HERO — trilha do avião de papel + tagline */
+.trail{display:block;width:min(520px,88%);margin:0 auto calc(-1*var(--space-2));color:var(--color-primary);opacity:.8}
+.trail-plane{transform:translate(498px,10px) rotate(14deg);animation:planeFloat 4s ease-in-out infinite alternate}
+@keyframes planeFloat{from{transform:translate(498px,12px) rotate(15deg)}to{transform:translate(500px,4px) rotate(10deg)}}
+@media (prefers-reduced-motion:reduce){.trail-plane{animation:none}}
+.hero-tag{font-family:var(--font-display);font-style:italic;font-size:var(--text-lg);color:var(--color-text-muted);margin:calc(-1*var(--space-4)) 0 var(--space-5)}
+/* ÍCONES DE SEÇÃO + divisor-trilha */
+h2.sec{display:flex;align-items:center;gap:var(--space-3)}
+.sec-ico{width:22px;height:22px;color:var(--color-primary);flex-shrink:0}
+.trail-div{width:220px;margin:var(--space-12) auto calc(-1*var(--space-8));color:var(--color-text-faint);opacity:.85}
+.sync-head{display:flex;align-items:center;gap:var(--space-2)}
+/* PASSAPORTE — página de carimbos de chegada (papel claro nos 2 temas, como passaporte real) */
+.passaporte{position:relative;background:#F3EAD8;background-image:repeating-linear-gradient(45deg,rgba(176,83,58,.045) 0 1px,transparent 1px 8px),repeating-linear-gradient(-45deg,rgba(94,107,62,.04) 0 1px,transparent 1px 8px);border:1px solid rgba(42,38,32,.2);border-radius:var(--radius-lg);padding:var(--space-6);box-shadow:var(--shadow-md)}
+.stamps{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:var(--space-3)}
+.stamp{position:relative;min-height:106px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:12px 10px;background:transparent;transition:all var(--transition)}
+.stamp .top,.stamp .bot{font-size:.52rem;letter-spacing:.14em;text-transform:uppercase;font-weight:700;line-height:1.35}
+.stamp .era{font-family:var(--font-display);font-style:italic;font-size:.82rem;font-weight:600;margin:4px 0;line-height:1.15}
+.stamp.vazio{border:1.5px dashed rgba(42,38,32,.3);border-radius:14px;color:#9A8E7B}
+.stamp.vazio:hover{border-color:#A8543A;color:#A8543A}
+.stamp.done{color:var(--ink,#A8543A);border:2px solid var(--ink,#A8543A);transform:rotate(var(--rot,0deg));opacity:.92}
+.stamp.done::before{content:'';position:absolute;inset:4px;border:1px solid var(--ink,#A8543A);border-radius:inherit;pointer-events:none;opacity:.75}
+.stamp.done:hover{opacity:1}
+.stamp.ink0{--ink:#A8543A}.stamp.ink1{--ink:#5E6B3E}.stamp.ink2{--ink:#7C3F4E}.stamp.ink3{--ink:#A87513}
+.stamp.sh0{border-radius:12px}.stamp.sh1{border-radius:52px}
+.pass-note{color:#6E6352;font-size:var(--text-xs);font-style:italic;margin-top:var(--space-4)}
 /* MALA */
 .mala{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6)}
 .mala-form{display:flex;gap:var(--space-2);flex-wrap:wrap}
@@ -153,15 +168,20 @@ footer a{color:var(--color-primary);text-decoration:none}
 <body>
 <header class="site-header">
   <div class="header-inner">
-    <a href="/" class="logo"><span class="logo-title">Viagem no Tempo</span><span class="logo-em">em</span><img class="logo-mark-mg" src="/symbol.png" alt=""/><span class="logo-mg">Marginália</span></a>
+    <a href="/" class="logo"><span class="logo-title">Travessia</span><span class="logo-em">em</span><img class="logo-mark-mg" src="/symbol.png" alt=""/><span class="logo-mg">Marginália</span></a>
     <button class="theme-toggle" id="themeToggle" title="Alternar tema"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
   </div>
 </header>
 
 <section class="hero">
   <p class="hero-eyebrow">Um projeto de leitura · no seu tempo</p>
-  <h1 class="hero-title">Viagem no <em>Tempo</em><br>via Ficção</h1>
-  <p class="hero-sub">Doze estações pela Linha do Tempo da Civilização — a ficção como máquina do tempo, sem prazo nem calendário: cada estação dura o quanto a leitura pedir. A viagem é temática: o que ordena as estações é o <strong>tempo da narrativa</strong> (quando a história se passa), nunca a data em que o livro foi escrito.</p>
+  <svg class="trail" viewBox="0 0 560 80" fill="none" aria-hidden="true">
+    <path d="M10 66 C 120 72, 170 22, 280 34 C 380 45, 440 58, 500 24" stroke="currentColor" stroke-width="1.5" stroke-dasharray="1 8" stroke-linecap="round"/>
+    <g class="trail-plane"><path d="m20 2-6.5 18-3.5-8-8-3.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M20 2 10 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></g>
+  </svg>
+  <h1 class="hero-title"><em>Travessia</em></h1>
+  <p class="hero-tag">uma viagem via ficção</p>
+  <p class="hero-sub">Doze estações pela Linha do Tempo da Civilização — a ficção como máquina do tempo, sem prazo nem calendário: cada estação dura o quanto a leitura pedir. A travessia é temática: o que ordena as estações é o <strong>tempo da narrativa</strong> (quando a história se passa), nunca a data em que o livro foi escrito.</p>
   <p class="hero-links"><a href="/linha-do-tempo/">✦ Linha do Tempo</a> &nbsp;·&nbsp; <a href="/maratona-nobel/">🏅 Maratona Nobel</a></p>
 </section>
 
@@ -179,14 +199,14 @@ footer a{color:var(--color-primary);text-decoration:none}
   </ul>
 </div>
 
-<h2 class="sec">O passaporte</h2>
-<p class="sec-sub">Uma estação concluída = um carimbo. Toque para carimbar (ou descarimbar) — a data fica registrada.</p>
+<h2 class="sec"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M9 16h6"/></svg>O passaporte</h2>
+<p class="sec-sub">Uma estação concluída = um carimbo de chegada, como os de fronteira. Toque no espaço pontilhado para carimbar (ou no carimbo para desfazer) — a data fica registrada.</p>
 <div class="passaporte">
   <div class="stamps" id="stamps"></div>
   <p class="pass-note" id="passNote">Nenhuma página carimbada ainda — a viagem espera o embarque.</p>
 </div>
 
-<h2 class="sec">A mala de livros</h2>
+<h2 class="sec"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M9 12v4M15 12v4"/></svg>A mala de livros</h2>
 <p class="sec-sub">Diga um livro — qualquer um, lido ou por ler. A IA do Marginália pergunta <em>onde ele vive no tempo</em> — e mostra a estação a que ele remete, com o porquê. Ajuste se quiser; a palavra final é sua. Conectada, o seu acervo aparece como sugestão enquanto digita.</p>
 <div class="mala">
   <div class="mala-form">
@@ -209,12 +229,13 @@ footer a{color:var(--color-primary);text-decoration:none}
   <div class="mala-list" id="malaList"></div>
 </div>
 
-<h2 class="sec">As doze estações</h2>
+<div class="trail-div" aria-hidden="true"><svg viewBox="0 0 240 36" fill="none"><path d="M6 28 C 60 32, 95 12, 150 18 C 190 22, 208 20, 218 12" stroke="currentColor" stroke-width="1.3" stroke-dasharray="1 7" stroke-linecap="round"/><g transform="translate(216 3) rotate(16)"><path d="m12 1-4 11-2-5-5-2Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M12 1 6.5 6.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></g></svg></div>
+<h2 class="sec"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h6.5a3.5 3.5 0 0 0 0-7h-5a3.5 3.5 0 0 1 0-7H16"/></svg>As doze estações</h2>
 <p class="sec-sub">Toque numa estação para abrir o clima da época, os livros propostos (com o porquê) e a prateleira de clássicos da própria linha. Marque <em>✓ li</em> ou <em>quero ler</em> nos propostos — eles e os livros da sua mala formam a bagagem da estação.</p>
 <div id="estacoes"></div>
 
 <div class="sync" id="syncBox">
-  <div class="sync-head">Sincronização na nuvem</div>
+  <div class="sync-head"><svg class="sec-ico" style="width:18px;height:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>Sincronização na nuvem</div>
   <div class="sync-status" id="syncStatus">Carimbos e mala ficam salvos neste aparelho. Entre com seu e-mail (o mesmo do app) para sincronizar entre aparelhos e ativar a IA do "Situar".</div>
   <div class="sync-row" id="syncRow">
     <input id="syncEmail" type="email" placeholder="seu e-mail">
@@ -233,7 +254,7 @@ footer a{color:var(--color-primary);text-decoration:none}
 </main>
 
 <footer>
-  <p>Viagem no Tempo via Ficção · um projeto do <a href="/">Marginália</a></p>
+  <p>Travessia · uma viagem via ficção — um projeto do <a href="/">Marginália</a></p>
   <p style="margin-top:6px"><a href="/linha-do-tempo/">Linha do Tempo</a> · <a href="/maratona-nobel/">Maratona Nobel</a> · <a href="/nobel/">Nobel</a></p>
 </footer>
 
@@ -346,16 +367,27 @@ function persist(){ try{ localStorage.setItem(SKEY,JSON.stringify(state)); }catc
 /* ───────── passaporte ───────── */
 function hoje(){ var d=new Date(); return d.toISOString().slice(0,10); }
 function fmtData(iso){ if(!iso) return ''; var p=iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0].slice(2); }
+var MES_UP=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+function fmtCarimbo(iso){ if(!iso) return ''; var p=iso.split('-'); return parseInt(p[2],10)+' '+(MES_UP[parseInt(p[1],10)-1]||'')+' '+p[0]; }
+var ROTS=[-5,3,-3,6,-6,2,4,-4,5,-2,3,-5]; // inclinação própria de cada carimbo, como na fronteira
 function renderStamps(){
   var box=document.getElementById('stamps'); box.innerHTML='';
   var n=0;
-  ESTACOES.forEach(function(e){
+  ESTACOES.forEach(function(e,i){
     var d=state.carimbos[e.id];
     if(d) n++;
     var b=document.createElement('button');
-    b.className='stamp'+(d?' done':'');
-    b.innerHTML='<span class="m">Estação '+e.id+'</span><span class="e">'+e.era.split('—')[0].split('·')[0].trim()+'</span>'+(d?'<span class="d">✦ '+fmtData(d)+'</span>':'');
-    b.title=d?('Carimbada em '+fmtData(d)+' — toque para desfazer'):'Toque para carimbar a chegada';
+    var era=e.era.split('—')[0].split('·')[0].trim();
+    if(d){
+      b.className='stamp done ink'+(i%4)+' sh'+(i%2);
+      b.style.setProperty('--rot',ROTS[i%ROTS.length]+'deg');
+      b.innerHTML='<span class="top">Marginália · nº '+e.id+'</span><span class="era">'+era+'</span><span class="bot">✦ chegada · '+fmtCarimbo(d)+'</span>';
+      b.title='Chegada carimbada em '+fmtData(d)+' — toque para desfazer';
+    } else {
+      b.className='stamp vazio';
+      b.innerHTML='<span class="top">Estação '+e.id+'</span><span class="era">'+era+'</span><span class="bot">à espera do carimbo</span>';
+      b.title='Toque para carimbar a chegada';
+    }
     b.addEventListener('click',function(){
       if(state.carimbos[e.id]){ if(!confirm('Desfazer o carimbo de "'+e.era+'"?')) return; delete state.carimbos[e.id]; }
       else state.carimbos[e.id]=hoje();
