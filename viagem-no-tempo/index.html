@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#EFE8DA">
-<meta name="description" content="Viagem no Tempo via Ficção — um projeto de leitura do Marginália: doze meses, doze estações pela Linha do Tempo da Civilização.">
+<meta name="description" content="Viagem no Tempo via Ficção — um projeto de leitura do Marginália: doze estações pela Linha do Tempo da Civilização, no seu tempo.">
 <title>Viagem no Tempo · Marginália</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -131,8 +131,13 @@ h2.sec{font-family:var(--font-display);font-weight:600;font-size:var(--text-xl);
 .livro p{font-size:var(--text-sm);color:var(--color-text-muted);margin-top:4px;line-height:1.6}
 .prateleira{margin-top:var(--space-4);font-size:var(--text-sm);color:var(--color-text-muted);font-style:italic;background:var(--color-surface-2);border:1px dashed var(--color-border);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);line-height:1.7}
 .prateleira .rot{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--fora);font-weight:700;display:block;font-style:normal;margin-bottom:3px}
-.est-mala{margin-top:var(--space-4);display:flex;flex-wrap:wrap;gap:var(--space-2)}
-.est-mala .chip-mes{background:var(--color-surface-2)}
+.est-mala{margin-top:var(--space-4);display:flex;flex-direction:column;gap:var(--space-2);background:var(--color-surface-2);border:1px dashed var(--color-border);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4)}
+.rot-bag{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--carimbo);font-weight:700}
+.bag-item{display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;font-size:var(--text-sm)}
+.bag-item b{font-family:var(--font-display);font-weight:600}
+.bag-item i{color:var(--color-text-faint);font-size:var(--text-xs);font-style:italic}
+.livro-acts{display:flex;gap:var(--space-2);margin-top:var(--space-2)}
+.mini.quero{background:var(--dentro);border-color:var(--dentro);color:#fff}
 /* SYNC */
 .sync{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6);margin:var(--space-8) 0}
 .sync-head{font-family:var(--font-display);font-weight:600;font-size:var(--text-base);margin-bottom:var(--space-3)}
@@ -154,9 +159,9 @@ footer a{color:var(--color-primary);text-decoration:none}
 </header>
 
 <section class="hero">
-  <p class="hero-eyebrow">Um projeto de leitura · 12 meses</p>
+  <p class="hero-eyebrow">Um projeto de leitura · no seu tempo</p>
   <h1 class="hero-title">Viagem no <em>Tempo</em><br>via Ficção</h1>
-  <p class="hero-sub">Doze meses, doze estações pela Linha do Tempo da Civilização — a ficção como máquina do tempo. A viagem é temática: o que ordena as estações é o <strong>tempo da narrativa</strong> (quando a história se passa), nunca a data em que o livro foi escrito.</p>
+  <p class="hero-sub">Doze estações pela Linha do Tempo da Civilização — a ficção como máquina do tempo, sem prazo nem calendário: cada estação dura o quanto a leitura pedir. A viagem é temática: o que ordena as estações é o <strong>tempo da narrativa</strong> (quando a história se passa), nunca a data em que o livro foi escrito.</p>
   <p class="hero-links"><a href="/linha-do-tempo/">✦ Linha do Tempo</a> &nbsp;·&nbsp; <a href="/maratona-nobel/">🏅 Maratona Nobel</a></p>
 </section>
 
@@ -165,9 +170,10 @@ footer a{color:var(--color-primary);text-decoration:none}
 <div class="how">
   <h2>Como funciona</h2>
   <ul>
-    <li><strong>Doze estações, em ordem</strong> — do mundo antes da escrita ao agora. Uma por mês; o relógio é seu.</li>
+    <li><strong>Doze estações, em ordem</strong> — do mundo antes da escrita ao agora. Sem prazo: o relógio é seu, e cada estação dura o quanto você quiser.</li>
     <li><strong>O tema manda</strong> — qualquer livro serve para uma estação, desde que <em>visite</em> aquela época. Um livro basta para carimbar; dois são festa.</li>
-    <li><strong>Todo livro seu tem assento</strong> — coloque na mala um título que quer ler e descubra a que era ele remete, e por quê.</li>
+    <li><strong>Todo livro seu tem assento</strong> — coloque na mala um título que quer ler e descubra a que era ele remete. Conectada, o seu <em>acervo do Marginália</em> aparece como sugestão enquanto você digita.</li>
+    <li><strong>Os seus livros ficam no diário</strong> — marque <em>✓ li</em> ou <em>quero ler</em> direto nos livros propostos de cada estação; tudo entra na sua bagagem da estação.</li>
     <li><strong>Cada chegada vira carimbo</strong> — toque na estação do passaporte ao concluí-la.</li>
     <li><strong>A viagem alimenta a linha</strong> — leitura que revelar um acontecimento novo vira card pela Curadoria (✦) da Linha do Tempo.</li>
   </ul>
@@ -181,14 +187,15 @@ footer a{color:var(--color-primary);text-decoration:none}
 </div>
 
 <h2 class="sec">A mala de livros</h2>
-<p class="sec-sub">Diga um livro que você quer ler. A IA do Marginália pergunta <em>onde ele vive no tempo</em> — e mostra a estação a que ele remete, com o porquê. Ajuste se quiser; a palavra final é sua.</p>
+<p class="sec-sub">Diga um livro — qualquer um, lido ou por ler. A IA do Marginália pergunta <em>onde ele vive no tempo</em> — e mostra a estação a que ele remete, com o porquê. Ajuste se quiser; a palavra final é sua. Conectada, o seu acervo aparece como sugestão enquanto digita.</p>
 <div class="mala">
   <div class="mala-form">
-    <input id="mTitulo" placeholder="Título do livro">
+    <input id="mTitulo" placeholder="Título do livro" list="acervoList" autocomplete="off">
+    <datalist id="acervoList"></datalist>
     <input id="mAutor" placeholder="Autor (opcional)" style="max-width:220px">
     <button class="btn" id="mSituar">✦ Situar no tempo</button>
   </div>
-  <div class="mala-msg" id="mMsg">A IA precisa de login (o mesmo do app — veja Sincronização, abaixo). Sem login, você ainda pode situar à mão.</div>
+  <div class="mala-msg" id="mMsg">A IA e o acervo precisam de login (o mesmo do app — veja Sincronização, abaixo). Sem login, você ainda pode situar à mão.</div>
   <div class="situo" id="situo">
     <div class="rot">Onde este livro vive no tempo</div>
     <div class="txt" id="situoTxt"></div>
@@ -203,7 +210,7 @@ footer a{color:var(--color-primary);text-decoration:none}
 </div>
 
 <h2 class="sec">As doze estações</h2>
-<p class="sec-sub">Toque numa estação para abrir o clima da época, os livros propostos (com o porquê) e a prateleira de clássicos da própria linha. Os livros da sua mala aparecem na estação a que remetem.</p>
+<p class="sec-sub">Toque numa estação para abrir o clima da época, os livros propostos (com o porquê) e a prateleira de clássicos da própria linha. Marque <em>✓ li</em> ou <em>quero ler</em> nos propostos — eles e os livros da sua mala formam a bagagem da estação.</p>
 <div id="estacoes"></div>
 
 <div class="sync" id="syncBox">
@@ -275,7 +282,7 @@ var ESTACOES=[
  {id:5,era:'Idade Média',per:'500 – 1400',min:500,max:1400,
   clima:'O canto gregoriano ecoa nas catedrais góticas; Hildegard compõe e tem visões; Avicena, Maimônides e Averróis devolvem Aristóteles ao Ocidente — entre cruzadas e as primeiras universidades.',
   livros:[
-   {c:'dentro',papel:'Voz de dentro · ✦ card na linha',t:'A Divina Comédia — Inferno',a:'Dante Alighieri',p:'A viagem dentro da viagem: Dante atravessa o outro mundo com Virgílio — o mesmo do mês anterior, agora personagem. O Inferno basta para a estação.'},
+   {c:'dentro',papel:'Voz de dentro · ✦ card na linha',t:'A Divina Comédia — Inferno',a:'Dante Alighieri',p:'A viagem dentro da viagem: Dante atravessa o outro mundo com Virgílio — o mesmo da estação anterior, agora personagem. O Inferno basta para a estação.'},
    {c:'fora',papel:'Olhar de fora',t:'O Nome da Rosa',a:'Umberto Eco · 1980',p:'Um mosteiro em 1327, uma biblioteca-labirinto, e a pergunta sobre quem controla os livros. Para uma viagem nascida de uma linha do tempo, quase autobiográfico.'},
    {c:'fora',papel:'A Idade Média não europeia · ✦ card na linha',t:'Genji Monogatari',a:'Murasaki Shikibu · c. 1010',p:'Enquanto a Europa erguia mosteiros, uma dama da corte japonesa escrevia o primeiro romance do mundo — moderno mil anos antes do moderno.'}],
   prat:'<b>Decamerão</b> — cem histórias durante a peste; <b>Contos da Cantuária</b>; <b>Beowulf</b>; <b>As Mil e Uma Noites</b> — Sherazade e a defesa mais bonita da narrativa; <b>Os Pilares da Terra</b> como rota folhetinesca.'},
@@ -284,7 +291,7 @@ var ESTACOES=[
   livros:[
    {c:'dentro',papel:'Voz de dentro · ✦ card na linha',t:'Os Lusíadas',a:'Luís de Camões · 1572',p:'A epopeia da nossa língua — Vasco da Gama, o Olimpo e o Velho do Restelo avisando que talvez tudo fosse vaidade. Ler em voz alta um canto: o verso foi feito para o ouvido.'},
    {c:'fora',papel:'Olhar de fora',t:'Wolf Hall',a:'Hilary Mantel · 2009',p:'A corte de Henrique VIII pelos olhos de Cromwell — o século XVI num presente tão vivo que parece agora.'},
-   {c:'ponte',papel:'A ponte armada',t:'Otelo',a:'Shakespeare · c. 1603',p:'O ciúme do mouro de Veneza — e a ponte que o acervo já armou: Dom Casmurro espera no mês 9, citando Otelo por dentro. Plante a dúvida agora.'}],
+   {c:'ponte',papel:'A ponte armada',t:'Otelo',a:'Shakespeare · c. 1603',p:'O ciúme do mouro de Veneza — e a ponte que o acervo já armou: Dom Casmurro espera na estação 9, citando Otelo por dentro. Plante a dúvida agora.'}],
   prat:'<b>Elogio da Loucura</b> (Erasmo), <b>Utopia</b>, <b>O Príncipe</b>, <b>Gargântua e Pantagruel</b>, <b>Orlando Furioso</b>, <b>Ensaios</b> (Montaigne), <b>Romeu e Julieta</b> — todos ✦ cards da linha.'},
  {id:7,era:'Barroco',per:'1600 – 1750',min:1600,max:1750,
   clima:'Descartes duvida de tudo, Espinosa geometriza Deus, Newton escreve os Principia; Bach, Vivaldi e Händel enchem as igrejas; Caravaggio e Rembrandt pintam luz e sombra — e Galileu é processado.',
@@ -297,21 +304,21 @@ var ESTACOES=[
   clima:'Kant escreve as três Críticas e Rousseau o Contrato Social; Mozart estreia Don Giovanni e Beethoven a Heroica; Goya pinta o 3 de Maio — entre a Bastilha e Napoleão se coroando.',
   livros:[
    {c:'dentro',papel:'Voz de dentro · ✦ card na linha',t:'Cândido, ou o Otimismo',a:'Voltaire · 1759',p:'Curto, veloz e impiedoso — o riso como arma da razão. Lê-se numa tarde e ecoa por meses.'},
-   {c:'ponte',papel:'A semente do pacto · ✦ card na linha',t:'Fausto',a:'Goethe · 1808',p:'O sábio que vende a alma, na fronteira entre razão e vertigem romântica. O acervo sabe aonde a semente vai dar: o Doutor Fausto de Mann (mês 10) e o pacto de Riobaldo (mês 11).'},
+   {c:'ponte',papel:'A semente do pacto · ✦ card na linha',t:'Fausto',a:'Goethe · 1808',p:'O sábio que vende a alma, na fronteira entre razão e vertigem romântica. O acervo sabe aonde a semente vai dar: o Doutor Fausto de Mann (estação 10) e o pacto de Riobaldo (estação 11).'},
    {c:'fora',papel:'Olhar de fora · ✦ card: Revolução Francesa',t:'Um Conto de Duas Cidades',a:'Dickens · 1859',p:'Londres e Paris, 1789 — o melhor e o pior dos tempos, e um dos finais mais comoventes da literatura.'}],
   prat:'<b>Werther</b>, <b>Contos</b> dos Grimm, <b>Baladas Líricas</b> — ✦ cards; <b>Frankenstein</b> (1818, na fronteira) — a razão parindo seu monstro; <b>O Perfume</b> como rota sensorial.'},
  {id:9,era:'Século XIX',per:'1815 – 1900',min:1815,max:1900,
   clima:'Darwin publica a Origem, Marx o Capital, Nietzsche o Zaratustra; a música vai da 9ª ao Anel de Wagner; Van Gogh pinta a Noite Estrelada — e Freud fecha o século interpretando sonhos.',
   livros:[
    {c:'dentro',papel:'Voz de dentro · Brasil · ✦ card na linha',t:'Memórias Póstumas de Brás Cubas',a:'Machado de Assis · 1881',p:'Um defunto autor debochando do Brasil imperial com uma modernidade que o mundo só alcançou décadas depois. Se a estação tiver um só livro, que seja este.'},
-   {c:'ponte',papel:'A colheita da ponte · ✦ card na linha',t:'Dom Casmurro',a:'Machado · 1899',p:'A colheita da semente do mês 6: o ciúme de Otelo, trezentos anos depois, citado por dentro. Capitu traiu? O livro não responde — por isso não envelhece.'},
+   {c:'ponte',papel:'A colheita da ponte · ✦ card na linha',t:'Dom Casmurro',a:'Machado · 1899',p:'A colheita da semente da estação 6: o ciúme de Otelo, trezentos anos depois, citado por dentro. Capitu traiu? O livro não responde — por isso não envelhece.'},
    {c:'fora',papel:'Olhar de fora',t:'O Mundo se Despedaça',a:'Chinua Achebe · 1958',p:'O século visto do outro lado do espelho: a aldeia igbo antes e durante a chegada colonial. Par brasileiro: Um Defeito de Cor (Ana Maria Gonçalves).'}],
-  prat:'<b>Crime e Castigo</b> (ponte armada com O Estrangeiro, mês 11), <b>Madame Bovary</b>, <b>Moby Dick</b> (a baleia que rima com a do mês 12!), <b>Guerra e Paz</b>, <b>Irmãos Karamázov</b>, <b>Os Miseráveis</b>, <b>Quincas Borba</b> — ✦ cards da linha.'},
+  prat:'<b>Crime e Castigo</b> (ponte armada com O Estrangeiro, estação 11), <b>Madame Bovary</b>, <b>Moby Dick</b> (a baleia que rima com a da estação 12!), <b>Guerra e Paz</b>, <b>Irmãos Karamázov</b>, <b>Os Miseráveis</b>, <b>Quincas Borba</b> — ✦ cards da linha.'},
  {id:10,era:'Modernismo',per:'1900 – 1945',min:1900,max:1945,
   clima:'Einstein torce o tempo, Heidegger pergunta pelo ser; a Sagração da Primavera provoca tumulto; Picasso quebra o rosto humano, Guernica grita — entre duas guerras e uma quebra da bolsa.',
   livros:[
    {c:'dentro',papel:'Voz de dentro · Brasil · ✦ card na linha',t:'Macunaíma',a:'Mário de Andrade · 1928',p:'O herói sem nenhum caráter, seis anos depois da Semana de 22 — a rapsódia que procura a alma plural do Brasil. Par nordestino: Vidas Secas.'},
-   {c:'ponte',papel:'Do acervo · os dois Manns',t:'A Montanha Mágica · Doutor Fausto',a:'Thomas Mann',p:'O sanatório como miniatura da Europa às vésperas de 1914 — o romance sobre o tempo. E a colheita do pacto do mês 8: a Alemanha que pactua com a própria ruína.'},
+   {c:'ponte',papel:'Do acervo · os dois Manns',t:'A Montanha Mágica · Doutor Fausto',a:'Thomas Mann',p:'O sanatório como miniatura da Europa às vésperas de 1914 — o romance sobre o tempo. E a colheita do pacto da estação 8: a Alemanha que pactua com a própria ruína.'},
    {c:'fora',papel:'Olhar de fora',t:'Expiação',a:'Ian McEwan · 2001',p:'Uma mentira de menina em 1935, a guerra, e a escrita como tentativa impossível de reparação.'}],
   prat:'<b>Ao Farol</b>, <b>A Metamorfose</b>, <b>No Caminho de Swann</b>, <b>Coração das Trevas</b>, <b>Ficções</b> (Borges — o santo patrono das linhas do tempo), <b>O Som e a Fúria</b> — ✦ cards; <b>Suíte Francesa</b> como rota comovente.'},
  {id:11,era:'Pós-Guerra',per:'1945 – 1989',min:1945,max:1989,
@@ -326,7 +333,7 @@ var ESTACOES=[
   livros:[
    {c:'ponte',papel:'Do acervo',t:'Ensaio sobre a Cegueira',a:'José Saramago · 1995',p:'A cegueira branca que revela o que somos quando a ordem cai — em ponte com A Peste. E Saramago rima com a Curadoria: seu Nobel de 1998 é card inscrito por você.'},
    {c:'dentro',papel:'Vozes do agora · ✦ cards',t:'Torto Arado · A Vegetariana',a:'Itamar Vieira Junior · Han Kang',p:'Bibiana e Belonísia na Chapada; Yeong-hye recusando o mundo em Seul. Duas vozes do século XXI que a linha já celebra.'},
-   {c:'fora',papel:'A última estação · ✦ curadoria da linha',t:'Melancolia da Resistência',a:'László Krasznahorkai · 1989',p:'O encerramento onde tudo começou: o Nobel de 2025 que você inscreveu na linha. Uma baleia empalhada chega a uma cidadezinha húngara — e rima com Moby Dick, lá do mês 9. A viagem termina respondendo a si mesma.'}],
+   {c:'fora',papel:'A última estação · ✦ curadoria da linha',t:'Melancolia da Resistência',a:'László Krasznahorkai · 1989',p:'O encerramento onde tudo começou: o Nobel de 2025 que você inscreveu na linha. Uma baleia empalhada chega a uma cidadezinha húngara — e rima com Moby Dick, lá da estação 9. A viagem termina respondendo a si mesma.'}],
   prat:'<b>Austerlitz</b>, <b>Não Me Abandone Jamais</b>, <b>A Estrada</b>, <b>A Amiga Genial</b>, <b>Lincoln no Bardo</b> — ✦ cards; <b>As Intermitências da Morte</b>, <b>A Cabeça do Santo</b>, <b>Graça Infinita</b> — pontes do acervo.'}
 ];
 
@@ -347,7 +354,7 @@ function renderStamps(){
     if(d) n++;
     var b=document.createElement('button');
     b.className='stamp'+(d?' done':'');
-    b.innerHTML='<span class="m">Mês '+e.id+'</span><span class="e">'+e.era.split('—')[0].split('·')[0].trim()+'</span>'+(d?'<span class="d">✦ '+fmtData(d)+'</span>':'');
+    b.innerHTML='<span class="m">Estação '+e.id+'</span><span class="e">'+e.era.split('—')[0].split('·')[0].trim()+'</span>'+(d?'<span class="d">✦ '+fmtData(d)+'</span>':'');
     b.title=d?('Carimbada em '+fmtData(d)+' — toque para desfazer'):'Toque para carimbar a chegada';
     b.addEventListener('click',function(){
       if(state.carimbos[e.id]){ if(!confirm('Desfazer o carimbo de "'+e.era+'"?')) return; delete state.carimbos[e.id]; }
@@ -363,6 +370,20 @@ function renderStamps(){
 
 /* ───────── estações ───────── */
 function mesDaEra(id){ var e=ESTACOES.filter(function(x){return x.id===id;})[0]; return e?e.era:''; }
+function norm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
+function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
+function itemPorTitulo(t){ var k=norm(t); return state.mala.find(function(x){return norm(x.t)===k;})||null; }
+// marca um livro PROPOSTO da estação como li / quero ler (2º toque no mesmo desfaz)
+function marcarSugestao(e,l,want){
+  var item=itemPorTitulo(l.t);
+  if(item){
+    if(item.status===want){ state.mala=state.mala.filter(function(x){return x!==item;}); }
+    else { item.status=want; item.mes=e.id; }
+  } else {
+    state.mala.push({id:'m'+Date.now(),t:l.t,a:l.a||'',mes:e.id,why:'',status:want,ts:hoje(),src:'sugestao'});
+  }
+  persist(); renderMala(); renderEstacoes();
+}
 function renderEstacoes(){
   var box=document.getElementById('estacoes');
   var abertas={}; box.querySelectorAll('.estacao.open').forEach(function(n){ abertas[n.dataset.id]=true; });
@@ -370,16 +391,36 @@ function renderEstacoes(){
   ESTACOES.forEach(function(e){
     var sec=document.createElement('div'); sec.className='estacao'+(abertas[e.id]?' open':''); sec.dataset.id=e.id;
     var d=state.carimbos[e.id];
-    var head='<div class="est-head"><span class="est-mes">Mês '+e.id+'</span><span class="est-era">'+e.era+'</span><span class="est-periodo">'+e.per+'</span>'+(d?'<span class="est-carimbado">✦ '+fmtData(d)+'</span>':'')+'<span class="arrow">▾</span></div>';
-    var livros=e.livros.map(function(l){
-      return '<div class="livro '+l.c+'"><div class="papel">'+l.papel+'</div><div class="tit">'+l.t+' <i>· '+l.a+'</i></div><p>'+l.p+'</p></div>';
+    var head='<div class="est-head"><span class="est-mes">Estação '+e.id+'</span><span class="est-era">'+e.era+'</span><span class="est-periodo">'+e.per+'</span>'+(d?'<span class="est-carimbado">✦ '+fmtData(d)+'</span>':'')+'<span class="arrow">▾</span></div>';
+    var livros=e.livros.map(function(l,li){
+      var item=itemPorTitulo(l.t);
+      var st=item?item.status:null;
+      return '<div class="livro '+l.c+'"><div class="papel">'+l.papel+'</div><div class="tit">'+l.t+' <i>· '+l.a+'</i></div><p>'+l.p+'</p>'+
+        '<div class="livro-acts">'+
+        '<button class="mini'+(st==='lido'?' lido':'')+'" data-li="'+li+'" data-w="lido">'+(st==='lido'?'✓ li':'já li')+'</button>'+
+        '<button class="mini'+(st==='quero'?' quero':'')+'" data-li="'+li+'" data-w="quero">'+(st==='quero'?'→ na mala':'quero ler')+'</button>'+
+        '</div></div>';
     }).join('');
     var daMala=state.mala.filter(function(m){return m.mes===e.id;});
-    var malaHtml=daMala.length?('<div class="est-mala">'+daMala.map(function(m){
-      return '<span class="chip-mes">🧳 '+m.t+(m.status==='lido'?' ✓':'')+'</span>';
+    var malaHtml=daMala.length?('<div class="est-mala"><span class="rot-bag">🧳 Sua bagagem nesta estação</span>'+daMala.map(function(m){
+      return '<span class="bag-item"><b>'+esc(m.t)+'</b>'+(m.a?' <i>· '+esc(m.a)+'</i>':'')+
+        '<button class="mini'+(m.status==='lido'?' lido':'')+'" data-bag="'+m.id+'" data-w="toggle">'+(m.status==='lido'?'✓ lido':'quero ler')+'</button>'+
+        '<button class="mini" data-bag="'+m.id+'" data-w="del">×</button></span>';
     }).join('')+'</div>'):'';
     sec.innerHTML=head+'<div class="est-body"><div class="clima"><span class="rot">O clima da época · dos cards da linha</span>'+e.clima+'</div>'+livros+'<div class="prateleira"><span class="rot">Da própria linha · cards que são leituras</span>'+e.prat+'</div>'+malaHtml+'</div>';
     sec.querySelector('.est-head').addEventListener('click',function(){ sec.classList.toggle('open'); });
+    sec.querySelectorAll('.livro-acts button').forEach(function(b){
+      b.addEventListener('click',function(ev){ ev.stopPropagation(); marcarSugestao(e, e.livros[parseInt(b.dataset.li,10)], b.dataset.w); });
+    });
+    sec.querySelectorAll('[data-bag]').forEach(function(b){
+      b.addEventListener('click',function(ev){
+        ev.stopPropagation();
+        var m=state.mala.find(function(x){return x.id===b.dataset.bag;}); if(!m) return;
+        if(b.dataset.w==='del'){ if(!confirm('Tirar "'+m.t+'" da bagagem?')) return; state.mala=state.mala.filter(function(x){return x!==m;}); }
+        else m.status=(m.status==='lido'?'quero':'lido');
+        persist(); renderMala(); renderEstacoes();
+      });
+    });
     box.appendChild(sec);
   });
 }
@@ -407,7 +448,7 @@ var situoDraft=null;
 function abrirSituo(draft){
   situoDraft=draft;
   var sel=document.getElementById('situoMes'); sel.innerHTML='';
-  ESTACOES.forEach(function(e){ var o=document.createElement('option'); o.value=e.id; o.textContent='Mês '+e.id+' · '+e.era; if(e.id===draft.mes) o.selected=true; sel.appendChild(o); });
+  ESTACOES.forEach(function(e){ var o=document.createElement('option'); o.value=e.id; o.textContent='Estação '+e.id+' · '+e.era; if(e.id===draft.mes) o.selected=true; sel.appendChild(o); });
   if(!draft.mes){ var o2=document.createElement('option'); o2.value=''; o2.textContent='— escolha a estação —'; o2.selected=true; sel.insertBefore(o2,sel.firstChild); }
   document.getElementById('situoTxt').innerHTML=draft.why||'Não consegui situar automaticamente — escolha a estação (ou diga o ano na descrição do app).';
   document.getElementById('situo').classList.add('visible');
@@ -430,7 +471,7 @@ function renderMala(){
     var it=document.createElement('div'); it.className='mala-item';
     it.innerHTML='<div class="t">'+m.t+'</div>'+(m.a?'<div class="a">'+m.a+'</div>':'')+
       (m.why?'<div class="w">'+m.why+'</div>':'')+
-      '<div class="mala-item-foot"><span class="chip-mes">Mês '+m.mes+' · '+mesDaEra(m.mes)+'</span>'+
+      '<div class="mala-item-foot"><span class="chip-mes">Estação '+m.mes+' · '+mesDaEra(m.mes)+'</span>'+
       '<button class="mini'+(m.status==='lido'?' lido':'')+'" data-a="toggle">'+(m.status==='lido'?'✓ lido':'quero ler')+'</button>'+
       '<button class="mini" data-a="del">remover</button></div>';
     it.querySelector('[data-a="toggle"]').addEventListener('click',function(){ m.status=(m.status==='lido'?'quero':'lido'); persist(); renderMala(); renderEstacoes(); });
@@ -450,6 +491,7 @@ document.getElementById('mSituar').addEventListener('click',async function(){
   var a=document.getElementById('mAutor').value.trim();
   var msg=document.getElementById('mMsg');
   if(!t){ msg.textContent='Diga ao menos o título.'; return; }
+  if(!a){ var hit=ACERVO.find(function(b){return norm(b.t)===norm(t);}); if(hit&&hit.a){ a=hit.a; document.getElementById('mAutor').value=a; } }
   if(!SB||!user){
     msg.textContent='Sem login, situe à mão: escolha a estação abaixo.';
     abrirSituo({t:t,a:a,mes:null,why:''});
@@ -467,7 +509,7 @@ document.getElementById('mSituar').addEventListener('click',async function(){
     if(d.narrador) why+=(why?'<br>':'')+'<b>O narrador · a escrita:</b> '+d.narrador;
     var ano=parseAnoDoTexto(d.narrativa||'');
     var mes=mesDoAno(ano);
-    msg.textContent=mes?('Sugestão: Mês '+mes+' — confirme ou ajuste.'):('Li os tempos, mas não cravei a estação — escolha abaixo.');
+    msg.textContent=mes?('Sugestão: Estação '+mes+' — confirme ou ajuste.'):('Li os tempos, mas não cravei a estação — escolha abaixo.');
     abrirSituo({t:t,a:a,mes:mes,why:why});
   }catch(e){ this.disabled=false; msg.textContent='Erro: '+e; abrirSituo({t:t,a:a,mes:null,why:''}); }
 });
@@ -489,13 +531,35 @@ async function cloudLoad(){
     else cloudSave();
   }catch(e){}
   renderStamps(); renderMala(); renderEstacoes();
+  loadAcervo();
+}
+
+/* ───────── acervo do Marginália como sugestão (só leitura) ─────────
+   Lê a Biblioteca do app (marginalia_state) e alimenta o autocomplete
+   do título na mala — o acervo inteiro sempre alocável nas estações. */
+var ACERVO=[];
+async function loadAcervo(){
+  if(!SB||!user) return;
+  try{
+    var r=await SB.from('marginalia_state').select('data').eq('user_id',user.id).maybeSingle();
+    var books=r&&r.data&&r.data.data&&r.data.data.books;
+    if(!Array.isArray(books)) return;
+    ACERVO=books.filter(function(b){return b&&!b.deleted&&b.title;})
+      .map(function(b){return {t:b.title,a:b.author||''};});
+    var dl=document.getElementById('acervoList');
+    if(dl) dl.innerHTML=ACERVO.map(function(b){
+      return '<option value="'+esc(b.t).replace(/"/g,'&quot;')+'">'+esc(b.a)+'</option>';
+    }).join('');
+    var msg=document.getElementById('mMsg');
+    if(msg&&ACERVO.length) msg.textContent='Acervo carregado: '+ACERVO.length+' livros seus aparecem como sugestão enquanto você digita o título.';
+  }catch(e){}
 }
 function syncUI(){
   var st=document.getElementById('syncStatus');
   document.getElementById('syncRow').style.display=user?'none':'flex';
   document.getElementById('syncCodeRow').style.display='none';
   document.getElementById('syncOutRow').style.display=user?'flex':'none';
-  st.innerHTML=user?('Sincronizando como <span class="ok">'+(user.email||'')+'</span> — carimbos, mala e IA ativos em todos os aparelhos.')
+  st.innerHTML=user?('Sincronizando como <span class="ok">'+(user.email||'')+'</span> — carimbos, mala, acervo e IA ativos em todos os aparelhos.')
     :'Carimbos e mala ficam salvos neste aparelho. Entre com seu e-mail (o mesmo do app) para sincronizar entre aparelhos e ativar a IA do "Situar".';
 }
 var pendingEmail='';
