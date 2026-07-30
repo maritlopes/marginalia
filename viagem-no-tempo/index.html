@@ -114,7 +114,9 @@ h2.sec{display:flex;align-items:center;gap:var(--space-3)}
 .mala-item{border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-3) var(--space-4);background:var(--color-surface-2)}
 .mala-item .t{font-family:var(--font-display);font-weight:600;font-size:var(--text-base)}
 .mala-item .a{font-size:var(--text-xs);color:var(--color-text-muted);font-style:italic}
+.mala-item .r{font-family:var(--font-display);font-style:italic;font-size:var(--text-sm);color:var(--color-text);margin-top:var(--space-2);line-height:1.65}
 .mala-item .w{font-size:var(--text-sm);color:var(--color-text-muted);margin-top:var(--space-2);line-height:1.55}
+.situo .res{font-family:var(--font-display);font-style:italic;color:var(--color-text)}
 .mala-item-foot{display:flex;gap:var(--space-2);flex-wrap:wrap;align-items:center;margin-top:var(--space-3)}
 .chip-mes{display:inline-block;font-size:.66rem;letter-spacing:.08em;font-weight:700;border-radius:var(--radius-full);padding:3px 10px;text-transform:uppercase;background:var(--color-primary-glow);color:var(--color-primary);border:1px solid var(--color-primary)}
 .mini{font-size:var(--text-xs);padding:var(--space-1) var(--space-3);border-radius:var(--radius-full);border:1px solid var(--color-border);color:var(--color-text-muted);transition:all var(--transition)}
@@ -482,7 +484,10 @@ function abrirSituo(draft){
   var sel=document.getElementById('situoMes'); sel.innerHTML='';
   ESTACOES.forEach(function(e){ var o=document.createElement('option'); o.value=e.id; o.textContent='Estação '+e.id+' · '+e.era; if(e.id===draft.mes) o.selected=true; sel.appendChild(o); });
   if(!draft.mes){ var o2=document.createElement('option'); o2.value=''; o2.textContent='— escolha a estação —'; o2.selected=true; sel.insertBefore(o2,sel.firstChild); }
-  document.getElementById('situoTxt').innerHTML=draft.why||'Não consegui situar automaticamente — escolha a estação (ou diga o ano na descrição do app).';
+  var sHtml='';
+  if(draft.resenha) sHtml+='<span class="res">✦ '+draft.resenha+'</span>';
+  if(draft.why) sHtml+=(sHtml?'<br><br>':'')+draft.why;
+  document.getElementById('situoTxt').innerHTML=sHtml||'Não consegui situar automaticamente — escolha a estação (ou diga o ano na descrição do app).';
   document.getElementById('situo').classList.add('visible');
 }
 function fecharSituo(){ situoDraft=null; document.getElementById('situo').classList.remove('visible'); }
@@ -491,7 +496,7 @@ document.getElementById('situoSalvar').addEventListener('click',function(){
   if(!situoDraft) return;
   var mes=parseInt(document.getElementById('situoMes').value,10);
   if(!mes){ document.getElementById('mMsg').textContent='Escolha a estação antes de guardar.'; return; }
-  state.mala.push({id:'m'+Date.now(),t:situoDraft.t,a:situoDraft.a||'',mes:mes,why:situoDraft.why||'',status:'quero',ts:hoje()});
+  state.mala.push({id:'m'+Date.now(),t:situoDraft.t,a:situoDraft.a||'',mes:mes,why:situoDraft.why||'',resenha:situoDraft.resenha||'',status:'quero',ts:hoje()});
   persist(); fecharSituo(); renderMala(); renderEstacoes();
   document.getElementById('mTitulo').value=''; document.getElementById('mAutor').value='';
   document.getElementById('mMsg').textContent='Guardado! O livro já aparece na estação dele, lá embaixo.';
@@ -502,6 +507,7 @@ function renderMala(){
   state.mala.slice().sort(function(a,b){return a.mes-b.mes;}).forEach(function(m){
     var it=document.createElement('div'); it.className='mala-item';
     it.innerHTML='<div class="t">'+m.t+'</div>'+(m.a?'<div class="a">'+m.a+'</div>':'')+
+      (m.resenha?'<div class="r">✦ '+m.resenha+'</div>':'')+
       (m.why?'<div class="w">'+m.why+'</div>':'')+
       '<div class="mala-item-foot"><span class="chip-mes">Estação '+m.mes+' · '+mesDaEra(m.mes)+'</span>'+
       '<button class="mini'+(m.status==='lido'?' lido':'')+'" data-a="toggle">'+(m.status==='lido'?'✓ lido':'quero ler')+'</button>'+
@@ -529,20 +535,20 @@ document.getElementById('mSituar').addEventListener('click',async function(){
     abrirSituo({t:t,a:a,mes:null,why:''});
     return;
   }
-  msg.textContent='✦ Perguntando onde este livro vive no tempo…';
+  msg.textContent='✦ Perguntando onde este livro vive no tempo — e escrevendo a resenha…';
   this.disabled=true;
   try{
-    var r=await SB.functions.invoke('ecos',{body:{title:t,author:a,tempo:true}});
+    var r=await SB.functions.invoke('ecos',{body:{title:t,author:a,viagem:true}});
     this.disabled=false;
     var d=r&&r.data;
-    if(r.error||!d||(!d.narrativa&&!d.narrador)){ msg.textContent='Não consegui agora — situe à mão ou tente de novo.'; abrirSituo({t:t,a:a,mes:null,why:''}); return; }
+    if(r.error||!d||(!d.narrativa&&!d.narrador&&!d.resenha)){ msg.textContent='Não consegui agora — situe à mão ou tente de novo.'; abrirSituo({t:t,a:a,mes:null,why:''}); return; }
     var why='';
     if(d.narrativa) why+='<b>A narrativa:</b> '+d.narrativa;
     if(d.narrador) why+=(why?'<br>':'')+'<b>O narrador · a escrita:</b> '+d.narrador;
     var ano=parseAnoDoTexto(d.narrativa||'');
     var mes=mesDoAno(ano);
     msg.textContent=mes?('Sugestão: Estação '+mes+' — confirme ou ajuste.'):('Li os tempos, mas não cravei a estação — escolha abaixo.');
-    abrirSituo({t:t,a:a,mes:mes,why:why});
+    abrirSituo({t:t,a:a,mes:mes,why:why,resenha:d.resenha||''});
   }catch(e){ this.disabled=false; msg.textContent='Erro: '+e; abrirSituo({t:t,a:a,mes:null,why:''}); }
 });
 
