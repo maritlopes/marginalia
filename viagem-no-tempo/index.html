@@ -120,6 +120,14 @@ h2.sec{display:flex;align-items:center;gap:var(--space-3)}
 .mala-item .r{font-family:var(--font-display);font-style:italic;font-size:var(--text-sm);color:var(--color-text);margin-top:var(--space-2);line-height:1.65}
 .mala-item .nota{font-family:var(--font-display);font-style:italic;font-size:var(--text-sm);color:var(--color-primary);margin-top:var(--space-2);line-height:1.6}
 .bag-nota{display:block;flex-basis:100%;font-size:var(--text-xs);font-style:italic;color:var(--color-text-muted);margin-top:2px}
+.det{margin-top:var(--space-2)}
+.det summary{cursor:pointer;font-size:var(--text-xs);font-weight:600;color:var(--color-primary);list-style:none;user-select:none}
+.det summary::-webkit-details-marker{display:none}
+.det summary::after{content:' ▾'}
+.det[open] summary::after{content:' ▴'}
+.det .r{font-family:var(--font-display);font-style:italic;font-size:var(--text-sm);color:var(--color-text);margin-top:var(--space-2);line-height:1.65}
+.det .w{font-size:var(--text-sm);color:var(--color-text-muted);margin-top:var(--space-2);line-height:1.55}
+.bag-det{flex-basis:100%}
 /* mapa do acervo */
 .mapa-est{border-bottom:1px solid var(--color-divider)}
 .mapa-row{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) 0;cursor:pointer}
@@ -242,7 +250,7 @@ footer a{color:var(--color-primary);text-decoration:none}
 </div>
 
 <h2 class="sec"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M9 12v4M15 12v4"/></svg>A mala de livros</h2>
-<p class="sec-sub">Diga um livro — qualquer um, lido ou por ler. A IA do Marginália pergunta <em>onde ele vive no tempo</em> — e mostra a estação a que ele remete, com o porquê. Ajuste se quiser; a palavra final é sua. Conectada, o seu acervo aparece como sugestão enquanto digita.</p>
+<p class="sec-sub">Diga um livro — qualquer um, lido ou por ler. A IA do Marginália pergunta <em>onde ele vive no tempo</em> — e mostra a estação a que ele remete, com o porquê. Ajuste se quiser; a palavra final é sua. Conectada, o seu acervo aparece como sugestão enquanto digita. Livro lido sai da mala e mora na estação dele — a resenha vai junto, guardada num toque.</p>
 <div class="mala">
   <div class="mala-form">
     <input id="mTitulo" placeholder="Título do livro" list="acervoList" autocomplete="off">
@@ -526,8 +534,11 @@ function renderEstacoes(){
     var malaHtml=daMala.length?('<div class="est-mala"><span class="rot-bag">🧳 Sua bagagem nesta estação</span>'+daMala.map(function(m){
       return '<span class="bag-item"><b>'+esc(m.t)+'</b>'+(m.a?' <i>· '+esc(m.a)+'</i>':'')+
         '<button class="mini'+(m.status==='lido'?' lido':'')+'" data-bag="'+m.id+'" data-w="toggle">'+(m.status==='lido'?'✓ lido':'quero ler')+'</button>'+
+        (m.status==='lido'?'<button class="mini" data-bag="'+m.id+'" data-w="nota">'+(m.nota?'✎ editar nota':'✎ nota')+'</button>':'')+
+        (!m.resenha?'<button class="mini" data-bag="'+m.id+'" data-w="resenha">✦ resenha</button>':'')+
         '<button class="mini" data-bag="'+m.id+'" data-w="del">×</button>'+
-        (m.status==='lido'&&m.nota?'<i class="bag-nota">✎ “'+esc(m.nota)+'”</i>':'')+'</span>';
+        (m.status==='lido'&&m.nota?'<i class="bag-nota">✎ “'+esc(m.nota)+'”</i>':'')+
+        ((m.resenha||m.why)?('<details class="det bag-det"><summary>✦ ler a resenha</summary>'+(m.resenha?'<div class="r">'+m.resenha+'</div>':'')+(m.why?'<div class="w">'+m.why+'</div>':'')+'</details>'):'')+'</span>';
     }).join('')+'</div>'):'';
     var fioHtml=e.fio?('<div class="fio"><span class="rot">✦ O fio da tapeçaria</span>'+e.fio+' <a class="fio-link" href="/viagem-no-tempo/tapecaria/">ler o ensaio →</a></div>'):'';
     sec.innerHTML=head+'<div class="est-body"><div class="clima"><span class="rot">O clima da época · dos cards da linha</span>'+e.clima+'</div>'+fioHtml+livros+'<div class="prateleira"><span class="rot">Da própria linha · cards que são leituras</span>'+e.prat+'</div>'+malaHtml+'</div>';
@@ -540,6 +551,11 @@ function renderEstacoes(){
         ev.stopPropagation();
         var m=state.mala.find(function(x){return x.id===b.dataset.bag;}); if(!m) return;
         if(b.dataset.w==='del'){ if(!confirm('Tirar "'+m.t+'" da bagagem?')) return; state.mala=state.mala.filter(function(x){return x!==m;}); }
+        else if(b.dataset.w==='nota'){ abrirNota(b.closest('.bag-item'),m); return; }
+        else if(b.dataset.w==='resenha'){
+          if(!SB||!user){ alert('A resenha precisa de login — painel Sincronização, no fim da página.'); return; }
+          b.textContent='✦ escrevendo…'; b.disabled=true; buscarResenha(m); return;
+        }
         else setLido(m, m.status!=='lido');
         persist(); renderMala(); renderEstacoes(); renderStamps();
       });
@@ -607,7 +623,7 @@ function abrirNota(card,m){
   var inp=f.querySelector('input'); inp.focus();
   inp.addEventListener('keydown',function(ev){ if(ev.key==='Enter') salvar(); });
   f.querySelector('[data-n="ok"]').addEventListener('click',salvar);
-  f.querySelector('[data-n="x"]').addEventListener('click',function(){ renderMala(); });
+  f.querySelector('[data-n="x"]').addEventListener('click',function(){ renderMala(); renderEstacoes(); });
   function salvar(){
     var v=(inp.value||'').trim();
     if(v) m.nota=v; else delete m.nota;
@@ -617,20 +633,16 @@ function abrirNota(card,m){
 function renderMala(){
   var box=document.getElementById('malaList'); box.innerHTML='';
   if(!state.mala.length) return;
-  state.mala.slice().sort(function(a,b){return a.mes-b.mes;}).forEach(function(m){
+  // a mala guarda só os QUERO LER — livro lido mora na estação dele (bagagem)
+  state.mala.slice().filter(function(m){return m.status!=='lido';}).sort(function(a,b){return a.mes-b.mes;}).forEach(function(m){
     var it=document.createElement('div'); it.className='mala-item';
     it.innerHTML='<div class="t">'+m.t+'</div>'+(m.a?'<div class="a">'+m.a+'</div>':'')+
-      (m.resenha?'<div class="r">✦ '+m.resenha+'</div>':'')+
-      (m.why?'<div class="w">'+m.why+'</div>':'')+
-      (m.status==='lido'&&m.nota?'<div class="nota">✎ “'+esc(m.nota)+'”</div>':'')+
+      ((m.resenha||m.why)?('<details class="det"><summary>✦ ler a resenha</summary>'+(m.resenha?'<div class="r">'+m.resenha+'</div>':'')+(m.why?'<div class="w">'+m.why+'</div>':'')+'</details>'):'')+
       '<div class="mala-item-foot"><span class="chip-mes">Estação '+m.mes+' · '+mesDaEra(m.mes)+'</span>'+
-      '<button class="mini'+(m.status==='lido'?' lido':'')+'" data-a="toggle">'+(m.status==='lido'?'✓ lido':'quero ler')+'</button>'+
-      (m.status==='lido'?'<button class="mini" data-a="nota">'+(m.nota?'editar nota':'✎ nota da chegada')+'</button>':'')+
+      '<button class="mini" data-a="toggle">✓ li — carimbar</button>'+
       (!m.resenha?'<button class="mini" data-a="resenha">✦ resenha</button>':'')+
       '<button class="mini" data-a="del">remover</button></div>';
-    it.querySelector('[data-a="toggle"]').addEventListener('click',function(){ setLido(m, m.status!=='lido'); persist(); renderMala(); renderEstacoes(); renderStamps(); });
-    var bn=it.querySelector('[data-a="nota"]');
-    if(bn) bn.addEventListener('click',function(){ abrirNota(it,m); });
+    it.querySelector('[data-a="toggle"]').addEventListener('click',function(){ setLido(m,true); persist(); renderMala(); renderEstacoes(); renderStamps(); document.getElementById('mMsg').textContent='✓ '+m.t+' virou parada na Estação '+m.mes+' — a resenha mora lá agora.'; });
     var br=it.querySelector('[data-a="resenha"]');
     if(br) br.addEventListener('click',function(){
       if(!SB||!user){ document.getElementById('mMsg').textContent='A resenha precisa de login — painel Sincronização, abaixo.'; return; }
