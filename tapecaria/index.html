@@ -39,6 +39,15 @@ button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
 .hero-sub{font-size:var(--text-base);color:var(--color-text-muted);max-width:62ch;margin:0 auto;line-height:1.7}
 .hero-links{margin-top:var(--space-4);font-size:var(--text-sm)}
 .hero-links a{color:var(--color-primary);text-decoration:none;font-weight:500}
+.fio-trail{display:block;width:min(520px,88%);margin:0 auto calc(-1*var(--space-2));color:var(--color-primary);opacity:.8}
+.agulha{transform:translate(468px,6px) rotate(0deg);animation:agulhaFloat 4.5s ease-in-out infinite alternate}
+@keyframes agulhaFloat{from{transform:translate(468px,8px) rotate(2deg)}to{transform:translate(470px,2px) rotate(-3deg)}}
+@media (prefers-reduced-motion:reduce){.agulha{animation:none}}
+.lnk-ico{width:15px;height:15px;vertical-align:-2px;margin-right:3px}
+h2.sec{display:flex;align-items:center;gap:var(--space-3);font-family:var(--font-display);font-weight:600;font-size:var(--text-xl);margin:var(--space-8) 0 var(--space-2)}
+.sec-ico{width:22px;height:22px;color:var(--color-primary);flex-shrink:0}
+.tec-sec .rot{display:flex;align-items:center;gap:6px}
+.tec-sec .rot svg{width:13px;height:13px;flex-shrink:0}
 .stats{display:flex;gap:var(--space-3);justify-content:center;flex-wrap:wrap;margin-top:var(--space-5);font-size:var(--text-xs);color:var(--color-text-faint)}
 .stats b{color:var(--color-text);font-family:var(--font-display);font-size:var(--text-base)}
 .busca{margin:var(--space-4) 0 var(--space-6)}
@@ -92,9 +101,13 @@ footer a{color:var(--color-primary);text-decoration:none}
 
 <section class="hero">
   <p class="hero-eyebrow">O seu acervo, tecido na história</p>
+  <svg class="fio-trail" viewBox="0 0 560 80" fill="none" aria-hidden="true">
+    <path d="M10 62 C 90 74, 160 26, 250 40 C 340 54, 400 24, 462 30" stroke="currentColor" stroke-width="1.5" stroke-dasharray="1 8" stroke-linecap="round"/>
+    <g class="agulha"><path d="M0 24 L26 -2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="23" cy="1" r="2.6" stroke="currentColor" stroke-width="1.4"/></g>
+  </svg>
   <h1 class="hero-title">A Tapeçaria <em>do Tempo</em></h1>
   <p class="hero-sub">Cada livro da sua biblioteca envolto nas vozes do seu tempo: a resenha, o que se pensava na época, a filosofia e as ideias que permeiam a narrativa, a música, as artes, o cinema — e o fio que liga a obra à grande conversa da cultura. O fio de cada livro é tecido uma única vez, e fica seu.</p>
-  <p class="hero-links"><a href="ensaio/">✦ Ler o ensaio — a tese da tapeçaria</a> &nbsp;·&nbsp; <a href="/viagem-no-tempo/">🧳 Travessia</a> &nbsp;·&nbsp; <a href="/linha-do-tempo/">✦ Linha do Tempo</a></p>
+  <p class="hero-links"><a href="ensaio/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-2px;margin-right:3px"><path d="M20.2 12.2a6 6 0 0 0-8.5-8.5L5 10.5V19h8.5Z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg>Ler o ensaio — a tese da tapeçaria</a> &nbsp;·&nbsp; <a href="/viagem-no-tempo/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-2px;margin-right:3px"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M9 12v4M15 12v4"/></svg>Travessia</a> &nbsp;·&nbsp; <a href="/linha-do-tempo/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-2px;margin-right:3px"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h6.5a3.5 3.5 0 0 0 0-7h-5a3.5 3.5 0 0 1 0-7H16"/></svg>Linha do Tempo</a></p>
   <div class="stats" id="stats" style="display:none"><span><b id="stLivros">0</b> livros</span><span>·</span><span><b id="stFios">0</b> fios tecidos</span></div>
 </section>
 
@@ -102,6 +115,7 @@ footer a{color:var(--color-primary);text-decoration:none}
 
 <div class="aviso" id="avisoLogin">A tapeçaria é tecida sobre o <strong>seu acervo</strong> — entre com o seu e-mail (o mesmo do app) no painel de <a href="#sync">Sincronização</a>, logo abaixo, e a sua biblioteca aparece aqui, organizada pelas eras da <a href="/viagem-no-tempo/">Travessia</a>.</div>
 
+<h2 class="sec"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>O tecido, era a era</h2>
 <div class="busca" id="busca" style="display:none"><input id="buscaInp" type="search" placeholder="Buscar um livro no acervo…" autocomplete="off"></div>
 
 <div id="eras"></div>
@@ -159,6 +173,7 @@ var ERAS=[
  {id:11,era:'Pós-Guerra',per:'1945 – 1989'},
  {id:12,era:'O Agora',per:'1989 – hoje'}
 ];
+var TECICO={"resenha": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20.2 12.2a6 6 0 0 0-8.5-8.5L5 10.5V19h8.5Z\"/><path d=\"M16 8 2 22\"/><path d=\"M17.5 15H9\"/></svg>", "epoca": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 22h18\"/><path d=\"M6 18v-7M10 18v-7M14 18v-7M18 18v-7\"/><path d=\"M12 2 20 7H4Z\"/></svg>", "ideias": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 18h6M10 22h4\"/><path d=\"M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2Z\"/></svg>", "musica": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 18V5l12-2v13\"/><circle cx=\"6\" cy=\"18\" r=\"3\"/><circle cx=\"18\" cy=\"16\" r=\"3\"/></svg>", "artes": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 22a10 10 0 1 1 10-10c0 1.7-1.3 3-3 3h-2a2 2 0 0 0-2 2c0 .6.2 1.1.6 1.5.3.4.4.9.4 1.5a2 2 0 0 1-2 2Z\"/><circle cx=\"7.5\" cy=\"10.5\" r=\".8\"/><circle cx=\"12\" cy=\"7.5\" r=\".8\"/><circle cx=\"16.5\" cy=\"10.5\" r=\".8\"/></svg>", "cinema": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/><path d=\"M7 3v18M17 3v18M3 8h4M3 16h4M17 8h4M17 16h4\"/></svg>", "vizinhos": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2Z\"/><path d=\"M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7Z\"/></svg>", "fio": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 3l-8.5 8.5\"/><circle cx=\"20\" cy=\"4\" r=\"1.6\"/><path d=\"M12.5 11.5C10 14 8.5 11 6 13.5S4.5 18 2 20\"/></svg>"};
 var SECOES=[
  {k:'resenha',rot:'A resenha',cls:'resenha'},
  {k:'epoca',rot:'O que se vivia'},
@@ -291,7 +306,7 @@ async function montarTecido(row){
 function tecidoHtml(d){
   return SECOES.map(function(s){
     var v=d&&d[s.k]; if(!v) return '';
-    return '<div class="tec-sec '+(s.cls||'')+'"><span class="rot">'+s.rot+'</span><p>'+esc(v)+'</p></div>';
+    return '<div class="tec-sec '+(s.cls||'')+'"><span class="rot">'+(TECICO[s.k]||'')+s.rot+'</span><p>'+esc(v)+'</p></div>';
   }).join('')||'<p style="font-size:var(--text-sm)">fio vazio — teça de novo.</p>';
 }
 

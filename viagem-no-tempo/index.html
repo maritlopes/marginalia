@@ -131,7 +131,7 @@ h2.sec{display:flex;align-items:center;gap:var(--space-3)}
 /* mapa do acervo */
 .mapa-est{border-bottom:1px solid var(--color-divider)}
 .mapa-row{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) 0;cursor:pointer}
-.mapa-row .nome{font-family:var(--font-display);font-size:var(--text-sm);font-weight:600;min-width:140px}
+.mapa-row .nome{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-display);font-size:var(--text-sm);font-weight:600;min-width:140px}
 .mapa-bar{flex:1;height:10px;border-radius:99px;background:var(--color-surface-3);overflow:hidden}
 .mapa-fill{display:block;height:100%;background:var(--color-primary);border-radius:99px}
 .mapa-count{font-size:var(--text-xs);color:var(--color-text-muted);min-width:64px;text-align:right}
@@ -165,7 +165,7 @@ h2.sec{display:flex;align-items:center;gap:var(--space-3)}
 .est-head .arrow{margin-left:auto;color:var(--color-text-faint);transition:transform .25s}
 .estacao.open .est-head .arrow{transform:rotate(180deg)}
 .est-carimbado{font-size:.72rem;color:var(--carimbo);font-weight:600}
-.est-bag{font-size:.72rem;color:var(--color-text-muted);font-weight:600}
+.est-bag{display:inline-flex;align-items:center;gap:4px;font-size:.72rem;color:var(--color-text-muted);font-weight:600}
 .est-body{display:none;padding:var(--space-4) var(--space-5) var(--space-5)}
 .estacao.open .est-body{display:block}
 .clima{font-size:var(--text-sm);color:var(--color-text-muted);background:var(--color-surface-2);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);margin-bottom:var(--space-4);line-height:1.65}
@@ -187,7 +187,7 @@ h2.sec{display:flex;align-items:center;gap:var(--space-3)}
 .prateleira{margin-top:var(--space-4);font-size:var(--text-sm);color:var(--color-text-muted);font-style:italic;background:var(--color-surface-2);border:1px dashed var(--color-border);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);line-height:1.7}
 .prateleira .rot{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--fora);font-weight:700;display:block;font-style:normal;margin-bottom:3px}
 .est-mala{margin-top:var(--space-4);display:flex;flex-direction:column;gap:var(--space-2);background:var(--color-surface-2);border:1px dashed var(--color-border);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4)}
-.rot-bag{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--carimbo);font-weight:700}
+.rot-bag{display:flex;align-items:center;gap:6px;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--carimbo);font-weight:700}
 .bag-item{display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;font-size:var(--text-sm)}
 .bag-item b{font-family:var(--font-display);font-weight:600}
 .bag-item i{color:var(--color-text-faint);font-size:var(--text-xs);font-style:italic}
@@ -222,7 +222,7 @@ footer a{color:var(--color-primary);text-decoration:none}
   <h1 class="hero-title"><em>Travessia</em></h1>
   <p class="hero-tag">uma viagem via ficção</p>
   <p class="hero-sub">Doze estações pela Linha do Tempo da Civilização — a ficção como máquina do tempo, sem prazo nem calendário: cada estação dura o quanto a leitura pedir. A travessia é temática: o que ordena as estações é o <strong>tempo da narrativa</strong> (quando a história se passa), nunca a data em que o livro foi escrito.</p>
-  <p class="hero-links"><a href="/tapecaria/">🧵 A Tapeçaria do Tempo — o acervo tecido na história</a><br><a href="/linha-do-tempo/">✦ Linha do Tempo</a> &nbsp;·&nbsp; <a href="/maratona-nobel/">🏅 Maratona Nobel</a></p>
+  <p class="hero-links"><a href="/tapecaria/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-2px;margin-right:3px"><path d="M21 3l-8.5 8.5"/><circle cx="20" cy="4" r="1.6"/><path d="M12.5 11.5C10 14 8.5 11 6 13.5S4.5 18 2 20"/></svg>A Tapeçaria do Tempo — o acervo tecido na história</a><br><a href="/linha-do-tempo/">✦ Linha do Tempo</a> &nbsp;·&nbsp; <a href="/maratona-nobel/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-2px;margin-right:3px"><circle cx="12" cy="9" r="6"/><path d="M15.5 14 17 22l-5-3-5 3 1.5-8"/></svg>Maratona Nobel</a></p>
 </section>
 
 <main class="container">
@@ -522,7 +522,7 @@ function renderEstacoes(){
     var d=state.carimbos[e.id];
     var daMala=state.mala.filter(function(m){return m.mes===e.id;})
       .sort(function(a,b){ return (a.status==='lido'?0:1)-(b.status==='lido'?0:1); });
-    var head='<div class="est-head"><span class="est-mes">Estação '+e.id+'</span><span class="est-era">'+e.era+'</span><span class="est-periodo">'+e.per+'</span>'+(d?'<span class="est-carimbado">✦ '+fmtData(d)+'</span>':'')+(daMala.length?'<span class="est-bag">🧳 '+daMala.length+'</span>':'')+'<span class="arrow">▾</span></div>';
+    var head='<div class="est-head"><span class="est-mes">Estação '+e.id+'</span><span class="est-era">'+e.era+'</span><span class="est-periodo">'+e.per+'</span>'+(d?'<span class="est-carimbado">✦ '+fmtData(d)+'</span>':'')+(daMala.length?'<span class="est-bag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;vertical-align:-1px"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M9 12v4M15 12v4"/></svg> '+daMala.length+'</span>':'')+'<span class="arrow">▾</span></div>';
     var livros=e.livros.map(function(l,li){
       var item=itemPorTitulo(l.t);
       var st=item?item.status:null;
@@ -532,7 +532,7 @@ function renderEstacoes(){
         '<button class="mini'+(st==='quero'?' quero':'')+'" data-li="'+li+'" data-w="quero">'+(st==='quero'?'→ na mala':'quero ler')+'</button>'+
         '</div></div>';
     }).join('');
-    var malaHtml=daMala.length?('<div class="est-mala"><span class="rot-bag">🧳 Sua bagagem nesta estação</span>'+daMala.map(function(m){
+    var malaHtml=daMala.length?('<div class="est-mala"><span class="rot-bag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;vertical-align:-1px"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M9 12v4M15 12v4"/></svg> Sua bagagem nesta estação</span>'+daMala.map(function(m){
       return '<span class="bag-item"><b>'+esc(m.t)+'</b>'+(m.a?' <i>· '+esc(m.a)+'</i>':'')+
         '<button class="mini'+(m.status==='lido'?' lido':'')+'" data-bag="'+m.id+'" data-w="toggle">'+(m.status==='lido'?'✓ lido':'quero ler')+'</button>'+
         (m.status==='lido'?'<button class="mini" data-bag="'+m.id+'" data-w="nota">'+(m.nota?'✎ editar nota':'✎ nota')+'</button>':'')+
@@ -609,7 +609,7 @@ function guardarDaMala(comoLido){
   document.getElementById('mTitulo').value=''; document.getElementById('mAutor').value='';
   document.getElementById('mMsg').textContent=comoLido
     ? '✓ Parada registrada — o livro entrou no carimbo da Estação '+mes+' e a chegada foi carimbada. A ✎ nota da chegada espera na bagagem da estação.'
-    : 'Guardado! O livro espera na bagagem da Estação '+mes+', lá embaixo (repare no 🧳 do cabeçalho).';
+    : 'Guardado! O livro espera na bagagem da Estação '+mes+', lá embaixo (repare na maleta do cabeçalho).';
 }
 document.getElementById('situoSalvar').addEventListener('click',function(){ guardarDaMala(false); });
 document.getElementById('situoSalvarLido').addEventListener('click',function(){ guardarDaMala(true); });
@@ -818,7 +818,7 @@ function renderMapa(){
     html+='<div class="mapa-est"><div class="mapa-row"><span class="nome">'+e.id+' · '+era+'</span><span class="mapa-bar"><span class="mapa-fill" style="width:'+pct+'%"></span></span><span class="mapa-count">'+l.length+(l.length===1?' livro':' livros')+'</span></div>'
       +'<div class="mapa-livros">'+(l.length?chips(l.slice()):'<span style="font-size:var(--text-xs);color:var(--color-text-faint);font-style:italic">nenhum livro situado aqui — por enquanto.</span>')+'</div></div>';
   });
-  if(fora.length) html+='<div class="mapa-est"><div class="mapa-row"><span class="nome">✈ Fora do mapa</span><span class="mapa-bar"></span><span class="mapa-count">'+fora.length+'</span></div><div class="mapa-livros">'+chips(fora.slice())+'</div></div>';
+  if(fora.length) html+='<div class="mapa-est"><div class="mapa-row"><span class="nome"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;vertical-align:-1px"><path d="m21 3-7 19-3.5-8.5L2 10Z"/><path d="M21 3 10.5 13.5"/></svg> Fora do mapa</span><span class="mapa-bar"></span><span class="mapa-count">'+fora.length+'</span></div><div class="mapa-livros">'+chips(fora.slice())+'</div></div>';
   box.innerHTML=html;
   if(msg&&!alocando) msg.textContent=keys.length+' livros situados · toque numa estação para abrir a prateleira, num livro para levá-lo à mala.';
   box.querySelectorAll('.mapa-row').forEach(function(r){ r.addEventListener('click',function(){ var lv=r.parentElement.querySelector('.mapa-livros'); lv.style.display=(lv.style.display==='block'?'none':'block'); }); });
