@@ -222,7 +222,7 @@ footer a{color:var(--color-primary);text-decoration:none}
   <h1 class="hero-title"><em>Travessia</em></h1>
   <p class="hero-tag">uma viagem via ficção</p>
   <p class="hero-sub">Doze estações pela Linha do Tempo da Civilização — a ficção como máquina do tempo, sem prazo nem calendário: cada estação dura o quanto a leitura pedir. A travessia é temática: o que ordena as estações é o <strong>tempo da narrativa</strong> (quando a história se passa), nunca a data em que o livro foi escrito.</p>
-  <p class="hero-links"><a href="tapecaria/">✦ A Tapeçaria do Tempo — o ensaio que inspirou a viagem</a><br><a href="/linha-do-tempo/">✦ Linha do Tempo</a> &nbsp;·&nbsp; <a href="/maratona-nobel/">🏅 Maratona Nobel</a></p>
+  <p class="hero-links"><a href="/tapecaria/">🧵 A Tapeçaria do Tempo — o acervo tecido na história</a><br><a href="/linha-do-tempo/">✦ Linha do Tempo</a> &nbsp;·&nbsp; <a href="/maratona-nobel/">🏅 Maratona Nobel</a></p>
 </section>
 
 <main class="container">
@@ -541,7 +541,7 @@ function renderEstacoes(){
         (m.status==='lido'&&m.nota?'<i class="bag-nota">✎ “'+esc(m.nota)+'”</i>':'')+
         ((m.resenha||m.why)?('<details class="det bag-det"><summary>✦ ler a resenha</summary>'+(m.resenha?'<div class="r">'+m.resenha+'</div>':'')+(m.why?'<div class="w">'+m.why+'</div>':'')+'</details>'):'')+'</span>';
     }).join('')+'</div>'):'';
-    var fioHtml=e.fio?('<div class="fio"><span class="rot">✦ O fio da tapeçaria</span>'+e.fio+' <a class="fio-link" href="/viagem-no-tempo/tapecaria/">ler o ensaio →</a></div>'):'';
+    var fioHtml=e.fio?('<div class="fio"><span class="rot">✦ O fio da tapeçaria</span>'+e.fio+' <a class="fio-link" href="/tapecaria/ensaio/">ler o ensaio →</a></div>'):'';
     sec.innerHTML=head+'<div class="est-body"><div class="clima"><span class="rot">O clima da época · dos cards da linha</span>'+e.clima+'</div>'+fioHtml+livros+'<div class="prateleira"><span class="rot">Da própria linha · cards que são leituras</span>'+e.prat+'</div>'+malaHtml+'</div>';
     sec.querySelector('.est-head').addEventListener('click',function(){ sec.classList.toggle('open'); });
     sec.querySelectorAll('.livro-acts button').forEach(function(b){

@@ -743,6 +743,33 @@ function HomeVariantA({ onNav = () => {} }) {
           </div>
         </a>
 
+        {/* PORTAL — convite para a Tapeçaria do Tempo (página irmã) */}
+        <a href="/tapecaria/" style={{ textDecoration: 'none', display: 'block', marginBottom: 22 }}>
+          <div style={{
+            background: T.ink, color: T.cream, borderRadius: 14, padding: '18px 18px 16px',
+            position: 'relative', overflow: 'hidden',
+          }}>
+            <div style={{ position: 'absolute', right: -14, top: -14, opacity: 0.12, pointerEvents: 'none' }}>
+              <svg viewBox="0 0 24 24" width="108" height="108" fill="none">
+                <path d="M3 4h18M3 8h18M3 12h18M3 16h18M3 20h18" stroke={T.cream} strokeWidth="0.9"/>
+                <path d="M5 2v20M9 2v20M13 2v20M17 2v20M21 2v20" stroke={T.cream} strokeWidth="0.9" opacity="0.7"/>
+              </svg>
+            </div>
+            <div style={{ fontSize: 9, letterSpacing: 1.8, textTransform: 'uppercase', color: T.ochre, fontWeight: 700, marginBottom: 8 }}>
+              ✦ Portal · o acervo tecido na história
+            </div>
+            <div style={{ fontFamily: T.serif, fontSize: 20, fontWeight: 500, lineHeight: 1.15, marginBottom: 8 }}>
+              A Tapeçaria do Tempo
+            </div>
+            <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, lineHeight: 1.5, color: 'rgba(247,241,228,0.82)', marginBottom: 12, maxWidth: '92%' }}>
+              Cada livro seu envolto nas vozes do seu tempo — o que se pensava, a música, as artes, o cinema. O fio de cada obra, tecido uma vez, guardado pra sempre.
+            </div>
+            <div style={{ fontSize: 11, letterSpacing: 0.6, fontWeight: 700, color: T.ochre, textTransform: 'uppercase' }}>
+              Puxar o fio →
+            </div>
+          </div>
+        </a>
+
         {/* PORTAL — convite para o Nobel de Literatura (página irmã) */}
         <a href="/nobel/" style={{ textDecoration: 'none', display: 'block', marginBottom: 22 }}>
           <div style={{

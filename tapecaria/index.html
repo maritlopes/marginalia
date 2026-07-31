@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#EFE8DA">
+<meta name="description" content="A Tapeçaria do Tempo — o seu acervo tecido na história: cada livro com sua resenha, as ideias, a música, as artes e o cinema do tempo da narrativa.">
+<title>A Tapeçaria do Tempo · Marginália</title>
+<link rel="icon" href="/symbol.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--font-display:'Fraunces','Georgia',serif;--font-body:'Inter',system-ui,sans-serif;
+--text-xs:clamp(.75rem,.7rem + .25vw,.875rem);--text-sm:clamp(.875rem,.8rem + .35vw,1rem);--text-base:clamp(1rem,.95rem + .25vw,1.125rem);--text-lg:clamp(1.125rem,1rem + .75vw,1.5rem);--text-xl:clamp(1.5rem,1.2rem + 1.25vw,2.25rem);--text-hero:clamp(2.1rem,1rem + 4vw,4rem);
+--space-1:.25rem;--space-2:.5rem;--space-3:.75rem;--space-4:1rem;--space-5:1.25rem;--space-6:1.5rem;--space-8:2rem;--space-10:2.5rem;--space-12:3rem;
+--radius-md:.5rem;--radius-lg:.75rem;--radius-full:9999px;--transition:180ms cubic-bezier(.16,1,.3,1)}
+[data-theme="dark"]{--color-bg:#1A1612;--color-surface:#221E18;--color-surface-2:#2A2620;--color-surface-3:#322C24;--color-border:rgba(247,241,228,.12);--color-divider:rgba(247,241,228,.07);--color-text:#EFE8DA;--color-text-muted:#B8AE9C;--color-text-faint:#7A7263;--color-primary:#C9836E;--ochre:#DBA943;--fora:#82B07B;--shadow-md:0 4px 24px rgba(0,0,0,.45)}
+[data-theme="light"]{--color-bg:#EFE8DA;--color-surface:#F7F1E4;--color-surface-2:#FBF6EA;--color-surface-3:#E8DFC9;--color-border:rgba(42,38,32,.16);--color-divider:rgba(42,38,32,.09);--color-text:#2A2620;--color-text-muted:#6E6352;--color-text-faint:#9A8E7B;--color-primary:#B0533A;--ochre:#A87513;--fora:#5E6B3E;--shadow-md:0 4px 24px rgba(42,38,32,.07)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);font-size:var(--text-base);background:var(--color-bg);color:var(--color-text);min-height:100dvh;line-height:1.6;transition:background .3s,color .3s}
+button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
+.container{max-width:900px;margin:0 auto;padding:0 var(--space-6) var(--space-12)}
+.site-header{position:sticky;top:0;z-index:100;background:var(--color-surface);border-bottom:1px solid var(--color-border);backdrop-filter:blur(12px)}
+.header-inner{max-width:1200px;margin:0 auto;padding:var(--space-4) var(--space-6);display:flex;align-items:center;justify-content:space-between;gap:var(--space-4)}
+.logo{display:flex;align-items:center;gap:.5rem;text-decoration:none;color:var(--color-text)}
+.logo-title{font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;color:var(--color-primary);white-space:nowrap}
+.logo-em{font-family:var(--font-display);font-style:italic;font-size:var(--text-sm);color:var(--color-text-faint)}
+.logo-mark-mg{width:24px;height:24px;object-fit:contain;border-radius:5px}
+.logo-mg{font-family:var(--font-display);font-size:var(--text-lg);font-weight:600}
+@media(max-width:560px){.logo-em,.logo-mg,.logo-mark-mg{display:none}}
+.theme-toggle{width:38px;height:38px;border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;color:var(--color-text-muted);border:1px solid var(--color-border);transition:all var(--transition)}
+.theme-toggle:hover{color:var(--color-text);border-color:var(--color-primary)}
+.hero{max-width:900px;margin:0 auto;padding:var(--space-12) var(--space-6) var(--space-8);text-align:center}
+.hero-eyebrow{font-size:var(--text-xs);letter-spacing:.18em;text-transform:uppercase;color:var(--color-primary);font-weight:500;margin-bottom:var(--space-4)}
+.hero-title{font-family:var(--font-display);font-size:var(--text-hero);font-weight:600;line-height:1.05;margin-bottom:var(--space-4);letter-spacing:-.01em}
+.hero-title em{font-style:italic;color:var(--color-primary)}
+.hero-sub{font-size:var(--text-base);color:var(--color-text-muted);max-width:62ch;margin:0 auto;line-height:1.7}
+.hero-links{margin-top:var(--space-4);font-size:var(--text-sm)}
+.hero-links a{color:var(--color-primary);text-decoration:none;font-weight:500}
+.stats{display:flex;gap:var(--space-3);justify-content:center;flex-wrap:wrap;margin-top:var(--space-5);font-size:var(--text-xs);color:var(--color-text-faint)}
+.stats b{color:var(--color-text);font-family:var(--font-display);font-size:var(--text-base)}
+.busca{margin:var(--space-4) 0 var(--space-6)}
+.busca input{width:100%;padding:var(--space-4);border:1px solid var(--color-border);border-radius:var(--radius-lg);font-family:var(--font-body);font-size:var(--text-base);background:var(--color-surface);color:var(--color-text)}
+.busca input:focus{outline:none;border-color:var(--color-primary)}
+.era{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);margin-bottom:var(--space-4);overflow:hidden}
+.era-head{padding:var(--space-4) var(--space-5);display:flex;align-items:baseline;gap:var(--space-3);cursor:pointer;user-select:none;flex-wrap:wrap}
+.era-num{font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;font-weight:700;color:#fff;background:var(--color-primary);border-radius:var(--radius-full);padding:4px 12px;align-self:center}
+.era-nome{font-family:var(--font-display);font-size:var(--text-lg);font-weight:600}
+.era-per{font-size:var(--text-xs);color:var(--color-text-faint)}
+.era-count{margin-left:auto;font-size:var(--text-xs);color:var(--color-text-muted)}
+.era-head .arrow{color:var(--color-text-faint);transition:transform .25s}
+.era.open .era-head .arrow{transform:rotate(180deg)}
+.era-body{display:none;padding:0 var(--space-5) var(--space-4)}
+.era.open .era-body{display:block}
+.livro-row{border-top:1px solid var(--color-divider);padding:var(--space-3) 0;cursor:pointer}
+.livro-row .lin{display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap}
+.livro-row .t{font-family:var(--font-display);font-weight:600;font-size:var(--text-base)}
+.livro-row .a{font-size:var(--text-xs);color:var(--color-text-faint);font-style:italic}
+.tag{font-size:.62rem;letter-spacing:.08em;font-weight:700;text-transform:uppercase;border-radius:var(--radius-full);padding:2px 9px}
+.tag.lido{background:var(--fora);color:#fff}
+.tag.fio{border:1px solid var(--ochre);color:var(--ochre)}
+.tecido{display:none;margin-top:var(--space-3);border-left:3px solid var(--ochre);padding-left:var(--space-4)}
+.livro-row.open .tecido{display:block}
+.tec-sec{margin-bottom:var(--space-3)}
+.tec-sec .rot{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ochre);font-weight:700;display:block;margin-bottom:2px}
+.tec-sec p{font-size:var(--text-sm);color:var(--color-text-muted);line-height:1.7}
+.tec-sec.resenha p,.tec-sec.fio-final p{font-family:var(--font-display);font-style:italic;color:var(--color-text)}
+.btn{font-weight:500;font-size:var(--text-sm);padding:var(--space-3) var(--space-5);border-radius:var(--radius-full);border:1px solid var(--color-primary);background:var(--color-primary);color:#fff;transition:all var(--transition);white-space:nowrap}
+.btn:hover{opacity:.92}
+.btn.ghost{background:transparent;color:var(--color-text-muted);border-color:var(--color-border)}
+.aviso{font-size:var(--text-sm);color:var(--color-text-muted);background:var(--color-surface);border:1px dashed var(--color-border);border-radius:var(--radius-lg);padding:var(--space-4) var(--space-5);margin:var(--space-4) 0;line-height:1.7}
+.aviso a{color:var(--color-primary)}
+.sync{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6);margin:var(--space-8) 0}
+.sync-head{font-family:var(--font-display);font-weight:600;font-size:var(--text-base);margin-bottom:var(--space-3);display:flex;align-items:center;gap:var(--space-2)}
+.sync-status{font-size:var(--text-sm);color:var(--color-text-muted)}
+.sync-status .ok{color:var(--color-primary);font-weight:600}
+.sync-row{display:flex;gap:var(--space-2);flex-wrap:wrap;align-items:center;margin-top:var(--space-3)}
+.sync-row input{flex:1;min-width:180px;padding:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);font-family:var(--font-body);font-size:var(--text-base);background:var(--color-bg);color:var(--color-text)}
+footer{border-top:1px solid var(--color-border);margin-top:var(--space-12);padding:var(--space-8) 0 var(--space-12);text-align:center;color:var(--color-text-faint);font-size:var(--text-sm)}
+footer a{color:var(--color-primary);text-decoration:none}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a href="/" class="logo"><span class="logo-title">A Tapeçaria</span><span class="logo-em">em</span><img class="logo-mark-mg" src="/symbol.png" alt=""/><span class="logo-mg">Marginália</span></a>
+    <button class="theme-toggle" id="themeToggle" title="Alternar tema"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+  </div>
+</header>
+
+<section class="hero">
+  <p class="hero-eyebrow">O seu acervo, tecido na história</p>
+  <h1 class="hero-title">A Tapeçaria <em>do Tempo</em></h1>
+  <p class="hero-sub">Cada livro da sua biblioteca envolto nas vozes do seu tempo: a resenha, o que se pensava na época, a filosofia e as ideias que permeiam a narrativa, a música, as artes, o cinema — e o fio que liga a obra à grande conversa da cultura. O fio de cada livro é tecido uma única vez, e fica seu.</p>
+  <p class="hero-links"><a href="ensaio/">✦ Ler o ensaio — a tese da tapeçaria</a> &nbsp;·&nbsp; <a href="/viagem-no-tempo/">🧳 Travessia</a> &nbsp;·&nbsp; <a href="/linha-do-tempo/">✦ Linha do Tempo</a></p>
+  <div class="stats" id="stats" style="display:none"><span><b id="stLivros">0</b> livros</span><span>·</span><span><b id="stFios">0</b> fios tecidos</span></div>
+</section>
+
+<main class="container">
+
+<div class="aviso" id="avisoLogin">A tapeçaria é tecida sobre o <strong>seu acervo</strong> — entre com o seu e-mail (o mesmo do app) no painel de <a href="#sync">Sincronização</a>, logo abaixo, e a sua biblioteca aparece aqui, organizada pelas eras da <a href="/viagem-no-tempo/">Travessia</a>.</div>
+
+<div class="busca" id="busca" style="display:none"><input id="buscaInp" type="search" placeholder="Buscar um livro no acervo…" autocomplete="off"></div>
+
+<div id="eras"></div>
+
+<div class="sync" id="sync">
+  <div class="sync-head"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--color-primary)"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>Sincronização</div>
+  <div class="sync-status" id="syncStatus">Entre com seu e-mail (o mesmo do app) — chega um código. 🔒 Só você vê o seu acervo e os seus fios.</div>
+  <div class="sync-row" id="syncRow">
+    <input id="syncEmail" type="email" placeholder="seu e-mail">
+    <button class="btn" id="syncSend">Enviar código</button>
+  </div>
+  <div class="sync-row" id="syncCodeRow" style="display:none">
+    <input id="syncCode" inputmode="numeric" placeholder="código de 6 dígitos">
+    <button class="btn" id="syncVerify">Entrar</button>
+  </div>
+  <div class="sync-row" id="syncOutRow" style="display:none">
+    <button class="btn ghost" id="syncOut">Sair</button>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  <p>A Tapeçaria do Tempo · um projeto do <a href="/">Marginália</a></p>
+  <p style="margin-top:6px"><a href="ensaio/">O ensaio</a> · <a href="/viagem-no-tempo/">Travessia</a> · <a href="/linha-do-tempo/">Linha do Tempo</a> · <a href="/nobel/">Nobel</a></p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+'use strict';
+/* ───────── tema (compartilhado com a Travessia) ───────── */
+(function(){
+  var KEY='marginalia-viagem-theme';
+  var saved=null; try{ saved=localStorage.getItem(KEY); }catch(e){}
+  if(saved) document.documentElement.setAttribute('data-theme',saved);
+  document.getElementById('themeToggle').addEventListener('click',function(){
+    var cur=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',cur);
+    try{ localStorage.setItem(KEY,cur); }catch(e){}
+  });
+})();
+
+/* ───────── eras (mesmas estações da Travessia) ───────── */
+var ERAS=[
+ {id:1,era:'Antes da Escrita',per:'o tempo que a linha não alcança'},
+ {id:2,era:'Mundo Antigo',per:'3500 a.C. – 500 a.C.'},
+ {id:3,era:'Grécia',per:'500 a.C. – 323 a.C.'},
+ {id:4,era:'Roma',per:'323 a.C. – 500 d.C.'},
+ {id:5,era:'Idade Média',per:'500 – 1400'},
+ {id:6,era:'Renascimento',per:'1400 – 1600'},
+ {id:7,era:'Barroco',per:'1600 – 1750'},
+ {id:8,era:'Iluminismo',per:'1750 – 1815'},
+ {id:9,era:'Século XIX',per:'1815 – 1900'},
+ {id:10,era:'Modernismo',per:'1900 – 1945'},
+ {id:11,era:'Pós-Guerra',per:'1945 – 1989'},
+ {id:12,era:'O Agora',per:'1989 – hoje'}
+];
+var SECOES=[
+ {k:'resenha',rot:'A resenha',cls:'resenha'},
+ {k:'epoca',rot:'O que se vivia'},
+ {k:'ideias',rot:'A filosofia e as ideias'},
+ {k:'musica',rot:'A música'},
+ {k:'artes',rot:'As artes'},
+ {k:'cinema',rot:'Na tela'},
+ {k:'vizinhos',rot:'Livros vizinhos'},
+ {k:'fio',rot:'O fio na tapeçaria',cls:'fio-final'}
+];
+
+function norm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
+function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
+
+var SB=null,user=null;
+if(typeof supabase!=='undefined'){
+  SB=supabase.createClient('https://rpsiewnsvqpeadwaqsib.supabase.co','sb_publishable_QyDwy0ZCCRYzSFfTXCXQYQ_h3vEAL3I',
+    {auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:'marginalia-auth'}});
+}
+
+var ACERVO=[];        // [{k,t,a,lido}]
+var MAPA={};          // norm(title) -> est (da viagem_state)
+var FIOS={};          // norm(title) -> data (tecidos carregados)
+var FIOS_KEYS={};     // norm(title) -> true (tecidos existentes no banco)
+var tecendo={};
+
+async function pullTudo(){
+  if(!SB||!user) return;
+  try{
+    var r=await SB.from('marginalia_state').select('data').eq('user_id',user.id).maybeSingle();
+    var books=r&&r.data&&r.data.data&&r.data.data.books;
+    if(Array.isArray(books)){
+      var vistos={};
+      ACERVO=[];
+      books.forEach(function(b){
+        if(!b||b.deleted||!b.title) return;
+        var k=norm(b.title); if(!k||vistos[k]) return; vistos[k]=1;
+        ACERVO.push({k:k,t:b.title,a:(b.author||'').split('·')[0].trim(),
+          lido:(b.status==='read'||b.mark==='read')});
+      });
+    }
+  }catch(e){}
+  try{
+    var v=await SB.from('viagem_state').select('data').eq('user_id',user.id).maybeSingle();
+    var aloc=v&&v.data&&v.data.data&&v.data.data.mapa&&v.data.data.mapa.aloc;
+    MAPA={}; if(aloc) Object.keys(aloc).forEach(function(k){ MAPA[k]=aloc[k]&&aloc[k].est; });
+  }catch(e){}
+  try{
+    var f=await SB.from('tapecaria_fios').select('book_key').eq('user_id',user.id);
+    FIOS_KEYS={}; if(f&&Array.isArray(f.data)) f.data.forEach(function(row){ FIOS_KEYS[row.book_key]=true; });
+  }catch(e){}
+  render();
+}
+
+function render(){
+  var box=document.getElementById('eras');
+  var aviso=document.getElementById('avisoLogin');
+  if(!user||!ACERVO.length){ box.innerHTML=''; if(aviso) aviso.style.display=''; return; }
+  if(aviso) aviso.style.display='none';
+  document.getElementById('busca').style.display='';
+  var stats=document.getElementById('stats'); stats.style.display='flex';
+  document.getElementById('stLivros').textContent=ACERVO.length;
+  document.getElementById('stFios').textContent=Object.keys(FIOS_KEYS).length;
+
+  var abertas={}; box.querySelectorAll('.era.open').forEach(function(n){ abertas[n.dataset.id]=true; });
+  var abertos={}; box.querySelectorAll('.livro-row.open').forEach(function(n){ abertos[n.dataset.k]=true; });
+
+  var por={}, fora=[], semLugar=[];
+  ACERVO.forEach(function(b){
+    var e=MAPA[b.k];
+    if(e>=1&&e<=12) (por[e]=por[e]||[]).push(b);
+    else if(e===0) fora.push(b);
+    else semLugar.push(b);
+  });
+
+  function grupo(id,nome,per,livros){
+    if(!livros.length) return '';
+    livros.sort(function(a,b){ return a.t.localeCompare(b.t); });
+    var rows=livros.map(function(b){
+      var temFio=!!FIOS_KEYS[b.k];
+      return '<div class="livro-row'+(abertos[b.k]?' open':'')+'" data-k="'+b.k+'" data-t="'+esc(b.t).replace(/"/g,'&quot;')+'" data-a="'+esc(b.a).replace(/"/g,'&quot;')+'">'
+        +'<div class="lin"><span class="t">'+esc(b.t)+'</span>'+(b.a?'<span class="a">· '+esc(b.a)+'</span>':'')
+        +(b.lido?'<span class="tag lido">✓ lido</span>':'')
+        +(temFio?'<span class="tag fio">🧵 fio tecido</span>':'')
+        +'</div><div class="tecido" id="tec-'+b.k.replace(/\s+/g,'-')+'"></div></div>';
+    }).join('');
+    return '<div class="era'+(abertas[id]?' open':'')+'" data-id="'+id+'"><div class="era-head">'
+      +'<span class="era-num">'+nome+'</span><span class="era-nome">'+(per?'':'')+(id>=1&&id<=12?ERAS[id-1].era:'')+'</span>'
+      +'<span class="era-per">'+(per||'')+'</span><span class="era-count">'+livros.length+(livros.length===1?' livro':' livros')+'</span><span class="arrow">▾</span></div>'
+      +'<div class="era-body">'+rows+'</div></div>';
+  }
+  var html='';
+  ERAS.forEach(function(e){ html+=grupo(e.id,'Estação '+e.id,e.per,por[e.id]||[]); });
+  html+=grupo('fora','✈ Fora do mapa','fantasia e mundos sem tempo histórico',fora);
+  html+=grupo('semlugar','Ainda sem lugar','aloque o acervo na Travessia para tecê-los por era',semLugar);
+  box.innerHTML=html||'<div class="aviso">Seu acervo ainda não foi alocado nas eras — passe primeiro pelo <a href="/viagem-no-tempo/">mapa do acervo da Travessia</a>.</div>';
+
+  box.querySelectorAll('.era-head').forEach(function(h){ h.addEventListener('click',function(){ h.parentElement.classList.toggle('open'); }); });
+  box.querySelectorAll('.livro-row').forEach(function(row){
+    row.querySelector('.lin').addEventListener('click',function(){ abrirLivro(row); });
+  });
+  // re-render dos tecidos que estavam abertos
+  box.querySelectorAll('.livro-row.open').forEach(function(row){ montarTecido(row); });
+}
+
+function abrirLivro(row){
+  var aberto=row.classList.contains('open');
+  if(aberto){ row.classList.remove('open'); return; }
+  row.classList.add('open');
+  montarTecido(row);
+}
+
+async function montarTecido(row){
+  var k=row.dataset.k, t=row.dataset.t, a=row.dataset.a;
+  var box=row.querySelector('.tecido');
+  if(FIOS[k]){ box.innerHTML=tecidoHtml(FIOS[k]); return; }
+  if(FIOS_KEYS[k]){
+    box.innerHTML='<p style="font-size:var(--text-sm);color:var(--color-text-faint);font-style:italic">puxando o fio…</p>';
+    try{
+      var r=await SB.from('tapecaria_fios').select('data').eq('user_id',user.id).eq('book_key',k).maybeSingle();
+      if(r&&r.data&&r.data.data){ FIOS[k]=r.data.data; box.innerHTML=tecidoHtml(FIOS[k]); return; }
+    }catch(e){}
+    box.innerHTML='<p style="font-size:var(--text-sm);color:#9B2C2C">não consegui puxar o fio agora — tente de novo.</p>';
+    return;
+  }
+  box.innerHTML='<button class="btn" data-tecer="1">✦ Tecer o fio deste livro</button><span style="font-size:var(--text-xs);color:var(--color-text-faint);margin-left:10px">a IA escreve uma vez; o fio fica guardado pra sempre</span>';
+  box.querySelector('[data-tecer]').addEventListener('click',function(ev){ ev.stopPropagation(); tecerFio(row); });
+}
+
+function tecidoHtml(d){
+  return SECOES.map(function(s){
+    var v=d&&d[s.k]; if(!v) return '';
+    return '<div class="tec-sec '+(s.cls||'')+'"><span class="rot">'+s.rot+'</span><p>'+esc(v)+'</p></div>';
+  }).join('')||'<p style="font-size:var(--text-sm)">fio vazio — teça de novo.</p>';
+}
+
+async function tecerFio(row){
+  var k=row.dataset.k, t=row.dataset.t, a=row.dataset.a;
+  if(tecendo[k]) return; tecendo[k]=true;
+  var box=row.querySelector('.tecido');
+  box.innerHTML='<p style="font-size:var(--text-sm);color:var(--color-text-faint);font-style:italic">✦ tecendo o fio — a época, as ideias, a música, as artes…</p>';
+  try{
+    var r=await SB.functions.invoke('ecos',{body:{title:t,author:a,tecido:true}});
+    var d=r&&r.data;
+    if(r.error||!d||(!d.resenha&&!d.fio)){ box.innerHTML='<p style="font-size:var(--text-sm);color:#9B2C2C">a IA não conseguiu agora — tente de novo num instante.</p><button class="btn" data-tecer="1" style="margin-top:8px">✦ Tentar de novo</button>'; box.querySelector('[data-tecer]').addEventListener('click',function(){ tecerFio(row); }); return; }
+    FIOS[k]=d; FIOS_KEYS[k]=true;
+    try{ await SB.from('tapecaria_fios').upsert({user_id:user.id,book_key:k,data:d,updated_at:new Date().toISOString()},{onConflict:'user_id,book_key'}); }catch(e){}
+    box.innerHTML=tecidoHtml(d);
+    var lin=row.querySelector('.lin');
+    if(lin&&!lin.querySelector('.tag.fio')){ var sp=document.createElement('span'); sp.className='tag fio'; sp.textContent='🧵 fio tecido'; lin.appendChild(sp); }
+    document.getElementById('stFios').textContent=Object.keys(FIOS_KEYS).length;
+  } finally { tecendo[k]=false; }
+}
+
+/* busca */
+document.getElementById('buscaInp').addEventListener('input',function(){
+  var q=norm(this.value);
+  document.querySelectorAll('.era').forEach(function(sec){
+    var alguma=false;
+    sec.querySelectorAll('.livro-row').forEach(function(row){
+      var hit=!q||row.dataset.k.indexOf(q)!==-1||norm(row.dataset.a).indexOf(q)!==-1;
+      row.style.display=hit?'':'none';
+      if(hit) alguma=true;
+    });
+    sec.style.display=(alguma||!q)?'':'none';
+    if(q&&alguma) sec.classList.add('open');
+  });
+});
+
+/* ───────── login (mesma receita das irmãs) ───────── */
+function syncUI(){
+  var st=document.getElementById('syncStatus');
+  document.getElementById('syncRow').style.display=user?'none':'flex';
+  document.getElementById('syncCodeRow').style.display='none';
+  document.getElementById('syncOutRow').style.display=user?'flex':'none';
+  st.innerHTML=user?('Tecendo como <span class="ok">'+esc(user.email||'')+'</span> — acervo e fios em todos os aparelhos.')
+    :'Entre com seu e-mail (o mesmo do app) — chega um código. 🔒 Só você vê o seu acervo e os seus fios.';
+}
+var pendingEmail='';
+document.getElementById('syncSend').addEventListener('click',async function(){
+  if(!SB) return; var email=document.getElementById('syncEmail').value.trim(); if(!email) return;
+  try{ var r=await SB.auth.signInWithOtp({email:email,options:{shouldCreateUser:true}}); if(r.error) throw r.error;
+    pendingEmail=email; document.getElementById('syncCodeRow').style.display='flex';
+    document.getElementById('syncStatus').textContent='Código enviado para '+email+'.';
+  }catch(e){ document.getElementById('syncStatus').textContent='Erro: '+(e.message||e); }
+});
+document.getElementById('syncVerify').addEventListener('click',async function(){
+  if(!SB) return; var code=document.getElementById('syncCode').value.trim(); if(!code) return;
+  try{ var r=await SB.auth.verifyOtp({email:pendingEmail,token:code,type:'email'}); if(r.error) throw r.error;
+    var u=await SB.auth.getUser(); user=u.data&&u.data.user; syncUI(); await pullTudo();
+  }catch(e){ document.getElementById('syncStatus').textContent='Código inválido.'; }
+});
+document.getElementById('syncOut').addEventListener('click',async function(){
+  try{ await SB.auth.signOut(); }catch(e){} user=null; ACERVO=[]; syncUI(); render();
+});
+(async function init(){
+  if(SB){ try{ var r=await SB.auth.getUser(); user=r.data&&r.data.user; }catch(e){user=null;} syncUI(); if(user) await pullTudo(); }
+  else syncUI();
+})();
+</script>
+</body>
+</html>
