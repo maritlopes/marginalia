@@ -93,6 +93,9 @@ h2.sec{display:flex;align-items:center;gap:var(--space-3)}
 .stamp.done:hover{opacity:1}
 .stamp.ink0{--ink:#A8543A}.stamp.ink1{--ink:#5E6B3E}.stamp.ink2{--ink:#7C3F4E}.stamp.ink3{--ink:#A87513}
 .stamp.sh0{border-radius:12px}.stamp.sh1{border-radius:52px}
+.stamp .paradas{display:flex;flex-direction:column;gap:2px;margin-top:6px;max-width:100%;padding:0 4px}
+.stamp .pr{display:block;font-size:.56rem;letter-spacing:.03em;font-weight:600;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.stamp.vazio .pr{color:#6E6352}
 .pass-note{color:#6E6352;font-size:var(--text-xs);font-style:italic;margin-top:var(--space-4)}
 /* MALA */
 .mala{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6)}
@@ -196,13 +199,13 @@ footer a{color:var(--color-primary);text-decoration:none}
     <li><strong>O tema manda</strong> — qualquer livro serve para uma estação, desde que <em>visite</em> aquela época. Um livro basta para carimbar; dois são festa.</li>
     <li><strong>Todo livro seu tem assento</strong> — coloque na mala um título que quer ler e descubra a que era ele remete. Conectada, o seu <em>acervo do Marginália</em> aparece como sugestão enquanto você digita.</li>
     <li><strong>Os seus livros ficam no diário</strong> — marque <em>✓ li</em> ou <em>quero ler</em> direto nos livros propostos de cada estação; tudo entra na sua bagagem da estação.</li>
-    <li><strong>Cada chegada vira carimbo</strong> — toque na estação do passaporte ao concluí-la.</li>
+    <li><strong>Cada chegada vira carimbo</strong> — marque um livro como <em>✓ lido</em> e a estação se carimba sozinha, com o livro registrado como parada; ou toque na estação do passaporte para carimbar à mão.</li>
     <li><strong>A viagem alimenta a linha</strong> — leitura que revelar um acontecimento novo vira card pela Curadoria (✦) da Linha do Tempo.</li>
   </ul>
 </div>
 
 <h2 class="sec"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M9 16h6"/></svg>O passaporte</h2>
-<p class="sec-sub">Uma estação concluída = um carimbo de chegada, como os de fronteira. Toque no espaço pontilhado para carimbar (ou no carimbo para desfazer) — a data fica registrada.</p>
+<p class="sec-sub">Uma estação concluída = um carimbo de chegada, como os de fronteira. Marcar um livro como <em>✓ lido</em> carimba a chegada sozinho — e cada livro lido entra no carimbo como uma <em>parada</em>, com a data. Também dá para tocar no espaço pontilhado para carimbar à mão (ou no carimbo, para desfazer).</p>
 <div class="passaporte">
   <div class="stamps" id="stamps"></div>
   <p class="pass-note" id="passNote">Nenhuma página carimbada ainda — a viagem espera o embarque.</p>
@@ -225,6 +228,7 @@ footer a{color:var(--color-primary);text-decoration:none}
       <label style="font-size:var(--text-xs);color:var(--color-text-faint)">Estação:</label>
       <select id="situoMes"></select>
       <button class="btn" id="situoSalvar">Guardar na mala</button>
+      <button class="btn" id="situoSalvarLido">✓ Já li — carimbar parada</button>
       <button class="btn ghost" id="situoCancelar">Cancelar</button>
     </div>
   </div>
@@ -372,6 +376,8 @@ function fmtData(iso){ if(!iso) return ''; var p=iso.split('-'); return p[2]+'/'
 var MES_UP=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
 function fmtCarimbo(iso){ if(!iso) return ''; var p=iso.split('-'); return parseInt(p[2],10)+' '+(MES_UP[parseInt(p[1],10)-1]||'')+' '+p[0]; }
 var ROTS=[-5,3,-3,6,-6,2,4,-4,5,-2,3,-5]; // inclinação própria de cada carimbo, como na fronteira
+var MES_MIN=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+function fmtParada(iso){ if(!iso) return ''; var p=String(iso).split('-'); if(p.length<3) return iso; return parseInt(p[2],10)+' '+(MES_MIN[parseInt(p[1],10)-1]||''); }
 function renderStamps(){
   var box=document.getElementById('stamps'); box.innerHTML='';
   var n=0;
@@ -380,14 +386,20 @@ function renderStamps(){
     if(d) n++;
     var b=document.createElement('button');
     var era=e.era.split('—')[0].split('·')[0].trim();
+    // as PARADAS do carimbo: livros lidos nesta estação, com a data da leitura
+    var lidos=state.mala.filter(function(m){return m.mes===e.id&&m.status==='lido';});
+    var paradas=lidos.length?('<span class="paradas">'+lidos.map(function(m){
+      var dt=m.lidoEm?(' · '+fmtParada(m.lidoEm)):'';
+      return '<span class="pr" title="'+esc(m.t).replace(/"/g,'&quot;')+'">✓ '+esc(m.t)+dt+'</span>';
+    }).join('')+'</span>'):'';
     if(d){
       b.className='stamp done ink'+(i%4)+' sh'+(i%2);
       b.style.setProperty('--rot',ROTS[i%ROTS.length]+'deg');
-      b.innerHTML='<span class="top">Marginália · nº '+e.id+'</span><span class="era">'+era+'</span><span class="bot">✦ chegada · '+fmtCarimbo(d)+'</span>';
+      b.innerHTML='<span class="top">Marginália · nº '+e.id+'</span><span class="era">'+era+'</span><span class="bot">✦ chegada · '+fmtCarimbo(d)+'</span>'+paradas;
       b.title='Chegada carimbada em '+fmtData(d)+' — toque para desfazer';
     } else {
       b.className='stamp vazio';
-      b.innerHTML='<span class="top">Estação '+e.id+'</span><span class="era">'+era+'</span><span class="bot">à espera do carimbo</span>';
+      b.innerHTML='<span class="top">Estação '+e.id+'</span><span class="era">'+era+'</span><span class="bot">à espera do carimbo</span>'+paradas;
       b.title='Toque para carimbar a chegada';
     }
     b.addEventListener('click',function(){
@@ -407,16 +419,24 @@ function mesDaEra(id){ var e=ESTACOES.filter(function(x){return x.id===id;})[0];
 function norm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
 function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
 function itemPorTitulo(t){ var k=norm(t); return state.mala.find(function(x){return norm(x.t)===k;})||null; }
+// marca/desmarca LIDO num item da mala: lido ganha data e CARIMBA a estação
+// sozinho (se ainda sem carimbo). Desmarcar não descarimba — chegada é chegada.
+function setLido(item,on){
+  if(on){ item.status='lido'; item.lidoEm=item.lidoEm||hoje(); if(item.mes&&!state.carimbos[item.mes]) state.carimbos[item.mes]=hoje(); }
+  else { item.status='quero'; delete item.lidoEm; }
+}
 // marca um livro PROPOSTO da estação como li / quero ler (2º toque no mesmo desfaz)
 function marcarSugestao(e,l,want){
   var item=itemPorTitulo(l.t);
   if(item){
     if(item.status===want){ state.mala=state.mala.filter(function(x){return x!==item;}); }
-    else { item.status=want; item.mes=e.id; }
+    else { item.mes=e.id; setLido(item,want==='lido'); }
   } else {
-    state.mala.push({id:'m'+Date.now(),t:l.t,a:l.a||'',mes:e.id,why:'',status:want,ts:hoje(),src:'sugestao'});
+    item={id:'m'+Date.now(),t:l.t,a:l.a||'',mes:e.id,why:'',status:'quero',ts:hoje(),src:'sugestao'};
+    if(want==='lido') setLido(item,true);
+    state.mala.push(item);
   }
-  persist(); renderMala(); renderEstacoes();
+  persist(); renderMala(); renderEstacoes(); renderStamps();
 }
 function renderEstacoes(){
   var box=document.getElementById('estacoes');
@@ -451,8 +471,8 @@ function renderEstacoes(){
         ev.stopPropagation();
         var m=state.mala.find(function(x){return x.id===b.dataset.bag;}); if(!m) return;
         if(b.dataset.w==='del'){ if(!confirm('Tirar "'+m.t+'" da bagagem?')) return; state.mala=state.mala.filter(function(x){return x!==m;}); }
-        else m.status=(m.status==='lido'?'quero':'lido');
-        persist(); renderMala(); renderEstacoes();
+        else setLido(m, m.status!=='lido');
+        persist(); renderMala(); renderEstacoes(); renderStamps();
       });
     });
     box.appendChild(sec);
@@ -492,15 +512,21 @@ function abrirSituo(draft){
 }
 function fecharSituo(){ situoDraft=null; document.getElementById('situo').classList.remove('visible'); }
 document.getElementById('situoCancelar').addEventListener('click',fecharSituo);
-document.getElementById('situoSalvar').addEventListener('click',function(){
+function guardarDaMala(comoLido){
   if(!situoDraft) return;
   var mes=parseInt(document.getElementById('situoMes').value,10);
   if(!mes){ document.getElementById('mMsg').textContent='Escolha a estação antes de guardar.'; return; }
-  state.mala.push({id:'m'+Date.now(),t:situoDraft.t,a:situoDraft.a||'',mes:mes,why:situoDraft.why||'',resenha:situoDraft.resenha||'',status:'quero',ts:hoje()});
-  persist(); fecharSituo(); renderMala(); renderEstacoes();
+  var item={id:'m'+Date.now(),t:situoDraft.t,a:situoDraft.a||'',mes:mes,why:situoDraft.why||'',resenha:situoDraft.resenha||'',status:'quero',ts:hoje()};
+  if(comoLido) setLido(item,true);
+  state.mala.push(item);
+  persist(); fecharSituo(); renderMala(); renderEstacoes(); renderStamps();
   document.getElementById('mTitulo').value=''; document.getElementById('mAutor').value='';
-  document.getElementById('mMsg').textContent='Guardado! O livro já aparece na estação dele, lá embaixo.';
-});
+  document.getElementById('mMsg').textContent=comoLido
+    ? '✓ Parada registrada — o livro entrou no carimbo da Estação '+mes+' e a chegada foi carimbada.'
+    : 'Guardado! O livro já aparece na estação dele, lá embaixo.';
+}
+document.getElementById('situoSalvar').addEventListener('click',function(){ guardarDaMala(false); });
+document.getElementById('situoSalvarLido').addEventListener('click',function(){ guardarDaMala(true); });
 function renderMala(){
   var box=document.getElementById('malaList'); box.innerHTML='';
   if(!state.mala.length) return;
@@ -512,8 +538,8 @@ function renderMala(){
       '<div class="mala-item-foot"><span class="chip-mes">Estação '+m.mes+' · '+mesDaEra(m.mes)+'</span>'+
       '<button class="mini'+(m.status==='lido'?' lido':'')+'" data-a="toggle">'+(m.status==='lido'?'✓ lido':'quero ler')+'</button>'+
       '<button class="mini" data-a="del">remover</button></div>';
-    it.querySelector('[data-a="toggle"]').addEventListener('click',function(){ m.status=(m.status==='lido'?'quero':'lido'); persist(); renderMala(); renderEstacoes(); });
-    it.querySelector('[data-a="del"]').addEventListener('click',function(){ if(!confirm('Tirar "'+m.t+'" da mala?')) return; state.mala=state.mala.filter(function(x){return x.id!==m.id;}); persist(); renderMala(); renderEstacoes(); });
+    it.querySelector('[data-a="toggle"]').addEventListener('click',function(){ setLido(m, m.status!=='lido'); persist(); renderMala(); renderEstacoes(); renderStamps(); });
+    it.querySelector('[data-a="del"]').addEventListener('click',function(){ if(!confirm('Tirar "'+m.t+'" da mala?')) return; state.mala=state.mala.filter(function(x){return x.id!==m.id;}); persist(); renderMala(); renderEstacoes(); renderStamps(); });
     box.appendChild(it);
   });
 }
