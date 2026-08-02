@@ -6,6 +6,12 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "8795", "--directory", "/tmp/marg-vite"],
       "port": 8795
+    },
+    {
+      "name": "marg-vite-b",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8797", "--directory", "/tmp/marg-vite"],
+      "port": 8797
     }
   ]
 }

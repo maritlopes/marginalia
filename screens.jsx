@@ -492,6 +492,8 @@ function PlanoLeitura({ book }) {
   const [pageInput, setPageInput] = React.useState(String(cur));
   const [goal, setGoal] = React.useState(b.goalFinishBy || '');
 
+  React.useEffect(() => { setGoal(b.goalFinishBy || ''); setEditingPage(false); }, [b.id]);
+
   const salvarPagina = () => {
     let p = Math.max(0, parseInt(pageInput) || 0);
     if (pages) p = Math.min(p, pages);
@@ -520,10 +522,25 @@ function PlanoLeitura({ book }) {
       plano = { tipo: 'passou', msg: 'A data escolhida já passou — ajuste a meta acima.' };
     } else {
       const dias = Math.max(1, diasRestantes);
+      // metas semanais: reparte as páginas restantes pelos dias e corta em blocos de 7,
+      // então cada semana ganha "até a página X" — recalcula conforme a página avança
+      const semanas = [];
+      const nSem = Math.ceil(dias / 7);
+      let ini = cur + 1;
+      for (let k = 1; k <= nSem; k++) {
+        const diasAte = Math.min(7 * k, dias);
+        const alvo = (k === nSem) ? pages : cur + Math.round(pagsRestantes * diasAte / dias);
+        const data = new Date(hoje); data.setDate(hoje.getDate() + diasAte);
+        semanas.push({
+          k, ini, alvo,
+          data: data.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
+        });
+        ini = alvo + 1;
+      }
       plano = {
         tipo: 'ok',
         ritmo: Math.ceil(pagsRestantes / dias),
-        pagsRestantes, dias,
+        pagsRestantes, dias, semanas,
         fim: fim.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
       };
     }
@@ -568,6 +585,31 @@ function PlanoLeitura({ book }) {
               Leia <strong style={{ color: T.terra }}>~{plano.ritmo} páginas por dia</strong> para terminar até {plano.fim}.
               <div style={{ fontSize: 11, color: T.muted, fontFamily: T.sans, marginTop: 4 }}>
                 Faltam {plano.pagsRestantes} páginas em {plano.dias} {plano.dias === 1 ? 'dia' : 'dias'}.
+              </div>
+            </div>
+          )}
+          {plano && plano.tipo === 'ok' && plano.semanas.length > 1 && (
+            <div style={{ marginTop: 14, borderTop: `1px dashed ${T.hairline}`, paddingTop: 12 }}>
+              <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 8 }}>
+                Metas semanais
+              </div>
+              {plano.semanas.map(s => (
+                <div key={s.k} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                  padding: '6px 8px', borderRadius: 8, marginBottom: 2,
+                  background: s.k === 1 ? 'rgba(176,83,58,0.07)' : 'transparent',
+                }}>
+                  <div style={{ fontSize: 12, color: s.k === 1 ? T.terra : T.brown, fontWeight: s.k === 1 ? 700 : 400 }}>
+                    {s.k === 1 ? 'Esta semana' : `Semana ${s.k}`}
+                    <span style={{ color: T.muted, fontWeight: 400 }}> · até {s.data}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: T.ink }}>
+                    pág {s.ini}–<strong style={{ color: T.terra }}>{s.alvo}</strong>
+                  </div>
+                </div>
+              ))}
+              <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 6 }}>
+                As metas se reajustam conforme você atualiza a página.
               </div>
             </div>
           )}
