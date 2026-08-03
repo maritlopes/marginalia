@@ -492,7 +492,52 @@ function PlanoLeitura({ book }) {
   const [pageInput, setPageInput] = React.useState(String(cur));
   const [goal, setGoal] = React.useState(b.goalFinishBy || '');
 
-  React.useEffect(() => { setGoal(b.goalFinishBy || ''); setEditingPage(false); }, [b.id]);
+  // meta da semana — definida à mão, por livro: "chegar à pág X até tal dia".
+  // Independente da data final: dá pra adiantar um livro e ir devagar noutro.
+  const wg = b.weekGoal || null;
+  const [wgEditing, setWgEditing] = React.useState(false);
+  const [wgPage, setWgPage] = React.useState('');
+  const [wgDate, setWgDate] = React.useState('');
+
+  React.useEffect(() => { setGoal(b.goalFinishBy || ''); setEditingPage(false); setWgEditing(false); }, [b.id]);
+
+  const abrirMetaSemana = () => {
+    const d = new Date(); d.setDate(d.getDate() + 6);
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    setWgPage(wg ? String(wg.page) : '');
+    setWgDate(wg && wg.until ? wg.until : iso);
+    setWgEditing(true);
+  };
+  const salvarMetaSemana = () => {
+    let p = parseInt(wgPage) || 0;
+    if (pages) p = Math.min(p, pages);
+    if (p <= cur || !wgDate) return;
+    if (typeof MG !== 'undefined' && MG.updateBook) MG.updateBook(b.id, { weekGoal: { from: cur, page: p, until: wgDate } });
+    setWgEditing(false);
+  };
+  const limparMetaSemana = () => {
+    if (typeof MG !== 'undefined' && MG.updateBook) MG.updateBook(b.id, { weekGoal: null });
+    setWgEditing(false);
+  };
+
+  // estado da meta da semana (recalcula a cada render, conforme a página avança)
+  let metaSemana = null;
+  if (wg && wg.page) {
+    const hoje0 = new Date(); hoje0.setHours(0, 0, 0, 0);
+    const ate = new Date(wg.until + 'T00:00:00');
+    const diasSem = Math.round((ate - hoje0) / 86400000);
+    const dataFmt = ate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+    const de = wg.from || 0;
+    const pctSem = wg.page > de ? Math.max(0, Math.min(100, Math.round(((cur - de) / (wg.page - de)) * 100))) : 0;
+    if (cur >= wg.page) {
+      metaSemana = { tipo: 'cumprida', dataFmt, pctSem: 100 };
+    } else if (diasSem < 0) {
+      metaSemana = { tipo: 'vencida', dataFmt, pctSem, faltam: wg.page - cur };
+    } else {
+      const dd = Math.max(1, diasSem);
+      metaSemana = { tipo: 'ativa', dataFmt, pctSem, faltam: wg.page - cur, dias: dd, ritmo: Math.ceil((wg.page - cur) / dd) };
+    }
+  }
 
   const salvarPagina = () => {
     let p = Math.max(0, parseInt(pageInput) || 0);
@@ -574,6 +619,69 @@ function PlanoLeitura({ book }) {
           </div>
         </div>
         <LinearProgress pct={pct} height={4}/>
+
+        {/* meta da semana — planejamento semanal à mão, livro a livro */}
+        <div style={{ marginTop: 14, borderTop: `1px solid ${T.hairline}`, paddingTop: 14 }}>
+          <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 8 }}>
+            Meta da semana
+          </div>
+          {wgEditing ? (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 13, fontFamily: T.serif, color: T.ink }}>chegar à pág</span>
+                <input type="number" value={wgPage} onChange={e => setWgPage(e.target.value)} autoFocus
+                  placeholder={pages ? `até ${pages}` : ''}
+                  style={{ width: 70, padding: '6px 8px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 14 }}/>
+                <span style={{ fontSize: 13, fontFamily: T.serif, color: T.ink }}>até</span>
+                <input type="date" value={wgDate} onChange={e => setWgDate(e.target.value)}
+                  style={{ padding: '6px 8px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13 }}/>
+              </div>
+              {(parseInt(wgPage) || 0) > cur && wgDate && (() => {
+                const h = new Date(); h.setHours(0, 0, 0, 0);
+                const dd = Math.max(1, Math.round((new Date(wgDate + 'T00:00:00') - h) / 86400000));
+                return (
+                  <div style={{ marginTop: 8, fontSize: 12, color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>
+                    ~{Math.ceil(((pages ? Math.min(parseInt(wgPage), pages) : parseInt(wgPage)) - cur) / dd)} páginas por dia, a partir da pág {cur}.
+                  </div>
+                );
+              })()}
+              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                <button onClick={salvarMetaSemana} style={{ background: T.terra, color: T.cream, border: 0, borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Salvar</button>
+                <button onClick={() => setWgEditing(false)} style={{ background: 'transparent', color: T.brown, border: `1px solid ${T.hairline}`, borderRadius: 8, padding: '8px 16px', fontSize: 12, cursor: 'pointer' }}>Cancelar</button>
+                {wg && <button onClick={limparMetaSemana} style={{ background: 'transparent', color: T.muted, border: 0, padding: '8px 10px', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>remover meta</button>}
+              </div>
+            </div>
+          ) : metaSemana ? (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                <div style={{ fontFamily: T.serif, fontSize: 15, color: T.ink }}>
+                  Chegar à <strong style={{ color: T.terra }}>pág {wg.page}</strong> até {metaSemana.dataFmt}
+                </div>
+                <button onClick={abrirMetaSemana} style={{ background: 'transparent', border: 0, color: T.terra, fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '2px 4px' }}>ajustar</button>
+              </div>
+              <LinearProgress pct={metaSemana.pctSem} height={4}/>
+              {metaSemana.tipo === 'ativa' && (
+                <div style={{ marginTop: 8, fontSize: 12, color: T.brown, fontFamily: T.sans, lineHeight: 1.5 }}>
+                  Faltam <strong>{metaSemana.faltam} páginas</strong> em {metaSemana.dias} {metaSemana.dias === 1 ? 'dia' : 'dias'} — ~<strong style={{ color: T.terra }}>{metaSemana.ritmo} por dia</strong>. Você partiu da pág {wg.from || 0} · {metaSemana.pctSem}% da meta.
+                </div>
+              )}
+              {metaSemana.tipo === 'cumprida' && (
+                <div style={{ marginTop: 8, fontSize: 13, color: T.olive || '#6B6B3A', fontFamily: T.serif, fontStyle: 'italic' }}>
+                  ✓ Meta cumprida — pág {wg.page} alcançada. <button onClick={abrirMetaSemana} style={{ background: 'transparent', border: 0, color: T.terra, fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>Definir a próxima</button>
+                </div>
+              )}
+              {metaSemana.tipo === 'vencida' && (
+                <div style={{ marginTop: 8, fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic' }}>
+                  A semana terminou a {metaSemana.faltam} páginas da meta. <button onClick={abrirMetaSemana} style={{ background: 'transparent', border: 0, color: T.terra, fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>Definir a próxima</button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button onClick={abrirMetaSemana} style={{ background: 'transparent', color: T.brown, border: `1px dashed ${T.hairline}`, borderRadius: 8, padding: '10px 12px', fontSize: 13, fontFamily: T.serif, fontStyle: 'italic', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+              ✎ Definir a meta desta semana — chegar à pág…
+            </button>
+          )}
+        </div>
 
         {/* meta de término */}
         <div style={{ marginTop: 14, borderTop: `1px solid ${T.hairline}`, paddingTop: 14 }}>
