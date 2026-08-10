@@ -586,53 +586,61 @@ const FRASES_MARCANTES = [
 // sem deploy. NÃO acrescentar aqui item que envelhece (ano de prêmio, "há N anos").
 const HOJE_BANNER = [
   {
-    id: 'h1', kind: 'efemeride', accent: 'rose',
-    headline_pt: '10 de agosto · Blanca Varela: cem anos de poesia peruana',
-    headline_en: 'August 10 · Blanca Varela: one hundred years of Peruvian poetry',
-    sub_pt: 'Nascida em Lima em 1926, é a maior voz lírica do Peru moderno — amiga de Octavio Paz, traduzida em todo o mundo.',
-    sub_en: 'Born in Lima in 1926, she is the greatest lyric voice of modern Peru — a friend of Octavio Paz, translated around the world.',
+    id: 'h1', kind: 'efemeride', accent: 'olive',
+    headline_pt: '6 de junho · nascimento de Thomas Mann (1875)',
+    headline_en: 'June 6 · birth of Thomas Mann (1875)',
+    sub_pt: '"A Montanha Mágica" e "Doutor Fausto" — releia o mestre.',
+    sub_en: 'Revisit the master of "The Magic Mountain".',
   },
   {
-    id: 'h2', kind: 'efemeride', accent: 'ochre',
-    headline_pt: '15 de agosto · Walter Scott nasce em Edimburgo (1771)',
-    headline_en: 'August 15 · Walter Scott is born in Edinburgh (1771)',
-    sub_pt: 'O pai do romance histórico. Ivanhoe, Rob Roy, Waverley — 255 anos depois, o gênero que ele inventou ainda vive.',
-    sub_en: 'The father of the historical novel. Ivanhoe, Rob Roy, Waverley — 255 years on, the genre he invented still thrives.',
+    id: 'h2', kind: 'efemeride', accent: 'plum',
+    headline_pt: '3 de junho · morte de Franz Kafka (1924)',
+    headline_en: 'June 3 · death of Franz Kafka (1924)',
+    sub_pt: 'O Processo, O Castelo, A Metamorfose.',
+    sub_en: 'The Trial, The Castle, The Metamorphosis.',
   },
   {
-    id: 'h3', kind: 'efemeride', accent: 'terra',
-    headline_pt: '16 de agosto · nasce Charles Bukowski em Andernach (1920)',
-    headline_en: 'August 16 · Charles Bukowski is born in Andernach (1920)',
-    sub_pt: 'Carteiro, estivador, poeta. A literatura do avesso: 106 anos do autor de "Mulheres" e "Factotum".',
-    sub_en: 'Postal worker, docker, poet. Literature from the underside: 106 years since the author of "Women" and "Factotum".',
+    id: 'h5', kind: 'efemeride', accent: 'rose',
+    headline_pt: '5 de junho · Federico García Lorca (1898)',
+    headline_en: 'June 5 · Federico García Lorca (1898)',
+    sub_pt: 'Poesia e teatro que pulsam até hoje.',
+    sub_en: 'Poetry and theatre that still pulse today.',
   },
   {
-    id: 'h4', kind: 'premio', accent: 'olive',
-    headline_pt: 'Prêmio Camões 2026: Lídia Jorge vence por unanimidade',
-    headline_en: 'Camões Prize 2026: Lídia Jorge wins unanimously',
-    sub_pt: 'A escritora portuguesa, aos 80 anos, recebeu o maior prêmio da literatura em língua portuguesa. "Misericórdia" está entre suas obras recentes.',
-    sub_en: 'The Portuguese writer, at 80, received the highest prize in Portuguese-language literature. "Misericórdia" is among her recent works.',
+    id: 'h7', kind: 'efemeride', accent: 'plum',
+    headline_pt: '16 de novembro · nasce José Saramago (1922)',
+    headline_en: 'November 16 · José Saramago is born (1922)',
+    sub_pt: 'O único Nobel da língua portuguesa — "Ensaio sobre a Cegueira".',
+    sub_en: 'The only Nobel laureate writing in Portuguese — "Blindness".',
   },
   {
-    id: 'h5', kind: 'premio', accent: 'sage',
-    headline_pt: 'International Booker 2026: "Taiwan Travelogue" vence em Londres',
-    headline_en: 'International Booker 2026: "Taiwan Travelogue" wins in London',
-    sub_pt: 'O romance de Yáng Shuāng-zǐ, traduzido por Lin King, foi premiado em maio na Tate Modern — amor entre mulheres, língua e memória histórica.',
-    sub_en: 'The novel by Yáng Shuāng-zǐ, translated by Lin King, was awarded in May at Tate Modern — love between women, language and historical memory.',
+    id: 'h8', kind: 'efemeride', accent: 'olive',
+    headline_pt: '31 de outubro · nasce Drummond, poeta de Itabira (1902)',
+    headline_en: 'October 31 · Drummond, the poet of Itabira, is born (1902)',
+    sub_pt: '"No meio do caminho tinha uma pedra."',
+    sub_en: '"In the middle of the road there was a stone."',
   },
   {
-    id: 'h6', kind: 'premio', accent: 'plum',
-    headline_pt: 'Nobel de Literatura 2026: anúncio em 8 de outubro',
-    headline_en: 'Nobel Prize in Literature 2026: announcement on October 8',
-    sub_pt: 'A Academia Sueca revelará o nome em Estocolmo. Entre os cotados: Can Xue, Murakami, Cristina Rivera Garza e César Aira.',
-    sub_en: 'The Swedish Academy will name the laureate in Stockholm. Among those tipped: Can Xue, Murakami, Cristina Rivera Garza and César Aira.',
+    id: 'h9', kind: 'efemeride', accent: 'rose',
+    headline_pt: '10 de agosto · nasce Blanca Varela, em Lima (1926)',
+    headline_en: 'August 10 · Blanca Varela is born in Lima (1926)',
+    sub_pt: 'A maior voz lírica do Peru moderno — descoberta por Octavio Paz em Paris, ainda por descobrir no Brasil.',
+    sub_en: 'The greatest lyric voice of modern Peru — discovered by Octavio Paz in Paris, still to be discovered in Brazil.',
+  },
+  {
+    id: 'h10', kind: 'efemeride', accent: 'ochre',
+    headline_pt: '16 de agosto · nasce Charles Bukowski (1920)',
+    headline_en: 'August 16 · Charles Bukowski is born (1920)',
+    sub_pt: 'Carteiro, estivador, poeta — a literatura do avesso de "Mulheres" e "Factotum".',
+    sub_en: 'Postal worker, docker, poet — the literature from the underside of "Women" and "Factotum".',
   },
 ];
 
 // ─────────────────────────────────────────────────────────────
 // CURADORIA — lista mais longa (visualizada em "ver mais")
 // ─────────────────────────────────────────────────────────────
-// Atualizada semanalmente (rotina de segunda) — semana de 10 a 16 de agosto de 2026.
+// Semente ATEMPORAL (regra 2026-07-27): só efemérides perenes e curiosidades sem data.
+// Conteúdo de prêmio/semana vive na nuvem (curadoria_items) e entra/sai sem deploy.
 // CURADORIA = voz editorial do clube: curiosidades, conexões, contexto, tema do mês.
 // ÂNCORA EDITORIAL: cada card diz POR QUE existe — por um RÓTULO ou por uma DATA.
 //  • `anchor_pt`/`anchor_en` → rótulo contextual (você sabia?, conexão literária, contexto…).
@@ -640,31 +648,11 @@ const HOJE_BANNER = [
 //    ex.: '03 jun') e anos que enquadram a obra (ex.: '1947'). ATEMPORAL: a efeméride traz
 //    a data do próprio fato, nunca "hoje"/"esta semana" (o conteúdo não é atualizado todo dia).
 const CURADORIA = [
-  { id: 'c1', kind: 'efemeride', date: '10 ago',
-    title_pt: 'Blanca Varela: cem anos de uma voz que reescreveu o silêncio',
-    title_en: 'Blanca Varela: one hundred years of a voice that rewrote silence',
-    desc_pt: 'Nascida em Lima em 10 de agosto de 1926, Blanca Varela é a maior poetisa peruana do século XX. Descoberta por Octavio Paz em Paris nos anos 1950, sua poesia é austera, visceral e filosófica — pouco traduzida no Brasil, muito por descobrir.',
-    desc_en: 'Born in Lima on August 10, 1926, Blanca Varela is the greatest Peruvian poet of the 20th century. Discovered by Octavio Paz in Paris in the 1950s, her poetry is austere, visceral and philosophical — little translated in Brazil, much to be discovered.' },
   { id: 'c2', kind: 'curiosidade', anchor_pt: 'você sabia?', anchor_en: 'did you know?',
     title_pt: 'Walter Scott inventou um gênero — e quase ninguém percebeu no começo',
     title_en: 'Walter Scott invented a genre — and almost no one noticed at first',
     desc_pt: '"Waverley" (1814) foi publicado anonimamente e virou fenômeno. Scott criou o romance histórico: ficção que mergulha num passado real para iluminar o presente. De Tolstói ("Guerra e Paz") a Hilary Mantel, o gênero que ele inventou ainda domina.',
     desc_en: '"Waverley" (1814) was published anonymously and became a sensation. Scott invented the historical novel: fiction that dives into a real past to illuminate the present. From Tolstoy ("War and Peace") to Hilary Mantel, the genre he created still reigns.' },
-  { id: 'c3', kind: 'conexao', anchor_pt: 'conexão literária', anchor_en: 'literary connection',
-    title_pt: 'Leu Clarice Lispector? Leia Lídia Jorge',
-    title_en: 'Read Clarice Lispector? Read Lídia Jorge',
-    desc_pt: 'Vencedora do Camões 2026, Lídia Jorge é para Portugal o que Clarice foi para o Brasil: uma escritora que dissolve a fábula e mergulha na consciência. "A Costa dos Murmúrios" e "Misericórdia" são o ponto de entrada.',
-    desc_en: 'Winner of the 2026 Camões Prize, Lídia Jorge is to Portugal what Clarice was to Brazil: a writer who dissolves plot and dives into consciousness. "The Murmuring Coast" and "Misericórdia" are the way in.' },
-  { id: 'c4', kind: 'contexto', anchor_pt: 'contexto literário', anchor_en: 'literary context',
-    title_pt: '"Taiwan Travelogue" e a nova era da literatura em tradução',
-    title_en: '"Taiwan Travelogue" and the new age of literature in translation',
-    desc_pt: 'O International Booker 2026 coroou um romance em chinês sobre amor entre mulheres e tensão entre língua e memória. O prêmio sinaliza uma virada: a ficção não anglófona nunca esteve tão no centro do debate literário global.',
-    desc_en: 'The 2026 International Booker crowned a novel in Chinese about love between women and the tension between language and memory. The prize marks a shift: non-anglophone fiction has never been so central to the global literary conversation.' },
-  { id: 'c5', kind: 'efemeride', date: '16 ago',
-    title_pt: 'Charles Bukowski: 106 anos de um poeta que escrevia com o corpo inteiro',
-    title_en: 'Charles Bukowski: 106 years of a poet who wrote with his whole body',
-    desc_pt: 'Nascido em 16 de agosto de 1920, Bukowski trabalhou nos correios americanos por mais de uma década antes de publicar seu primeiro romance aos 49 anos. "Ham on Rye" é o ponto de entrada — confessional, áspero e, por baixo de tudo, profundamente triste.',
-    desc_en: 'Born on August 16, 1920, Bukowski worked at the US post office for over a decade before publishing his first novel at 49. "Ham on Rye" is the way in — confessional, raw and, beneath it all, profoundly sad.' },
   { id: 'c6', kind: 'efemeride', date: '21 jun',
     title_pt: '21 de junho: nasce Machado de Assis (1839)',
     title_en: 'June 21: Machado de Assis is born (1839)',
