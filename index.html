@@ -162,6 +162,53 @@
      do bundle (Vite) — não precisa mais de bump manual a cada mudança. -->
 <script>window.APP_VERSION = '1.0.2';</script>
 
+<!-- Guarda de carregamento: se o bundle não chegar (rede oscilando, 404 logo
+     após um deploy) ou morrer antes de montar o React, a página ficava BRANCA
+     sem explicação. Este vigia espera o app montar em #root; se nada aparecer,
+     mostra uma tela amigável com botão de recarregar (que também limpa o cache
+     do service worker, pra buscar a versão nova do servidor). -->
+<script>
+(function () {
+  var tries = 0;
+  var timer = setInterval(function () {
+    var root = document.getElementById('root');
+    if (root && root.children.length > 0) { clearInterval(timer); remove(); return; }
+    tries++;
+    if (tries === 3) show();          // ~9s sem montar → tela de socorro
+    if (tries >= 40) clearInterval(timer);
+  }, 3000);
+  function remove() {
+    var el = document.getElementById('mg-load-fallback');
+    if (el) el.parentNode.removeChild(el);
+  }
+  function show() {
+    if (document.getElementById('mg-load-fallback')) return;
+    var d = document.createElement('div');
+    d.id = 'mg-load-fallback';
+    d.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#EFE8DA;color:#2A2620;' +
+      'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+      'text-align:center;padding:32px;font-family:Georgia,serif;';
+    d.innerHTML =
+      '<img src="symbol.png" alt="" style="width:56px;height:56px;object-fit:contain;margin-bottom:20px;opacity:.9">' +
+      '<div style="font-size:20px;margin-bottom:10px">A p&aacute;gina n&atilde;o conseguiu carregar</div>' +
+      '<div style="font-size:14px;opacity:.75;max-width:300px;line-height:1.5;margin-bottom:24px">' +
+      'Pode ser a conex&atilde;o, ou uma vers&atilde;o nova sendo publicada agora. Toque abaixo para tentar de novo.</div>' +
+      '<button id="mg-load-retry" style="background:#B0533A;color:#fff;border:0;border-radius:999px;' +
+      'padding:12px 28px;font-size:15px;font-family:inherit">Tentar de novo</button>';
+    document.body.appendChild(d);
+    document.getElementById('mg-load-retry').onclick = function () {
+      var done = function () { location.reload(); };
+      if (window.caches && caches.keys) {
+        caches.keys().then(function (ks) {
+          return Promise.all(ks.map(function (k) { return caches.delete(k); }));
+        }).then(done, done);
+        setTimeout(done, 2000); // rede travada não segura o reload
+      } else done();
+    };
+  }
+})();
+</script>
+
 <!-- Bundle do app — React, Supabase e todos os .jsx pré-compilados pelo Vite -->
 <script type="module" src="/src/main.jsx"></script>
 

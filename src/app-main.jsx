@@ -384,4 +384,37 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<MarginaliaApp/>);
+// Error boundary — sem isto, QUALQUER exceção de render desmonta a árvore
+// inteira do React e o app vira uma tela branca sem explicação (o sintoma
+// "a Biblioteca abre branca"). Com a rede de segurança, o erro aparece numa
+// tela amigável com o detalhe técnico (dá pra fotografar) e botão de recarregar.
+class MgErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { err: null }; }
+  static getDerivedStateFromError(err) { return { err }; }
+  render() {
+    if (!this.state.err) return this.props.children;
+    const msg = String((this.state.err && this.state.err.message) || this.state.err);
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, background: '#EFE8DA', color: '#2A2620',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        textAlign: 'center', padding: 32, fontFamily: 'Georgia, serif', zIndex: 9999,
+      }}>
+        <img src="symbol.png" alt="" style={{ width: 56, height: 56, objectFit: 'contain', marginBottom: 20, opacity: 0.9 }}/>
+        <div style={{ fontSize: 20, marginBottom: 10 }}>Algo saiu do lugar</div>
+        <div style={{ fontSize: 14, opacity: 0.75, maxWidth: 300, lineHeight: 1.5, marginBottom: 8 }}>
+          Uma parte do app tropeçou ao desenhar a tela. Seus livros e notas estão guardados — recarregue para continuar.
+        </div>
+        <div style={{ fontSize: 11, opacity: 0.45, maxWidth: 300, marginBottom: 24, wordBreak: 'break-word' }}>{msg}</div>
+        <button onClick={() => window.location.reload()} style={{
+          background: '#B0533A', color: '#fff', border: 0, borderRadius: 999,
+          padding: '12px 28px', fontSize: 15, fontFamily: 'inherit',
+        }}>Recarregar</button>
+      </div>
+    );
+  }
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <MgErrorBoundary><MarginaliaApp/></MgErrorBoundary>
+);
