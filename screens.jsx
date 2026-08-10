@@ -1,5 +1,11 @@
 // screens.jsx — full prototype screens (non-home)
 
+// Busca sem acento: "zafon" acha "Zafón", "jose" acha "José". No celular
+// ninguém digita acento — sem isto a busca esconde livro que existe.
+function buscaNorm(s) {
+  return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
 // ─────────────────────────────────────────────────────────────
 // Datas de leitura (início/fim) — formatação e legenda da estante
 // Parse por string (sem new Date) pra fuso horário não deslocar o dia.
@@ -3458,12 +3464,12 @@ function EstanteView({ all, V, onNav = () => {} }) {
   }[sort];
 
   // busca — dentro da estante (os dormentes ficam no catálogo)
-  const q = query.trim().toLowerCase();
+  const q = buscaNorm(query.trim());
   const matches = q
     ? shelf.filter(b =>
-        (b.title || '').toLowerCase().includes(q) ||
-        (b.author || '').toLowerCase().includes(q) ||
-        (b.theme || '').toLowerCase().includes(q))
+        buscaNorm(b.title).includes(q) ||
+        buscaNorm(b.author).includes(q) ||
+        buscaNorm(b.theme).includes(q))
     : shelf;
 
   // filtro Nobel corta TRANSVERSALMENTE (mantém as seções por status,
@@ -3906,7 +3912,7 @@ function CatalogoView({ all, V, onNav = () => {} }) {
     return m;
   }, [catalogo]);
 
-  const q = query.trim().toLowerCase();
+  const q = buscaNorm(query.trim());
   // memoizado: com centenas de livros no acervo, filtrar + ordenar a cada
   // render (cada tecla da busca) pesa no celular
   const list = React.useMemo(() => {
@@ -3915,7 +3921,7 @@ function CatalogoView({ all, V, onNav = () => {} }) {
     else if (filter === 'quero') l = marcas.quero;
     else if (filter === 'lendo') l = marcas.lendo;
     else if (filter === 'lido') l = marcas.lido;
-    if (q) l = l.filter(b => (b.title || '').toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q));
+    if (q) l = l.filter(b => buscaNorm(b.title).includes(q) || buscaNorm(b.author).includes(q));
     return [...l].sort((a, b) => (a.title || '').localeCompare(b.title || '', 'pt-BR'));
   }, [catalogo, V.dormem, marcas, filter, q]);
 
