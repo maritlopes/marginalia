@@ -476,6 +476,94 @@
     },
   };
 
+  // ───────── TRAVESSIA: o livro que acorda ganha lugar no tempo ─────────
+  // Quando um livro sai do acervo e entra na Estante (ganha status), ele é
+  // situado no mapa da Travessia. Assim o mapa se preenche PELA LEITURA, aos
+  // poucos, em vez de um lote de centenas de livros de uma vez só.
+  // ⚠️ Escreve SÓ o mapa.aloc, relendo o estado antes de gravar: a página da
+  // Travessia é dona do resto (carimbos, mala, notas) e não pode ser atropelada.
+  function normViagem(s) {
+    return (s || '').toLowerCase().normalize('NFD')
+      .replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  }
+
+  async function _situar(livros) {
+    const lista = (Array.isArray(livros) ? livros : [livros])
+      .filter(b => b && b.title && !b.deleted)
+      .map(b => ({ k: normViagem(b.title), t: b.title, a: String(b.author || '').split('·')[0].trim() }))
+      .filter(b => b.k);
+    if (!lista.length) return 'nada-novo';
+
+    const { data: ses } = await sb.auth.getSession();
+    const user = ses && ses.session && ses.session.user;
+    if (!user) return 'sem-conta';           // sem conta não há mapa
+
+    const { data: row } = await sb.from('viagem_state')
+      .select('data').eq('user_id', user.id).maybeSingle();
+    const estado = (row && row.data && typeof row.data === 'object') ? row.data : {};
+    if (!estado.mapa) estado.mapa = {};
+    if (!estado.mapa.aloc) estado.mapa.aloc = {};
+    const aloc = estado.mapa.aloc;
+
+    const vistos = {};
+    const fila = lista.filter(b => {
+      if (aloc[b.k] || vistos[b.k]) return false;   // idempotente: não re-situa
+      vistos[b.k] = 1; return true;
+    });
+    if (!fila.length) return 'nada-novo';    // tudo já situado
+
+    let gravou = false;
+    for (let i = 0; i < fila.length; i += 40) {
+      const chunk = fila.slice(i, i + 40);
+      const r = await sb.functions.invoke('ecos', {
+        body: { lote: chunk.map((b, j) => ({ i: j, t: b.t, a: b.a })) },
+      });
+      const d = r && r.data && r.data.alocacao;
+      if (r.error || !Array.isArray(d)) break;      // a IA tropeçou: fica pra próxima
+      d.forEach(x => {
+        const b = chunk[x.i]; if (!b) return;
+        const e = parseInt(x.est, 10);
+        // est 0 = fora do mapa (fantasia sem tempo, ou obra que a IA não conhece).
+        // Gravamos assim mesmo, para não perguntar de novo a cada abertura.
+        aloc[b.k] = { t: b.t, a: b.a, est: (e >= 0 && e <= 12) ? e : 0 };
+        gravou = true;
+      });
+    }
+    if (!gravou) return 'falhou';            // a IA tropeçou: tenta na próxima
+    estado.mapa.at = new Date().toISOString().slice(0, 10);
+    await sb.from('viagem_state').upsert(
+      { user_id: user.id, data: estado, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id' });
+    return 'ok';
+  }
+
+  // fila serial: duas gravações simultâneas se atropelariam no read-modify-write
+  let cadeiaTravessia = Promise.resolve();
+  function situarNaTravessia(livros) {
+    cadeiaTravessia = cadeiaTravessia
+      .then(() => _situar(livros))
+      .catch(e => console.warn('[travessia] situar:', e && e.message));
+    return cadeiaTravessia;
+  }
+  window.__situarNaTravessia = situarNaTravessia;
+
+  // UMA VEZ por aparelho: situa os livros que JÁ estavam na Estante antes
+  // desta versão, para o mapa não nascer vazio.
+  const TRAVESSIA_BACKFILL = 'mg_travessia_backfill_v1';
+  setTimeout(() => {
+    try {
+      if (localStorage.getItem(TRAVESSIA_BACKFILL)) return;
+      const naEstante = (window.BOOKS || []).filter(b => b && b.status && !b.deleted);
+      if (!naEstante.length) return;
+      situarNaTravessia(naEstante).then(r => {
+        // só dá por encerrado se de fato rodou: deslogada ou IA fora do ar,
+        // tenta de novo na próxima abertura.
+        if (r !== 'ok' && r !== 'nada-novo') return;
+        try { localStorage.setItem(TRAVESSIA_BACKFILL, '1'); } catch (e) {}
+      });
+    } catch (e) { /* silencioso: é conforto, não função crítica */ }
+  }, 6000);
+
   // sempre que o app salva localmente, agenda um envio à nuvem (se logada)
   window.__onLocalSave = schedulePush;
 

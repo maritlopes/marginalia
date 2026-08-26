@@ -98,6 +98,10 @@ const MG = {
     const books = this.getBooks();
     const next = [...books, book];
     this.setBooks(next);
+    // nasceu direto na Estante? ganha lugar no mapa da Travessia
+    if (book.status && typeof window.__situarNaTravessia === 'function') {
+      window.__situarNaTravessia(book);
+    }
     if (typeof window._refreshLive === 'function') window._refreshLive();
     if (typeof window.__rerender === 'function') window.__rerender();
     return next;
@@ -116,6 +120,10 @@ const MG = {
     // copia o seed para storage com o patch aplicado; futuras edições gridam.
     const stored = this.getBooks([]);
     const inStorage = stored.find(b => b.id === bookId);
+    // status ANTES da edição (conta também o livro-vitrine ainda só no seed)
+    const seedAntes = (!inStorage && typeof window !== 'undefined' && window.BOOKS_SEED)
+      ? window.BOOKS_SEED.find(b => b.id === bookId) : null;
+    const statusAntes = ((inStorage || seedAntes || {}).status) || null;
     let next;
     if (inStorage) {
       next = stored.map(b => b.id === bookId ? { ...b, ...patch } : b);
@@ -131,6 +139,13 @@ const MG = {
       }
     }
     this.setBooks(next);
+    // SAIU DO ACERVO E ENTROU NA ESTANTE: é o momento em que o livro deixa de
+    // dormir, e o único em que vale gastar uma chamada de IA para situá-lo no
+    // tempo. O mapa da Travessia se completa assim, uma leitura de cada vez.
+    if (patch.status && !statusAntes && typeof window.__situarNaTravessia === 'function') {
+      const vivo = next.find(b => b.id === bookId);
+      if (vivo) window.__situarNaTravessia(vivo);
+    }
     if (typeof window._refreshLive === 'function') window._refreshLive();
     if (typeof window.__rerender === 'function') window.__rerender();
     return next;
