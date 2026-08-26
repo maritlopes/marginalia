@@ -75,6 +75,9 @@ h2.sec{display:flex;align-items:center;gap:var(--space-3);font-family:var(--font
 .tec-sec{margin-bottom:var(--space-3)}
 .tec-sec .rot{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ochre);font-weight:700;display:block;margin-bottom:2px}
 .tec-sec p{font-size:var(--text-sm);color:var(--color-text-muted);line-height:1.7}
+.tec-orig{font-size:var(--text-xs);letter-spacing:.04em;color:var(--color-text-faint);margin-bottom:var(--space-3)}
+.tec-orig b{font-weight:600;color:var(--color-text-muted)}
+.tec-incerto{font-size:var(--text-sm);border-left:3px solid var(--ochre);padding-left:var(--space-3);color:var(--color-text-muted)}
 .tec-sec.resenha p,.tec-sec.fio-final p{font-family:var(--font-display);font-style:italic;color:var(--color-text)}
 .btn{font-weight:500;font-size:var(--text-sm);padding:var(--space-3) var(--space-5);border-radius:var(--radius-full);border:1px solid var(--color-primary);background:var(--color-primary);color:#fff;transition:all var(--transition);white-space:nowrap}
 .btn:hover{opacity:.92}
@@ -211,6 +214,7 @@ var ACERVO=[];        // [{k,t,a,lido}]
 var MAPA={};          // norm(title) -> est (da viagem_state)
 var FIOS={};          // norm(title) -> data (tecidos carregados)
 var FIOS_KEYS={};     // norm(title) -> true (tecidos existentes no banco)
+var ECOS_CUR={};      // book_key curado -> [ecos] (ancora de identificacao da obra)
 var tecendo={};
 
 async function pullTudo(){
@@ -233,6 +237,18 @@ async function pullTudo(){
     var v=await SB.from('viagem_state').select('data').eq('user_id',user.id).maybeSingle();
     var aloc=v&&v.data&&v.data.data&&v.data.data.mapa&&v.data.data.mapa.aloc;
     MAPA={}; if(aloc) Object.keys(aloc).forEach(function(k){ MAPA[k]=aloc[k]&&aloc[k].est; });
+  }catch(e){}
+  try{
+    // ECOS CURADOS: escritos a mao pela curadoria. Dizem de QUAL obra se trata --
+    // viram ancora no prompt do tecido (a IA ja confundiu 'A descida' com outro
+    // romance da mesma autora).
+    var ec=await SB.from('curadoria_items').select('book_key,data').eq('block','ecos').eq('status','validated');
+    ECOS_CUR={};
+    if(ec&&Array.isArray(ec.data)) ec.data.forEach(function(row){
+      if(!row.book_key||!row.data) return;
+      (ECOS_CUR[row.book_key]=ECOS_CUR[row.book_key]||[]).push({
+        title:row.data.title||'',author:row.data.author||'',why:row.data.why||''});
+    });
   }catch(e){}
   try{
     var f=await SB.from('tapecaria_fios').select('book_key').eq('user_id',user.id);
@@ -316,8 +332,15 @@ async function montarTecido(row){
   box.querySelector('[data-tecer]').addEventListener('click',function(ev){ ev.stopPropagation(); tecerFio(row); });
 }
 
+function ecosDoLivro(k){
+  var melhor='',n;
+  for(n in ECOS_CUR){ if(n&&k.indexOf(n)!==-1&&n.length>melhor.length) melhor=n; }
+  return melhor?ECOS_CUR[melhor]:[];
+}
+
 function tecidoHtml(d){
-  return SECOES.map(function(s){
+  var cab=(d&&d.original)?('<p class="tec-orig">obra identificada: <b>'+esc(d.original)+'</b></p>'):'';
+  return cab+SECOES.map(function(s){
     var v=d&&d[s.k]; if(!v) return '';
     return '<div class="tec-sec '+(s.cls||'')+'"><span class="rot">'+(TECICO[s.k]||'')+s.rot+'</span><p>'+esc(v)+'</p></div>';
   }).join('')||'<p style="font-size:var(--text-sm)">fio vazio — teça de novo.</p>';
@@ -329,8 +352,18 @@ async function tecerFio(row){
   var box=row.querySelector('.tecido');
   box.innerHTML='<p style="font-size:var(--text-sm);color:var(--color-text-faint);font-style:italic">✦ tecendo o fio — a época, as ideias, a música, as artes…</p>';
   try{
-    var r=await SB.functions.invoke('ecos',{body:{title:t,author:a,tecido:true}});
+    var r=await SB.functions.invoke('ecos',{body:{title:t,author:a,tecido:true,ecos:ecosDoLivro(k)}});
     var d=r&&r.data;
+    if(d&&d.incerto){
+      // A IA nao reconheceu a obra com seguranca. Melhor nenhum fio do que o fio
+      // do livro errado -- e NAO gravamos nada.
+      box.innerHTML='<p class="tec-incerto">Não consegui identificar esta obra com segurança'
+        +(d.motivo?(' — '+esc(d.motivo)):'')
+        +'<br><span style="color:var(--color-text-faint)">Prefiro não tecer a não tecer errado. Confira o título e o autor no acervo e tente de novo.</span></p>'
+        +'<button class="btn" data-tecer="1" style="margin-top:10px">✦ Tentar de novo</button>';
+      box.querySelector('[data-tecer]').addEventListener('click',function(ev){ ev.stopPropagation(); tecerFio(row); });
+      return;
+    }
     if(r.error||!d||(!d.resenha&&!d.fio)){ box.innerHTML='<p style="font-size:var(--text-sm);color:#9B2C2C">a IA não conseguiu agora — tente de novo num instante.</p><button class="btn" data-tecer="1" style="margin-top:8px">✦ Tentar de novo</button>'; box.querySelector('[data-tecer]').addEventListener('click',function(){ tecerFio(row); }); return; }
     FIOS[k]=d; FIOS_KEYS[k]=true;
     try{ await SB.from('tapecaria_fios').upsert({user_id:user.id,book_key:k,data:d,updated_at:new Date().toISOString()},{onConflict:'user_id,book_key'}); }catch(e){}
