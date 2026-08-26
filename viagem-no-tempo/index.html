@@ -653,11 +653,17 @@ document.getElementById('mSituar').addEventListener('click',async function(){
   msg.textContent='✦ Perguntando onde este livro vive no tempo — e escrevendo a resenha…';
   this.disabled=true;
   try{
-    var r=await SB.functions.invoke('ecos',{body:{title:t,author:a,viagem:true}});
+    var r=await SB.functions.invoke('ecos',{body:{title:t,author:a,viagem:true,ecos:ancoraDoLivro(t)}});
     this.disabled=false;
     var d=r&&r.data;
+    if(d&&d.incerto){
+      // melhor não situar do que situar o livro errado
+      msg.textContent='Não reconheci esta obra com segurança'+(d.motivo?(' — '+d.motivo):'')+'. Confira o título e o autor, ou situe à mão.';
+      abrirSituo({t:t,a:a,mes:null,why:''}); return;
+    }
     if(r.error||!d||(!d.narrativa&&!d.narrador&&!d.resenha)){ msg.textContent='Não consegui agora — situe à mão ou tente de novo.'; abrirSituo({t:t,a:a,mes:null,why:''}); return; }
     var why='';
+    if(d.original) why+='<b>Obra identificada:</b> '+d.original+'<br>';
     if(d.narrativa) why+='<b>A narrativa:</b> '+d.narrativa;
     if(d.narrador) why+=(why?'<br>':'')+'<b>O narrador · a escrita:</b> '+d.narrador;
     var ano=parseAnoDoTexto(d.narrativa||'');
@@ -692,9 +698,11 @@ async function cloudLoad(){
     if(r&&r.data&&r.data.data&&r.data.data.v===1){ state=r.data.data; try{localStorage.setItem(SKEY,JSON.stringify(state));}catch(e){} }
     else cloudSave();
   }catch(e){}
-  renderStamps(); renderMala(); renderEstacoes();
-  if(typeof renderMapa==='function') renderMapa();
-  pullAppLibrary();
+  // ⚠️ o acervo (datalist do situar) vem PRIMEIRO e fora do alcance de qualquer
+  // erro de render: um registro torto no mapa já derrubou o autocomplete uma vez.
+  pullAppLibrary(); pullEcosCurados();
+  try{ renderStamps(); renderMala(); renderEstacoes(); }catch(e){ console.warn('[travessia] render:',e&&e.message); }
+  try{ if(typeof renderMapa==='function') renderMapa(); }catch(e){ console.warn('[travessia] mapa:',e&&e.message); }
 }
 
 /* ───────── acervo do Marginália: sugestão + PONTE DE VOLTA ─────────
@@ -704,6 +712,29 @@ async function cloudLoad(){
    posse; NUNCA o `status` — a Estante é gerida só no app. Livro que já
    está na Estante a Travessia apenas exibe. */
 var ACERVO=[], appState=null, appPushTimer=null;
+/* ECOS CURADOS: escritos à mão pela curadoria, dizem de QUAL obra se trata.
+   Viram âncora nas chamadas à IA — sem isso o modelo reconhece o AUTOR e cai na
+   obra mais famosa dele (foi assim que "A descida" virou o Katrina de outro
+   romance da Jesmyn Ward). Mesma lógica da Tapeçaria. */
+var ECOS_CUR={};
+async function pullEcosCurados(){
+  if(!SB) return;
+  try{
+    var r=await SB.from('curadoria_items').select('book_key,data').eq('block','ecos').eq('status','validated');
+    ECOS_CUR={};
+    if(r&&Array.isArray(r.data)) r.data.forEach(function(row){
+      if(!row.book_key||!row.data) return;
+      (ECOS_CUR[row.book_key]=ECOS_CUR[row.book_key]||[]).push({
+        title:row.data.title||'',author:row.data.author||'',why:row.data.why||''});
+    });
+  }catch(e){}
+}
+function ancoraDoLivro(titulo){
+  var k=norm(titulo), melhor='', n;
+  if(!k) return [];
+  for(n in ECOS_CUR){ if(n&&k.indexOf(n)!==-1&&n.length>melhor.length) melhor=n; }
+  return melhor?ECOS_CUR[melhor].slice(0,8):[];
+}
 function onShelfApp(b){ return b && ['reading','paused','tbr','read'].indexOf(b.status)!==-1; }
 function buildAcervo(){
   var books=(appState&&appState.books)||[];
@@ -782,11 +813,11 @@ document.getElementById('syncOut').addEventListener('click',async function(){
 /* ───────── resenha automática p/ livro novo (mesma voz do Drácula) ───────── */
 function buscarResenha(item){
   if(!SB||!user||!item||item.resenha) return;
-  SB.functions.invoke('ecos',{body:{title:item.t,author:(item.a||'').split('·')[0].trim(),viagem:true}}).then(function(r){
+  SB.functions.invoke('ecos',{body:{title:item.t,author:(item.a||'').split('·')[0].trim(),viagem:true,ecos:ancoraDoLivro(item.t)}}).then(function(r){
     var d=r&&r.data; if(!d||(!d.resenha&&!d.narrativa)) return;
     var it=state.mala.find(function(x){return x.id===item.id;}); if(!it||it.resenha) return;
     it.resenha=d.resenha||'';
-    if(!it.why){ var why=''; if(d.narrativa) why+='<b>A narrativa:</b> '+d.narrativa; if(d.narrador) why+=(why?'<br>':'')+'<b>O narrador · a escrita:</b> '+d.narrador; it.why=why; }
+    if(!it.why){ var why=''; if(d.original) why+='<b>Obra identificada:</b> '+d.original+'<br>'; if(d.narrativa) why+='<b>A narrativa:</b> '+d.narrativa; if(d.narrador) why+=(why?'<br>':'')+'<b>O narrador · a escrita:</b> '+d.narrador; it.why=why; }
     persist(); renderMala(); renderEstacoes();
   }).catch(function(){});
 }
@@ -807,7 +838,7 @@ function renderMapa(){
   var por={}, fora=[];
   keys.forEach(function(k){ var it=aloc[k]; if(!it) return; if(it.est>=1&&it.est<=12){ (por[it.est]=por[it.est]||[]).push(it); } else fora.push(it); });
   var max=1; Object.keys(por).forEach(function(e){ if(por[e].length>max) max=por[e].length; });
-  function chips(l){ return l.sort(function(a,b){return a.t.localeCompare(b.t);}).map(function(it){
+  function chips(l){ return l.sort(function(a,b){return String(a&&a.t||'').localeCompare(String(b&&b.t||''));}).map(function(it){
     return '<span class="mapa-liv" data-t="'+esc(it.t).replace(/"/g,'&quot;')+'" data-a="'+esc(it.a||'').replace(/"/g,'&quot;')+'">'+esc(it.t)+'</span>';
   }).join(''); }
   var html='';

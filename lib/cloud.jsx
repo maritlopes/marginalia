@@ -362,14 +362,24 @@
   };
 
   // situa o livro no tempo (narrativa + narrador) — modo 'tempo' da função 'ecos'
+  // Vai ANCORADO nos ecos curados do livro: são eles que dizem de QUAL obra se
+  // trata. Sem isso o modelo reconhece o autor e cai na obra mais famosa dele —
+  // foi assim que "A descida" virou o furacão Katrina de outro romance da Ward.
   window.MGCloud.tempoDaObra = async function (book) {
     try {
+      const curados = (typeof window.curatedEcos === 'function') ? (window.curatedEcos(book) || []) : [];
+      const ancora = curados.slice(0, 8).map(e => ({ title: e.title, author: e.author, why: e.why }));
       const { data, error } = await sb.functions.invoke('ecos', {
-        body: { title: book && book.title, author: book && book.author, tempo: true },
+        body: { title: book && book.title, author: book && book.author, tempo: true, ecos: ancora },
       });
       if (error) return { error };
       if (data && data.error) return { error: { message: data.error } };
-      return { narrativa: (data && data.narrativa) || '', narrador: (data && data.narrador) || '' };
+      if (data && data.incerto) return { incerto: true, motivo: data.motivo || '' };
+      return {
+        original: (data && data.original) || '',
+        narrativa: (data && data.narrativa) || '',
+        narrador: (data && data.narrador) || '',
+      };
     } catch (e) {
       return { error: { message: String(e) } };
     }

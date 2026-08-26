@@ -449,8 +449,13 @@ function TempoDaObra({ book }) {
     setBusy(true); setErr(null);
     const r = await cloud.tempoDaObra(b);
     setBusy(false);
+    if (r.incerto) {
+      // melhor não dizer nada do que descrever outro livro (ver âncora em cloud.jsx)
+      setErr('Não reconheci esta obra com segurança' + (r.motivo ? ' — ' + r.motivo : '') + '. Confira o título e o autor.');
+      return;
+    }
     if (r.error || (!r.narrativa && !r.narrador)) { setErr('Não consegui situar agora. Tente de novo.'); return; }
-    const t = { narrativa: r.narrativa, narrador: r.narrador };
+    const t = { original: r.original || '', narrativa: r.narrativa, narrador: r.narrador };
     setTempo(t);
     if (typeof MG !== 'undefined' && MG.updateBook && b.id) MG.updateBook(b.id, { tempo: t });
   };
@@ -466,6 +471,11 @@ function TempoDaObra({ book }) {
       <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 12 }}>O tempo da obra</div>
       {tempo ? (
         <>
+          {tempo.original && (
+            <div style={{ fontSize: 10, letterSpacing: .5, color: T.muted, marginBottom: 10 }}>
+              obra identificada: <b style={{ fontWeight: 600 }}>{tempo.original}</b>
+            </div>
+          )}
           {tempo.narrativa && linha('A narrativa', tempo.narrativa)}
           {tempo.narrador && linha('O narrador · a escrita', tempo.narrador)}
           <a href="/linha-do-tempo/" style={{ display: 'inline-block', marginTop: 4, color: T.terra,
