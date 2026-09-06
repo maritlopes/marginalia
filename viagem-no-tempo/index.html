@@ -770,7 +770,20 @@ function scheduleAppPush(){ if(!user||!appState) return; clearTimeout(appPushTim
 function marcarLidoNoAcervo(m){
   if(!appState||!Array.isArray(appState.books)) return;
   var nt=norm(m.t); if(!nt) return;
-  var b=appState.books.find(function(x){return x&&!x.deleted&&norm(x.title)===nt;});
+  // casamento: exato primeiro; senão por CONTENÇÃO de título ("grande sertao" ⊂ "grande sertao veredas"),
+  // exigindo o sobrenome do autor quando os dois lados o têm — evita casar "Anatomia do Grande Sertão".
+  var na=norm((m.a||'').split('·')[0]); var last=na?na.split(' ').pop():'';
+  var vivos=appState.books.filter(function(x){return x&&!x.deleted&&x.title;});
+  var b=vivos.find(function(x){return norm(x.title)===nt;});
+  if(!b){
+    var cands=vivos.filter(function(x){
+      var xt=norm(x.title); if(xt.length<4||nt.length<4) return false;
+      if(xt.indexOf(nt)<0&&nt.indexOf(xt)<0) return false;
+      var xa=norm(x.author); return !last||!xa||xa.indexOf(last)>=0;
+    });
+    cands.sort(function(p,q){return (p.status?0:1)-(q.status?0:1);}); // prefere quem já está na Estante
+    b=cands[0];
+  }
   if(b){
     if(onShelfApp(b)) return;            // Estante manda — não tocamos
     if(b.mark==='read') return;          // já etiquetado
