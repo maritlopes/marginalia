@@ -54,8 +54,9 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
   const b = liveBook || book || (typeof currentBook === 'function' ? currentBook() : BOOK_CURRENT);
   const isDemo = !b || (typeof BOOK_CURRENT !== 'undefined' && b.id === BOOK_CURRENT.id);
   const bookNotes = (window.NOTES || []).filter(n => (n.bookId && n.bookId === b.id) || (!n.bookId && n.book === b.title));
-  const pct = typeof b.pct === 'number' ? b.pct : 0;
-  const currentPage = b.currentPage || 0;
+  // livro LIDO é 100% por definição (marcado pelo Editar pode ter ficado com pct antigo)
+  const pct = b.status === 'read' ? 100 : (typeof b.pct === 'number' ? b.pct : 0);
+  const currentPage = b.status === 'read' ? (b.pages || b.currentPage || 0) : (b.currentPage || 0);
   const openEditor = () => { if (typeof window.__editBook === 'function') window.__editBook(b); };
   // Devolver à estante → acervo: inverso do "tirar a poeira". O livro sai da
   // estante (status → null) e volta a ser adormecido, guardando a marca de leitura
@@ -4567,7 +4568,16 @@ function ScreenRetrospectiva({ onNav = () => {} }) {
   const paginas = comPaginas.reduce((s, b) => s + Number(b.pages), 0);
   const paginasIncompletas = comPaginas.length < doAno.length;
   const log = (typeof MG !== 'undefined' && MG.getReadingLog) ? MG.getReadingLog() : [];
-  const paginasDiario = log.filter(e => String(e.date || '').startsWith(String(ano))).reduce((s, e) => s + (e.pages || 0), 0);
+  const logAno = log.filter(e => String(e.date || '').startsWith(String(ano)));
+  const paginasDiario = logAno.reduce((s, e) => s + (e.pages || 0), 0);
+  const minutosDiario = logAno.reduce((s, e) => s + (e.minutes || 0), 0);
+  const horasDiario = Math.round(minutosDiario / 60);
+  const diasDiario = new Set(logAno.map(e => e.date)).size;
+  // por mês: páginas e minutos registrados (barras simples)
+  const porMes = Array.from({ length: 12 }, (_, i) => ({ m: i, pages: 0, minutes: 0 }));
+  for (const e of logAno) { const m = parseInt(String(e.date).slice(5, 7), 10) - 1; if (m >= 0 && m < 12) { porMes[m].pages += e.pages || 0; porMes[m].minutes += e.minutes || 0; } }
+  const maxMes = Math.max(1, ...porMes.map(x => x.pages));
+  const MESES1 = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 
   const statBox = (num, label) => (
     <div style={{ flex: 1, background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '12px 8px', textAlign: 'center' }}>
@@ -4625,6 +4635,26 @@ function ScreenRetrospectiva({ onNav = () => {} }) {
             {paginasDiario > 0 && (
               <div style={{ marginTop: 4, fontFamily: T.sans, fontSize: 11, color: T.muted, textAlign: 'center' }}>
                 no seu diário de leitura: {paginasDiario.toLocaleString('pt-BR')} páginas registradas em {ano}
+              </div>
+            )}
+            {/* o tempo com os livros — do diário (minutos registrados) */}
+            {(minutosDiario > 0 || paginasDiario > 0) && (
+              <div style={{ marginTop: 16, background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '12px 14px' }}>
+                <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.muted, fontWeight: 700, marginBottom: 8 }}>Seu tempo com os livros em {ano}</div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {minutosDiario >= 60 && statBox(horasDiario + 'h', 'de leitura')}
+                  {statBox(diasDiario, diasDiario === 1 ? 'dia lendo' : 'dias lendo')}
+                  {diasDiario > 0 && statBox(Math.round(paginasDiario / diasDiario), 'pág/dia')}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 64, marginTop: 12 }}>
+                  {porMes.map((x) => (
+                    <div key={x.m} title={`${x.pages} pág · ${x.minutes} min`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
+                      <div style={{ width: '100%', height: `${Math.max(x.pages > 0 ? 6 : 2, Math.round((x.pages / maxMes) * 52))}px`, background: x.pages > 0 ? T.terra : T.parchment, borderRadius: 3 }}/>
+                      <div style={{ fontSize: 9, color: T.muted, fontFamily: T.mono, marginTop: 4 }}>{MESES1[x.m]}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ fontSize: 10.5, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 6 }}>páginas registradas por mês{minutosDiario > 0 ? ` · ${Math.round(minutosDiario / 60)}h${String(minutosDiario % 60).padStart(2, '0')} no total` : ''}</div>
               </div>
             )}
 

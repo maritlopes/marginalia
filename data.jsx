@@ -536,11 +536,81 @@ function currentBook() {
   const bs = window.BOOKS || [];
   const reading = bs.filter(b => b.status === 'reading');
   if (reading.length) {
-    // o livro marcado como "Lendo" mais recentemente fica em primeiro
-    reading.sort((a, b) => String(b.readingSince || '').localeCompare(String(a.readingSince || '')));
+    // 1º critério: o livro que ela REGISTROU por último no diário (é o que está na mão);
+    // 2º: o marcado como "Lendo" mais recentemente
+    const log = (typeof MG !== 'undefined' && MG.getReadingLog) ? MG.getReadingLog() : [];
+    const ultimo = {};
+    for (const e of log) {
+      if (!e) continue;
+      const carimbo = (e.date || '') + '|' + (e.updatedAt || '');
+      const ids = e.books ? Object.keys(e.books).filter(id => (e.books[id].pages || 0) + (e.books[id].minutes || 0) > 0) : (e.bookId ? [e.bookId] : []);
+      // o livro principal do dia (o último que somou) vence os outros do mesmo dia
+      for (const id of ids) { const c = carimbo + (id === e.bookId ? '~' : ''); if (!ultimo[id] || c > ultimo[id]) ultimo[id] = c; }
+    }
+    reading.sort((a, b) => {
+      const ua = ultimo[a.id] || '', ub = ultimo[b.id] || '';
+      if (ua !== ub) return ub.localeCompare(ua);
+      return String(b.readingSince || '').localeCompare(String(a.readingSince || ''));
+    });
     return reading[0];
   }
   return bs.find(b => b.status === 'paused') || bs[0] || BOOK_CURRENT;
+}
+
+// ─────────────────────────────────────────────────────────────
+// CLUBES DE LEITURA com calendário — o app conhece as datas e cuida das contas.
+// Cada livro: janela [abre, fim] e metas semanais (sábado). Quando a meta vem em
+// página, o app pode preencher a "Meta da semana" do Plano. `keys` casam com o
+// título normalizado do livro no acervo (substring) — o cartão só aparece para
+// quem tem pelo menos um livro do clube na biblioteca.
+// ─────────────────────────────────────────────────────────────
+const CLUBES = [
+  {
+    id: 'elt06', nome: 'Entre Luz e Trevas 06', sub: 'Ingens Mundi · CLSL', tema: 'Uma virada de século',
+    inicio: '2026-09-12', fim: '2027-05-29',
+    livros: [
+      { title: 'Os Devaneios do Caminhante Solitário', author: 'Jean-Jacques Rousseau', keys: ['devaneios do caminhante'], abre: '2026-09-12', fim: '2026-09-26',
+        metas: [{ data: '2026-09-19', meta: 'até a Quinta Caminhada' }, { data: '2026-09-26', meta: 'até o final' }] },
+      { title: 'As Ligações Perigosas', author: 'Pierre Choderlos de Laclos', keys: ['ligacoes perigosas', 'relacoes perigosas'], abre: '2026-09-26', fim: '2026-10-30',
+        metas: [{ data: '2026-10-03', meta: 'até a carta 24' }, { data: '2026-10-10', meta: 'até a carta 65' }, { data: '2026-10-17', meta: 'até a carta 94' }, { data: '2026-10-24', meta: 'até a carta 124' }, { data: '2026-10-30', meta: 'até o final + cartas adicionais' }] },
+      { title: 'Maria Antonieta', author: 'Stefan Zweig', keys: ['maria antonieta'], abre: '2026-10-30', fim: '2026-12-05',
+        metas: [{ data: '2026-11-07', meta: 'até a página 106', page: 106 }, { data: '2026-11-14', meta: 'até a página 206', page: 206 }, { data: '2026-11-21', meta: 'até a página 306', page: 306 }, { data: '2026-11-28', meta: 'até a página 399', page: 399 }, { data: '2026-12-05', meta: 'até o final' }] },
+      { title: 'Um Conto de Duas Cidades', author: 'Charles Dickens', keys: ['conto de duas cidades'], abre: '2026-12-05', fim: '2027-01-09',
+        metas: [{ data: '2026-12-12', meta: 'Livro 2, capítulo 3' }, { data: '2026-12-19', meta: 'Livro 2, capítulo 12' }, { data: '2026-12-26', meta: 'Livro 2, capítulo 22' }, { data: '2027-01-02', meta: 'Livro 3, capítulo 7' }, { data: '2027-01-09', meta: 'até o final' }] },
+      { title: 'Guerra e Paz', author: 'Liev Tolstói', keys: ['guerra e paz'], abre: '2027-01-09', fim: '2027-04-17',
+        metas: [{ data: '2027-01-16', meta: 'Vol. 1 · Tomo 1 · Parte 1 · cap. 19' }, { data: '2027-01-23', meta: 'Vol. 1 · Tomo 1 · Parte 2 · cap. 13' }, { data: '2027-01-30', meta: 'Vol. 1 · Tomo 1 · Parte 3 · cap. 10' }, { data: '2027-02-06', meta: 'Vol. 1 · Tomo 2 · Parte 1 · cap. 16' }, { data: '2027-02-13', meta: 'Vol. 1 · Tomo 2 · Parte 3 · cap. 4' }, { data: '2027-02-20', meta: 'Vol. 1 · Tomo 2 · Parte 4 · cap. 7' }, { data: '2027-02-27', meta: 'até o final do Volume 1' }, { data: '2027-03-06', meta: 'Vol. 2 · Tomo 3 · Parte 2 · cap. 5' }, { data: '2027-03-13', meta: 'Vol. 2 · Tomo 3 · Parte 2 · cap. 27' }, { data: '2027-03-20', meta: 'Vol. 2 · Tomo 3 · Parte 3 · cap. 14' }, { data: '2027-03-27', meta: 'Vol. 2 · Tomo 4 · Parte 1 · cap. 10' }, { data: '2027-04-03', meta: 'Vol. 2 · Tomo 4 · Parte 3 · cap. 5' }, { data: '2027-04-10', meta: 'Vol. 2 · Epílogo · Parte 1 · cap. 4' }, { data: '2027-04-17', meta: 'até o final do Volume 2' }] },
+      { title: 'O Vermelho e o Negro', author: 'Stendhal', keys: ['vermelho e o negro'], abre: '2027-04-17', fim: '2027-05-29',
+        metas: [{ data: '2027-04-24', meta: 'Livro I · capítulo XVII' }, { data: '2027-05-01', meta: 'Livro I · capítulo XXVII' }, { data: '2027-05-08', meta: 'Livro II · capítulo VII' }, { data: '2027-05-15', meta: 'Livro II · capítulo XX' }, { data: '2027-05-22', meta: 'Livro II · capítulo XXXVI' }, { data: '2027-05-29', meta: 'até o final' }] },
+    ],
+  },
+];
+const _normTitulo = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+// o livro do acervo que corresponde a um livro do clube (prefere quem está na Estante)
+function livroDoClubeNoAcervo(lc) {
+  const bs = (window.BOOKS || []).filter(b => b && !b.deleted);
+  const hits = bs.filter(b => { const n = _normTitulo(b.title); return lc.keys.some(k => n.includes(k)); });
+  if (!hits.length) return null;
+  return hits.find(b => b.status) || hits[0];
+}
+// estado do clube HOJE: livro em curso (ou o próximo, antes do início), próxima meta semanal, próximo livro
+function clubeAgora(hojeISO) {
+  const hoje = hojeISO || (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
+  const out = [];
+  for (const c of CLUBES) {
+    if (hoje > c.fim) continue;
+    const temAlgum = c.livros.some(l => livroDoClubeNoAcervo(l));
+    if (!temAlgum) continue;
+    let idx = c.livros.findIndex(l => hoje >= l.abre && hoje < l.fim);
+    if (idx < 0) idx = c.livros.findIndex(l => hoje < l.abre);
+    if (idx < 0) idx = c.livros.length - 1;
+    const livro = c.livros[idx];
+    // antes da abertura, a próxima data é a própria abertura (Lendo ao vivo)
+    const meta = hoje < livro.abre ? { data: livro.abre, meta: 'Lendo ao vivo — as primeiras páginas', abertura: true } : (livro.metas.find(m => m.data >= hoje) || null);
+    const proximo = c.livros[idx + 1] || null;
+    const dias = (iso) => Math.round((new Date(iso + 'T00:00:00') - new Date(hoje + 'T00:00:00')) / 86400000);
+    out.push({ clube: c, livro, aindaNaoAbriu: hoje < livro.abre, meta, diasMeta: meta ? dias(meta.data) : null, diasFim: dias(livro.fim), proximo, book: livroDoClubeNoAcervo(livro) });
+  }
+  return out;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1007,7 +1077,7 @@ function nobelForAuthor(author) {
   return null;
 }
 
-Object.assign(window, {
+Object.assign(window, { CLUBES, clubeAgora, livroDoClubeNoAcervo,
   NOBEL_LAUREATES, nobelForAuthor,
   BOOK_CURRENT, NOTES_SEED, BOOKS_SEED, THEMES_STUDY, ACTIVITY,
   PONTES, PONTE_CATS, GLOSSARIO, ECOS_CURADOS, curatedEcos,

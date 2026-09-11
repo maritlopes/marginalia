@@ -220,12 +220,27 @@ function HomeVariantA({ onNav = () => {} }) {
   const [diaP, setDiaP] = React.useState('');
   const [diaM, setDiaM] = React.useState('');
   const [diaSalvo, setDiaSalvo] = React.useState(false);
-  React.useEffect(() => { setDiaP(diaTot.pages ? String(diaTot.pages) : ''); setDiaM(diaTot.minutes ? String(diaTot.minutes) : ''); }, [diaAtivo, diaTot.pages, diaTot.minutes]);
+  React.useEffect(() => { setDiaP(diaTot.pages ? String(diaTot.pages) : ''); setDiaM(diaTot.minutes ? String(diaTot.minutes) : ''); setChipLivro(null); }, [diaAtivo, diaTot.pages, diaTot.minutes]);
+  // em qual livro? — os livros em leitura viram chips; a diferença salva vai para o escolhido
+  const lendoAgora = (window.BOOKS || []).filter((x) => x && !x.deleted && (x.status === 'reading' || x.status === 'paused'));
+  const [chipLivro, setChipLivro] = React.useState(null);
+  const livroDia = chipLivro || diaTot.bookId || (b && b.id) || null;
+  const diaBooks = registrosDia.reduce((acc, e) => { const bk = e.books || (e.bookId ? { [e.bookId]: { pages: e.pages || 0, minutes: e.minutes || 0 } } : {}); Object.keys(bk).forEach((id) => { const x = acc[id] || (acc[id] = { pages: 0, minutes: 0 }); x.pages += bk[id].pages || 0; x.minutes += bk[id].minutes || 0; }); return acc; }, {});
+  const reparticao = Object.keys(diaBooks).filter((id) => diaBooks[id].pages + diaBooks[id].minutes > 0);
   const diaMudou = (parseInt(diaP, 10) || 0) !== diaTot.pages || (parseInt(diaM, 10) || 0) !== diaTot.minutes;
   const salvarDia = () => {
     if (!diaMudou) return;
-    if (typeof MG !== 'undefined' && MG.setDayTotals) MG.setDayTotals(diaAtivo, { pages: diaP, minutes: diaM, bookId: diaTot.bookId || (b && b.id) || null });
+    if (typeof MG !== 'undefined' && MG.setDayTotals) MG.setDayTotals(diaAtivo, { pages: diaP, minutes: diaM, bookId: livroDia });
     setDiaSalvo(true);
+  };
+  // registro rápido no cartão "Em leitura": SOMA ao dia de hoje, no livro do cartão
+  const [addP, setAddP] = React.useState('');
+  const [addM, setAddM] = React.useState('');
+  const somarAgora = () => {
+    const n = parseInt(addP, 10) || 0, m = parseInt(addM, 10) || 0;
+    if (n <= 0 && m <= 0) return;
+    if (typeof MG !== 'undefined' && MG.logReading) MG.logReading(n, (b && b.id) || null, { minutes: m, src: 'hoje' });
+    setAddP(''); setAddM('');
   };
   const apagarDia = () => { if (typeof MG !== 'undefined' && MG.setDayTotals) MG.setDayTotals(diaAtivo, { pages: 0, minutes: 0 }); setDiaSalvo(false); };
   const tituloLivro = (id) => { const bk = (window.BOOKS || []).find((x) => x.id === id); return bk ? bk.title : null; };
@@ -446,7 +461,78 @@ function HomeVariantA({ onNav = () => {} }) {
             fontFamily: T.sans, fontSize: 12, fontWeight: 600, letterSpacing: 0.4,
             textTransform: 'uppercase', cursor: 'pointer',
           }}>{tt('retomar_leitura')}</button>
+          {/* registro rápido: soma ao dia de hoje, neste livro */}
+          {!window.__demoShelf && (
+            <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.hairline}`, flexWrap: 'wrap', cursor: 'default' }}>
+              <span style={{ fontSize: 12, color: T.brown, fontFamily: T.serif }}>Li agora:</span>
+              <input value={addP} onChange={(e) => setAddP(e.target.value)} inputMode="numeric" placeholder="0"
+                onKeyDown={(e) => e.key === 'Enter' && somarAgora()}
+                style={{ width: 46, padding: '6px 4px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, outline: 'none', textAlign: 'center' }}/>
+              <span style={{ fontSize: 11, color: T.brown }}>pág</span>
+              <input value={addM} onChange={(e) => setAddM(e.target.value)} inputMode="numeric" placeholder="0"
+                onKeyDown={(e) => e.key === 'Enter' && somarAgora()}
+                style={{ width: 46, padding: '6px 4px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, outline: 'none', textAlign: 'center' }}/>
+              <span style={{ fontSize: 11, color: T.brown }}>min</span>
+              <div style={{ flex: 1 }}/>
+              <button onClick={somarAgora} disabled={!(parseInt(addP, 10) || parseInt(addM, 10))} style={{ padding: '6px 12px', borderRadius: 8, border: 0, background: (parseInt(addP, 10) || parseInt(addM, 10)) ? T.terra : T.parchment, color: (parseInt(addP, 10) || parseInt(addM, 10)) ? T.cream : T.brown, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>+ somar</button>
+            </div>
+          )}
         </div>
+
+        {/* LEITURAS DO CLUBE — o app conhece o calendário; só aparece para quem tem livro do clube */}
+        {(() => {
+          const lista = (typeof window.clubeAgora === 'function') ? window.clubeAgora() : [];
+          if (!lista.length) return null;
+          const fmt = (iso) => { const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${parseInt(m[3], 10)}/${m[2]}` : iso; };
+          const btn = { padding: '7px 12px', borderRadius: 8, border: `1px solid ${T.terra}`, background: 'transparent', color: T.terra, fontFamily: T.sans, fontSize: 11.5, fontWeight: 600, cursor: 'pointer' };
+          const ok = { fontSize: 11.5, color: T.olive, fontFamily: T.sans, fontWeight: 600, padding: '7px 0' };
+          return lista.map((c) => {
+            const bk = c.book; const cur = (bk && bk.currentPage) || 0; const tot = (bk && bk.pages) || 0;
+            const naEstante = !!(bk && bk.status);
+            const lido = !!(bk && bk.status === 'read');
+            const ritmo = (tot && cur < tot && c.diasFim > 0) ? Math.ceil((tot - cur) / c.diasFim) : null;
+            const metaJa = !!(bk && bk.goalFinishBy === c.livro.fim);
+            const wgJa = !!(bk && bk.weekGoal && c.meta && c.meta.page && bk.weekGoal.page === c.meta.page);
+            const quando = c.diasMeta === 0 ? 'é hoje' : (c.diasMeta === 1 ? 'amanhã' : `faltam ${c.diasMeta} dias`);
+            return (
+              <div key={c.clube.id}>
+                <SectionRule label="Leituras do clube"/>
+                <div style={{ background: T.paper, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '14px 16px', marginBottom: 22 }}>
+                  <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 600 }}>{c.clube.nome} · {c.clube.sub}</div>
+                  <div onClick={() => { if (bk && typeof window.__openBook === 'function') window.__openBook(bk); }} style={{ fontFamily: T.serif, fontSize: 19, lineHeight: 1.15, fontWeight: 500, letterSpacing: -0.3, marginTop: 4, color: T.ink, cursor: bk ? 'pointer' : 'default' }}>{c.livro.title}</div>
+                  <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 12.5, color: T.brown, marginTop: 2 }}>
+                    {c.livro.author} · {c.aindaNaoAbriu ? `abre em ${fmt(c.livro.abre)}` : `de ${fmt(c.livro.abre)} a ${fmt(c.livro.fim)}`}
+                  </div>
+                  {c.meta && (
+                    <div style={{ marginTop: 10, padding: '8px 10px', background: 'rgba(176,83,58,0.07)', borderRadius: 8 }}>
+                      <div style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: T.terra, fontWeight: 700 }}>
+                        {c.meta.abertura ? 'Abertura' : 'Meta da semana'} · sáb {fmt(c.meta.data)} · {quando}
+                      </div>
+                      <div style={{ fontFamily: T.serif, fontSize: 15, color: T.ink, marginTop: 2 }}>{c.meta.meta}</div>
+                    </div>
+                  )}
+                  <div style={{ fontSize: 12, color: T.brown, marginTop: 10, fontFamily: T.sans, lineHeight: 1.5 }}>
+                    {!bk ? 'Ainda não está na sua biblioteca.'
+                      : lido ? '✓ Você já leu este.'
+                      : !naEstante ? 'Está no seu acervo, adormecido.'
+                      : tot ? <>Você está na <strong>pág {cur}</strong> de {tot}{ritmo ? <> · ~<strong style={{ color: T.terra }}>{ritmo} pág/dia</strong> até {fmt(c.livro.fim)}</> : null}</>
+                      : 'Na sua estante — sem total de páginas (ponha no Editar para eu calcular o ritmo).'}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                    {bk && !naEstante && <button onClick={() => { if (typeof window.__tirarPoeira === 'function') window.__tirarPoeira(bk); }} style={btn}>Despertar para a estante</button>}
+                    {bk && naEstante && !lido && !metaJa && <button onClick={() => { if (typeof MG !== 'undefined') MG.updateBook(bk.id, { goalFinishBy: c.livro.fim }); }} style={btn}>Meta no plano: terminar até {fmt(c.livro.fim)}</button>}
+                    {bk && naEstante && !lido && metaJa && <span style={ok}>✓ Meta do plano: até {fmt(c.livro.fim)}</span>}
+                    {bk && naEstante && !lido && c.meta && c.meta.page && !wgJa && c.meta.page > cur && <button onClick={() => { if (typeof MG !== 'undefined') MG.updateBook(bk.id, { weekGoal: { from: cur, page: c.meta.page, until: c.meta.data } }); }} style={btn}>Meta da semana: pág {c.meta.page}</button>}
+                    {bk && naEstante && !lido && wgJa && <span style={ok}>✓ Meta da semana: pág {c.meta.page}</span>}
+                  </div>
+                  {c.proximo && (
+                    <div style={{ fontSize: 11, color: T.muted, marginTop: 8, fontFamily: T.serif, fontStyle: 'italic' }}>Depois: {c.proximo.title} · abre {fmt(c.proximo.abre)}</div>
+                  )}
+                </div>
+              </div>
+            );
+          });
+        })()}
 
         {/* SUA LEITURA, DIA A DIA — hoje + sequência + semana + calendário do mês + Li hoje */}
         <SectionRule label="Sua leitura, dia a dia"/>
@@ -563,9 +649,20 @@ function HomeVariantA({ onNav = () => {} }) {
                     {diaSalvo && !diaMudou ? '✓ Salvo' : 'Salvar'}
                   </button>
                 </div>
+                {lendoAgora.length > 0 && (
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
+                    <span style={{ fontSize: 11, color: T.brown }}>em qual livro?</span>
+                    {lendoAgora.map((x) => {
+                      const on = livroDia === x.id;
+                      return (
+                        <button key={x.id} onClick={() => { setChipLivro(x.id); setDiaSalvo(false); }} style={{ padding: '4px 10px', borderRadius: 999, border: `1px solid ${on ? T.ink : T.hairline}`, background: on ? T.ink : 'transparent', color: on ? T.cream : T.brown, fontFamily: T.sans, fontSize: 11, fontWeight: 600, cursor: 'pointer', maxWidth: 160, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.title}</button>
+                      );
+                    })}
+                  </div>
+                )}
                 <div style={{ fontSize: 11, color: T.brown, marginTop: 8, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.4 }}>
                   Um registro por dia: altere os totais para acrescentar ou corrigir.
-                  {diaTot.bookId && tituloLivro(diaTot.bookId) ? ` · ${tituloLivro(diaTot.bookId)}` : ''}
+                  {reparticao.length > 1 ? ' · ' + reparticao.map((id) => `${tituloLivro(id) || 'outro'} ${diaBooks[id].pages ? diaBooks[id].pages + ' pág' : ''}${diaBooks[id].pages && diaBooks[id].minutes ? ' · ' : ''}${diaBooks[id].minutes ? diaBooks[id].minutes + ' min' : ''}`).join(' · ') : (diaTot.bookId && tituloLivro(diaTot.bookId) ? ` · ${tituloLivro(diaTot.bookId)}` : '')}
                   {(diaTot.pages || diaTot.minutes) ? <> · <button onClick={apagarDia} style={{ background: 'transparent', border: 0, padding: 0, color: T.muted, fontSize: 11, cursor: 'pointer', textDecoration: 'underline', fontFamily: T.serif, fontStyle: 'italic' }}>apagar o dia</button></> : null}
                 </div>
               </div>

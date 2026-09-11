@@ -230,8 +230,14 @@ const MG = {
     const canon = vivos.find(e => e.id === 'd_' + date) || vivos[vivos.length - 1];
     const agora = new Date().toISOString();
     let pages = 0, minutes = 0, bookId = canon.bookId || null;
-    for (const e of vivos) { pages += e.pages || 0; minutes += e.minutes || 0; if (!bookId && e.bookId) bookId = e.bookId; }
-    const entry = { ...canon, id: 'd_' + date, date, pages, minutes, bookId, updatedAt: agora };
+    const books = {};
+    const addB = (id, p, m) => { if (!id) return; const x = books[id] || (books[id] = { pages: 0, minutes: 0 }); x.pages += p || 0; x.minutes += m || 0; };
+    for (const e of vivos) {
+      pages += e.pages || 0; minutes += e.minutes || 0; if (!bookId && e.bookId) bookId = e.bookId;
+      if (e.books) Object.keys(e.books).forEach(id => addB(id, e.books[id].pages, e.books[id].minutes));
+      else addB(e.bookId, e.pages, e.minutes);
+    }
+    const entry = { ...canon, id: 'd_' + date, date, pages, minutes, bookId, books, updatedAt: agora };
     // todo registro vivo do dia que NÃO é a linha canônica vira lápide (inclusive o que
     // serviu de base, se tinha id antigo) — só assim a dobra não desfaz no sync
     const next = log
@@ -251,10 +257,13 @@ const MG = {
     const agora = new Date().toISOString();
     let next;
     if (entry) {
-      const upd = { ...entry, pages: entry.pages + n, minutes: entry.minutes + min, bookId: bookId || entry.bookId || null, src: o.src || entry.src || 'hoje', updatedAt: agora };
+      const books = { ...(entry.books || {}) };
+      if (bookId) { const x = books[bookId] || { pages: 0, minutes: 0 }; books[bookId] = { pages: x.pages + n, minutes: x.minutes + min }; }
+      const upd = { ...entry, pages: entry.pages + n, minutes: entry.minutes + min, bookId: bookId || entry.bookId || null, books, src: o.src || entry.src || 'hoje', updatedAt: agora };
       next = log.map(e => e.id === entry.id ? upd : e);
     } else {
-      next = [{ id: 'd_' + date, date, pages: n, minutes: min, bookId: bookId || null, src: o.src || 'hoje', updatedAt: agora }, ...log];
+      const books = bookId ? { [bookId]: { pages: n, minutes: min } } : {};
+      next = [{ id: 'd_' + date, date, pages: n, minutes: min, bookId: bookId || null, books, src: o.src || 'hoje', updatedAt: agora }, ...log];
     }
     s.readingLog = next;
     save(s);
@@ -273,9 +282,14 @@ const MG = {
     if (!pages && !minutes) {
       next = entry ? log.map(e => e.id === entry.id ? { ...e, deleted: true, updatedAt: agora } : e) : log;
     } else if (entry) {
-      next = log.map(e => e.id === entry.id ? { ...e, pages, minutes, bookId: e.bookId || t.bookId || null, updatedAt: agora } : e);
+      // a DIFERENÇA vai para o livro escolhido (chips "em qual livro?"); nunca abaixo de zero
+      const books = { ...(entry.books || {}) };
+      const bid = t.bookId || entry.bookId || null;
+      if (bid) { const x = books[bid] || { pages: 0, minutes: 0 }; books[bid] = { pages: Math.max(0, x.pages + (pages - entry.pages)), minutes: Math.max(0, x.minutes + (minutes - entry.minutes)) }; }
+      next = log.map(e => e.id === entry.id ? { ...e, pages, minutes, bookId: bid, books, updatedAt: agora } : e);
     } else {
-      next = [{ id: 'd_' + date, date, pages, minutes, bookId: t.bookId || null, src: 'hoje', updatedAt: agora }, ...log];
+      const books = t.bookId ? { [t.bookId]: { pages, minutes } } : {};
+      next = [{ id: 'd_' + date, date, pages, minutes, bookId: t.bookId || null, books, src: 'hoje', updatedAt: agora }, ...log];
     }
     s.readingLog = next;
     save(s);
@@ -346,7 +360,14 @@ const MG = {
     const soma = (entries) => entries.reduce((a, e) => ({ pages: a.pages + (e.pages || 0), minutes: a.minutes + (e.minutes || 0), days: a.days.add(e.date) }), { pages: 0, minutes: 0, days: new Set() });
     const e7 = log.filter(e => e && k7.includes(e.date));
     const g7 = soma(e7);
-    const b7 = soma(bookId ? e7.filter(e => e.bookId === bookId) : []);
+    // parte DESTE livro: a repartição `books` quando existe; senão o registro inteiro se era dele
+    const parteDoLivro = (e) => {
+      if (!bookId) return null;
+      if (e.books && e.books[bookId]) return { date: e.date, pages: e.books[bookId].pages || 0, minutes: e.books[bookId].minutes || 0 };
+      if (!e.books && e.bookId === bookId) return e;
+      return null;
+    };
+    const b7 = soma(e7.map(parteDoLivro).filter(x => x && (x.pages > 0 || x.minutes > 0)));
     // páginas por hora: só registros com páginas E minutos (últimos 60 dias); precisa de ≥ 20 min somados
     const k60 = janela(60);
     const ambos = log.filter(e => e && k60.includes(e.date) && e.pages > 0 && e.minutes > 0);
