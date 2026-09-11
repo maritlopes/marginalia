@@ -212,29 +212,94 @@ const MG = {
     return next;
   },
 
-  // registro de leitura (páginas lidas por dia) — alimenta "Esta semana" e o ritmo
+  // ── DIÁRIO DE LEITURA: UM registro por dia (id 'd_<data>') com páginas e minutos ──
+  // Tudo o que a leitora registra num dia (Li hoje · Onde estou · Foco) SOMA na linha do
+  // dia; ela pode abrir a linha e alterar os totais (acrescentar ou corrigir).
+  // Remoção é por LÁPIDE (deleted:true + updatedAt) — o sync une por id e nunca apaga,
+  // então uma linha apagada de verdade voltaria pelo outro aparelho. Registros antigos
+  // (ids 'r_…', vários por dia) são dobrados na linha do dia na primeira escrita daquele dia.
   getReadingLog() {
     const s = load();
-    return Array.isArray(s.readingLog) ? s.readingLog : [];
+    return (Array.isArray(s.readingLog) ? s.readingLog : []).filter(e => e && !e.deleted);
   },
-  // Cada registro: { id, date, pages, minutes, bookId, src }. Páginas E/OU minutos —
-  // vale registrar só o tempo (Foco) ou só as páginas (Li hoje / Onde estou).
-  // src: 'hoje' (Li hoje na Home) · 'plano' (atualizou a página no Plano) · 'foco' (sessão do timer)
+  _dayEntry(s, date) {
+    const log = Array.isArray(s.readingLog) ? s.readingLog : [];
+    const vivos = log.filter(e => e && !e.deleted && e.date === date);
+    if (!vivos.length) return { log, entry: null };
+    // prefere a linha canônica do dia; senão a mais antiga (dobra as outras nela)
+    const canon = vivos.find(e => e.id === 'd_' + date) || vivos[vivos.length - 1];
+    const agora = new Date().toISOString();
+    let pages = 0, minutes = 0, bookId = canon.bookId || null;
+    for (const e of vivos) { pages += e.pages || 0; minutes += e.minutes || 0; if (!bookId && e.bookId) bookId = e.bookId; }
+    const entry = { ...canon, id: 'd_' + date, date, pages, minutes, bookId, updatedAt: agora };
+    // todo registro vivo do dia que NÃO é a linha canônica vira lápide (inclusive o que
+    // serviu de base, se tinha id antigo) — só assim a dobra não desfaz no sync
+    const next = log
+      .filter(e => !(e && e.id === 'd_' + date))
+      .map(e => (e && !e.deleted && e.date === date) ? { ...e, deleted: true, updatedAt: agora } : e);
+    return { log: [entry, ...next], entry };
+  },
   logReading(pages, bookId, opts) {
     const o = opts || {};
     const n = Math.max(0, parseInt(pages, 10) || 0);
     const min = Math.max(0, parseInt(o.minutes, 10) || 0);
     if (!n && !min) return null;
     const s = load();
-    const log = Array.isArray(s.readingLog) ? s.readingLog : [];
     const d = new Date();
     const date = o.date || (d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
-    const entry = { id: 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), date, pages: n, minutes: min, bookId: bookId || null, src: o.src || 'hoje' };
-    s.readingLog = [entry, ...log];
+    const { log, entry } = this._dayEntry(s, date);
+    const agora = new Date().toISOString();
+    let next;
+    if (entry) {
+      const upd = { ...entry, pages: entry.pages + n, minutes: entry.minutes + min, bookId: bookId || entry.bookId || null, src: o.src || entry.src || 'hoje', updatedAt: agora };
+      next = log.map(e => e.id === entry.id ? upd : e);
+    } else {
+      next = [{ id: 'd_' + date, date, pages: n, minutes: min, bookId: bookId || null, src: o.src || 'hoje', updatedAt: agora }, ...log];
+    }
+    s.readingLog = next;
     save(s);
     if (typeof window.__rerender === 'function') window.__rerender();
-    return entry;
+    return next.find(e => e.id === 'd_' + date) || null;
   },
+  // define os TOTAIS do dia (acrescentar ou corrigir); zerar os dois = apaga o dia
+  setDayTotals(date, totals) {
+    const t = totals || {};
+    const pages = Math.max(0, parseInt(t.pages, 10) || 0);
+    const minutes = Math.max(0, parseInt(t.minutes, 10) || 0);
+    const s = load();
+    const { log, entry } = this._dayEntry(s, date);
+    const agora = new Date().toISOString();
+    let next;
+    if (!pages && !minutes) {
+      next = entry ? log.map(e => e.id === entry.id ? { ...e, deleted: true, updatedAt: agora } : e) : log;
+    } else if (entry) {
+      next = log.map(e => e.id === entry.id ? { ...e, pages, minutes, bookId: e.bookId || t.bookId || null, updatedAt: agora } : e);
+    } else {
+      next = [{ id: 'd_' + date, date, pages, minutes, bookId: t.bookId || null, src: 'hoje', updatedAt: agora }, ...log];
+    }
+    s.readingLog = next;
+    save(s);
+    if (typeof window.__rerender === 'function') window.__rerender();
+  },
+  // compatibilidade: corrigir/remover por id (viram lápide, nunca somem do array)
+  updateReading(id, patch) {
+    const s = load();
+    const log = Array.isArray(s.readingLog) ? s.readingLog : [];
+    const pages = Math.max(0, parseInt(patch && patch.pages, 10) || 0);
+    const minutes = Math.max(0, parseInt(patch && patch.minutes, 10) || 0);
+    const agora = new Date().toISOString();
+    s.readingLog = log.map(e => e && e.id === id ? ((!pages && !minutes) ? { ...e, deleted: true, updatedAt: agora } : { ...e, pages, minutes, updatedAt: agora }) : e);
+    save(s);
+    if (typeof window.__rerender === 'function') window.__rerender();
+  },
+  removeReading(id) {
+    const s = load();
+    const agora = new Date().toISOString();
+    s.readingLog = (Array.isArray(s.readingLog) ? s.readingLog : []).map(e => e && e.id === id ? { ...e, deleted: true, updatedAt: agora } : e);
+    save(s);
+    if (typeof window.__rerender === 'function') window.__rerender();
+  },
+
   // meta diária — { pages, minutes } (qualquer um dos dois batido = dia cumprido); null = sem meta
   getDailyGoal() {
     const s = load();
@@ -306,25 +371,6 @@ const MG = {
       pagesPerHour, mes, primeiroDow, diasLidosMes,
     };
   },
-  // corrigir um registro (páginas e/ou minutos lançados errado); zerar os dois = remover
-  updateReading(id, patch) {
-    const s = load();
-    const log = Array.isArray(s.readingLog) ? s.readingLog : [];
-    const pages = Math.max(0, parseInt(patch && patch.pages, 10) || 0);
-    const minutes = Math.max(0, parseInt(patch && patch.minutes, 10) || 0);
-    s.readingLog = (!pages && !minutes)
-      ? log.filter(e => e.id !== id)
-      : log.map(e => e.id === id ? { ...e, pages, minutes, updatedAt: new Date().toISOString() } : e);
-    save(s);
-    if (typeof window.__rerender === 'function') window.__rerender();
-  },
-  removeReading(id) {
-    const s = load();
-    s.readingLog = (Array.isArray(s.readingLog) ? s.readingLog : []).filter(e => e.id !== id);
-    save(s);
-    if (typeof window.__rerender === 'function') window.__rerender();
-  },
-
   // progresso de leitura
   getProgress(bookId) {
     return load().progress[bookId] || null;
