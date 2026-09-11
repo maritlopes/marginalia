@@ -191,18 +191,34 @@ function HomeVariantA({ onNav = () => {} }) {
       perDay.push(log.filter((e) => e.date === k).reduce((s, e) => s + (e.pages || 0), 0));
     }
     const paginas = perDay.reduce((s, n) => s + n, 0);
+    const minutos = log.filter((e) => e && e.date >= keyOf(monday) && e.date <= keyOf(now)).reduce((s, e) => s + (e.minutes || 0), 0);
     const sessoes = perDay.filter((n) => n > 0).length;
     const ritmo = sessoes ? Math.round(paginas / sessoes) : 0;
-    return { paginas, sessoes, ritmo, perDay };
+    return { paginas, minutos, sessoes, ritmo, perDay };
   })();
   const stats = { paginas: semana.paginas, sessoes: semana.sessoes, ritmo: semana.ritmo };
-  const mosaico = semana.perDay.map((n) => n > 0);
+
+  // o hábito diário — hoje, sequência de dias, calendário do mês (tudo derivado do diário)
+  const [hojeMin, setHojeMin] = React.useState('');
+  const st = (typeof MG !== 'undefined' && MG.readingStats) ? MG.readingStats(b && b.id) : null;
+  const goalD = st ? st.goal : null;
+  const hojeT = (st && st.hoje) || { pages: 0, minutes: 0 };
+  const hojeLeu = hojeT.pages > 0 || hojeT.minutes > 0;
+  const anelPct = goalD ? Math.max(goalD.pages ? (hojeT.pages / goalD.pages) * 100 : 0, goalD.minutes ? (hojeT.minutes / goalD.minutes) * 100 : 0) : 0;
+  const [editGoal, setEditGoal] = React.useState(false);
+  const [goalP, setGoalP] = React.useState('');
+  const [goalM, setGoalM] = React.useState('');
+  const abrirMeta = () => { setGoalP(goalD && goalD.pages ? String(goalD.pages) : ''); setGoalM(goalD && goalD.minutes ? String(goalD.minutes) : ''); setEditGoal(true); };
+  const salvarMeta = () => { if (typeof MG !== 'undefined' && MG.setDailyGoal) MG.setDailyGoal({ pages: goalP, minutes: goalM }); setEditGoal(false); };
+  const removerMeta = () => { if (typeof MG !== 'undefined' && MG.setDailyGoal) MG.setDailyGoal(null); setEditGoal(false); };
+  const nomeMes = new Date().toLocaleDateString('pt-BR', { month: 'long' });
 
   const registrarHoje = () => {
-    const n = parseInt(hojePag, 10);
-    if (!n || n <= 0) return;
-    if (typeof MG !== 'undefined' && MG.logReading) MG.logReading(n, (b && b.id) || null);
-    setHojePag('');
+    const n = parseInt(hojePag, 10) || 0;
+    const m = parseInt(hojeMin, 10) || 0;
+    if (n <= 0 && m <= 0) return;
+    if (typeof MG !== 'undefined' && MG.logReading) MG.logReading(n, (b && b.id) || null, { minutes: m, src: 'hoje' });
+    setHojePag(''); setHojeMin('');
   };
 
   // curadoria — mostra 3 na home; "ver mais" abre o banco completo (todas)
@@ -421,37 +437,106 @@ function HomeVariantA({ onNav = () => {} }) {
           }}>{tt('retomar_leitura')}</button>
         </div>
 
-        {/* ESTA SEMANA — stats + mosaico */}
-        <SectionRule label={tt('esta_semana')}/>
+        {/* SUA LEITURA, DIA A DIA — hoje + sequência + semana + calendário do mês + Li hoje */}
+        <SectionRule label="Sua leitura, dia a dia"/>
         <div style={{
           background: T.paper, borderRadius: 12, padding: '14px 16px',
           border: `1px solid ${T.hairline}`, marginBottom: 22,
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: 14 }}>
-            <MicroStat n={stats.paginas} label={tt('paginas')} accent={T.terra}/>
-            <MicroStat n={stats.sessoes} label={tt('sessoes')} accent={T.olive}/>
-            <MicroStat n={stats.ritmo > 0 ? stats.ritmo : '—'} label={tt('ritmo')} accent={T.ochre}/>
-          </div>
-          <div style={{ display: 'flex', gap: 6, justifyContent: 'space-around' }}>
-            {['dia_seg','dia_ter','dia_qua','dia_qui','dia_sex','dia_sab','dia_dom'].map((k, i) => (
-              <div key={k} style={{ textAlign: 'center', flex: 1 }}>
-                <div style={{
-                  height: 24, borderRadius: 4, marginBottom: 4,
-                  background: mosaico[i] ? T.terra : T.parchment,
-                  opacity: mosaico[i] ? 1 : 0.5,
-                }}/>
-                <div style={{ fontSize: 9, color: T.muted, fontFamily: T.mono, letterSpacing: 0.5 }}>
-                  {tt(k)}
-                </div>
+          {/* hoje + sequência */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
+            <AnelDoDia pct={anelPct} temMeta={!!goalD} cumpriu={!!(st && st.hojeCumpriu)} leu={hojeLeu}/>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: T.serif, fontSize: 16, color: T.ink, lineHeight: 1.3 }}>
+                {hojeLeu ? (
+                  <>Hoje: <strong style={{ color: T.terra }}>{hojeT.pages} pág</strong>{hojeT.minutes ? <> · <strong style={{ color: T.terra }}>{hojeT.minutes} min</strong></> : null}</>
+                ) : (
+                  <span style={{ color: T.brown, fontStyle: 'italic' }}>Hoje ainda sem leitura.</span>
+                )}
               </div>
-            ))}
+              <div style={{ fontSize: 11, color: T.muted, marginTop: 3 }}>
+                {goalD ? (
+                  <>meta: {[goalD.pages ? `${goalD.pages} pág` : null, goalD.minutes ? `${goalD.minutes} min` : null].filter(Boolean).join(' ou ')} por dia · <button onClick={abrirMeta} style={{ background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>ajustar</button></>
+                ) : (
+                  <button onClick={abrirMeta} style={{ background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>Definir uma meta diária →</button>
+                )}
+              </div>
+              {st && st.streak > 0 && (
+                <div style={{ fontSize: 12, color: T.olive, marginTop: 5, fontFamily: T.serif }}>
+                  <strong>{st.streak} {st.streak === 1 ? 'dia' : 'dias'}</strong> seguidos com um livro nas mãos{st.hojeFalta ? ' — hoje ainda não' : ''}.
+                </div>
+              )}
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, paddingTop: 12, borderTop: `1px solid ${T.hairline}` }}>
+
+          {editGoal && (
+            <div style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 10, padding: '10px 12px', marginBottom: 14 }}>
+              <div style={{ fontSize: 11, color: T.muted, marginBottom: 8 }}>Meta diária — o dia conta ao bater qualquer uma das duas</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', fontFamily: T.serif, fontSize: 13, color: T.ink }}>
+                <input value={goalP} onChange={(e) => setGoalP(e.target.value)} inputMode="numeric" placeholder="20" autoFocus
+                  style={{ width: 52, padding: '6px 8px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, textAlign: 'center' }}/>
+                <span>páginas</span><span style={{ color: T.muted }}>ou</span>
+                <input value={goalM} onChange={(e) => setGoalM(e.target.value)} inputMode="numeric" placeholder="30"
+                  style={{ width: 52, padding: '6px 8px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, textAlign: 'center' }}/>
+                <span>min por dia</span>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                <button onClick={salvarMeta} style={{ background: T.terra, color: T.cream, border: 0, borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Salvar</button>
+                <button onClick={() => setEditGoal(false)} style={{ background: 'transparent', color: T.brown, border: `1px solid ${T.hairline}`, borderRadius: 8, padding: '7px 14px', fontSize: 12, cursor: 'pointer' }}>Cancelar</button>
+                {goalD && <button onClick={removerMeta} style={{ background: 'transparent', color: T.muted, border: 0, padding: '7px 8px', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>remover meta</button>}
+              </div>
+            </div>
+          )}
+
+          {/* esta semana */}
+          <div style={{ fontSize: 9, letterSpacing: 0.8, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 6 }}>Esta semana</div>
+          <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: 14 }}>
+            <MicroStat n={stats.paginas} label="páginas" accent={T.terra}/>
+            {st && st.last7.minutes > 0 && <MicroStat n={semana.minutos} label="minutos" accent={T.terra}/>}
+            <MicroStat n={stats.sessoes} label="dias" accent={T.olive}/>
+            <MicroStat n={stats.ritmo > 0 ? stats.ritmo : '—'} label="pág/dia" accent={T.ochre}/>
+          </div>
+
+          {/* calendário do mês — cheio = meta cumprida · claro = leu abaixo da meta */}
+          {st && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, letterSpacing: 0.8, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 6 }}>
+                <span>{nomeMes}</span>
+                <span>{st.diasLidosMes} {st.diasLidosMes === 1 ? 'dia' : 'dias'} com leitura</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+                {['S', 'T', 'Q', 'Q', 'S', 'S', 'D'].map((l, i) => (
+                  <div key={'h' + i} style={{ textAlign: 'center', fontSize: 9, color: T.muted, fontFamily: T.mono }}>{l}</div>
+                ))}
+                {Array.from({ length: st.primeiroDow }).map((_, i) => <div key={'v' + i}/>)}
+                {st.mes.map((d) => (
+                  <div key={d.key} title={`${d.dia}: ${d.pages} pág · ${d.minutes} min`} style={{
+                    aspectRatio: '1', borderRadius: 4, minHeight: 14,
+                    background: d.meta ? T.terra : (d.leu ? 'rgba(176,83,58,0.38)' : (d.futuro ? 'transparent' : T.parchment)),
+                    border: d.hoje ? `1.5px solid ${T.ink}` : (d.futuro ? `1px dashed ${T.hairline}` : '1px solid transparent'),
+                    opacity: d.futuro ? 0.7 : 1, boxSizing: 'border-box',
+                  }}/>
+                ))}
+              </div>
+              {goalD && (
+                <div style={{ fontSize: 10, color: T.muted, marginTop: 6, fontFamily: T.serif, fontStyle: 'italic' }}>
+                  cheio = meta cumprida · claro = leu, abaixo da meta
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Li hoje — páginas e/ou minutos */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 14, paddingTop: 12, borderTop: `1px solid ${T.hairline}`, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12, color: T.brown, fontFamily: T.serif }}>Li hoje:</span>
             <input value={hojePag} onChange={(e) => setHojePag(e.target.value)} inputMode="numeric" placeholder="0"
               onKeyDown={(e) => e.key === 'Enter' && registrarHoje()}
-              style={{ width: 60, padding: '7px 9px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, outline: 'none', textAlign: 'center' }}/>
-            <span style={{ fontSize: 12, color: T.muted }}>páginas</span>
+              style={{ width: 48, padding: '7px 6px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, outline: 'none', textAlign: 'center' }}/>
+            <span style={{ fontSize: 11, color: T.muted }}>pág</span>
+            <input value={hojeMin} onChange={(e) => setHojeMin(e.target.value)} inputMode="numeric" placeholder="0"
+              onKeyDown={(e) => e.key === 'Enter' && registrarHoje()}
+              style={{ width: 48, padding: '7px 6px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, outline: 'none', textAlign: 'center' }}/>
+            <span style={{ fontSize: 11, color: T.muted }}>min</span>
             <div style={{ flex: 1 }}/>
             <button onClick={registrarHoje} style={{ padding: '7px 14px', borderRadius: 8, border: 0, background: T.ink, color: T.cream, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Registrar</button>
           </div>
@@ -820,6 +905,24 @@ function SectionRule({ label, action, onAction }) {
         </div>
       )}
     </div>
+  );
+}
+
+// AnelDoDia — o dia se preenche conforme a meta diária (páginas OU minutos)
+function AnelDoDia({ pct = 0, temMeta = false, cumpriu = false, leu = false }) {
+  const r = 22, c = 2 * Math.PI * r, p = Math.max(0, Math.min(100, pct));
+  const cor = cumpriu ? T.olive : T.terra;
+  return (
+    <svg width="58" height="58" viewBox="0 0 58 58" style={{ flexShrink: 0 }} aria-label="leitura de hoje">
+      <circle cx="29" cy="29" r={r} fill="none" stroke={T.parchment} strokeWidth="5"/>
+      {temMeta && p > 0 ? (
+        <circle cx="29" cy="29" r={r} fill="none" stroke={cor} strokeWidth="5" strokeLinecap="round"
+          strokeDasharray={`${(c * p) / 100} ${c}`} transform="rotate(-90 29 29)" style={{ transition: 'stroke-dasharray .6s ease' }}/>
+      ) : (leu ? <circle cx="29" cy="29" r={r} fill="none" stroke="rgba(176,83,58,0.38)" strokeWidth="5"/> : null)}
+      <text x="29" y="33.5" textAnchor="middle" fontFamily={T.serif} fontSize={temMeta && !cumpriu ? 12 : 15} fill={temMeta && cumpriu ? T.olive : T.ink}>
+        {temMeta ? (cumpriu ? '✓' : `${Math.round(p)}%`) : (leu ? '✓' : '·')}
+      </text>
+    </svg>
   );
 }
 

@@ -573,6 +573,8 @@ function PlanoLeitura({ book, isDemo = false }) {
     let p = Math.max(0, parseInt(pageInput) || 0);
     if (pages) p = Math.min(p, pages);
     const pct = pages ? Math.min(100, Math.round((p / pages) * 100)) : (b.pct || 0);
+    // avançou → as páginas entram no diário de hoje (um registro só, sem digitar duas vezes)
+    if (p > cur && !isDemo && typeof MG !== 'undefined' && MG.logReading) MG.logReading(p - cur, b.id, { src: 'plano' });
     if (typeof MG !== 'undefined' && MG.updateBook) MG.updateBook(b.id, { currentPage: p, pct });
     setEditingPage(false);
   };
@@ -596,6 +598,7 @@ function PlanoLeitura({ book, isDemo = false }) {
     setFimErro('');
     const patch = { status: 'read', finishedAt: fimNovo || null, pct: 100, weekGoal: null };
     if (pages) patch.currentPage = pages;
+    if (pages > cur && !isDemo && typeof MG !== 'undefined' && MG.logReading) MG.logReading(pages - cur, b.id, { src: 'plano' });
     if (typeof MG !== 'undefined' && MG.updateBook) MG.updateBook(b.id, patch);
     setTerminando(false);
   };
@@ -701,6 +704,25 @@ function PlanoLeitura({ book, isDemo = false }) {
         // sem o ponto do mês abreviado ('set.') — a frase já fecha com ponto
         fim: fim.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace(/\.$/, ''),
       };
+    }
+  }
+
+  // ritmo REAL — do diário (Onde estou / Foco / Li hoje), últimos 7 dias corridos.
+  // Prefere o registro deste livro; sem ele, usa todas as leituras (avisando).
+  const st = (!isDemo && typeof MG !== 'undefined' && MG.readingStats) ? MG.readingStats(b.id) : null;
+  let ritmo = null;
+  if (st && pages) {
+    const usaLivro = st.book7.pages > 0;
+    const src = usaLivro ? st.book7 : st.last7;
+    if (src.pages > 0) {
+      const porDia = src.pages / 7;
+      const restantes = Math.max(0, pages - cur);
+      let previsao = null;
+      if (restantes > 0 && porDia > 0) {
+        const d = new Date(); d.setDate(d.getDate() + Math.ceil(restantes / porDia));
+        previsao = d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace(/\.$/, '');
+      }
+      ritmo = { porDia: Math.round(porDia * 10) / 10, dias: src.days, geral: !usaLivro, pph: st.pagesPerHour, previsao };
     }
   }
 
@@ -862,6 +884,47 @@ function PlanoLeitura({ book, isDemo = false }) {
               )}
               {plano && plano.tipo !== 'ok' && (
                 <div style={{ marginTop: 12, fontFamily: T.serif, fontSize: 14, fontStyle: 'italic', color: T.brown }}>{plano.msg}</div>
+              )}
+              {/* seu ritmo real — o que o diário diz, ao lado do que a meta pede */}
+              {pages > 0 && !isDemo && (
+                <div style={{ marginTop: 14, borderTop: `1px dashed ${T.hairline}`, paddingTop: 12 }}>
+                  <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 8 }}>
+                    Seu ritmo real
+                  </div>
+                  {ritmo ? (
+                    <>
+                      <div style={{ fontFamily: T.serif, fontSize: 15, lineHeight: 1.45, color: T.ink }}>
+                        Nos últimos 7 dias: <strong style={{ color: T.terra }}>~{String(ritmo.porDia).replace('.', ',')} páginas por dia</strong>
+                        {ritmo.pph ? <span style={{ color: T.brown }}> · {ritmo.pph} pág/hora</span> : null}
+                      </div>
+                      <div style={{ fontSize: 11, color: T.muted, fontFamily: T.sans, marginTop: 4 }}>
+                        {ritmo.dias} {ritmo.dias === 1 ? 'dia' : 'dias'} com leitura registrada{ritmo.geral ? ' (todas as leituras)' : ' neste livro'}.
+                      </div>
+                      {ritmo.previsao && (
+                        <div style={{ marginTop: 8, fontSize: 13, fontFamily: T.serif, fontStyle: 'italic', color: T.ink }}>
+                          No ritmo atual, você termina por volta de <strong>{ritmo.previsao}</strong>.
+                        </div>
+                      )}
+                      {plano && plano.tipo === 'ok' && (() => {
+                        const diff = plano.ritmo - ritmo.porDia;
+                        const minDia = ritmo.pph ? Math.ceil((plano.ritmo / ritmo.pph) * 60) : null;
+                        return diff > 0.5 ? (
+                          <div style={{ marginTop: 6, fontSize: 12, color: T.brown, fontFamily: T.sans, lineHeight: 1.5 }}>
+                            Para fechar até {plano.fim} são ~{plano.ritmo} por dia{minDia ? ` (≈ ${minDia} min)` : ''} — <strong style={{ color: T.terra }}>{Math.ceil(diff)} acima</strong> do seu ritmo atual.
+                          </div>
+                        ) : (
+                          <div style={{ marginTop: 6, fontSize: 12, color: T.olive, fontFamily: T.sans, lineHeight: 1.5 }}>
+                            ✓ Seu ritmo atual dá conta da meta{minDia ? ` — ≈ ${minDia} min por dia` : ''}.
+                          </div>
+                        );
+                      })()}
+                    </>
+                  ) : (
+                    <div style={{ fontSize: 12, color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>
+                      Registre o que lê — no "Onde estou", no Foco ou no "Li hoje" da Home — e eu mostro seu ritmo real e a previsão de término.
+                    </div>
+                  )}
+                </div>
               )}
               {!goal && pages > 0 && (
                 <div style={hintStyle}>Escolha uma data e eu sugiro um ritmo diário.</div>
@@ -3266,6 +3329,10 @@ function ScreenFoco({ onNav = () => {} }) {
   const [running, setRunning] = React.useState(false);
   const [done, setDone] = React.useState(false);
   const [customMin, setCustomMin] = React.useState('');
+  // registro da sessão: ao terminar (ou encerrar antes), grava minutos + página no diário
+  const [reg, setReg] = React.useState(false);
+  const [regPage, setRegPage] = React.useState('');
+  const [saved, setSaved] = React.useState(null);
 
   const presets = [25, 30, 40, 50];
 
@@ -3299,7 +3366,7 @@ function ScreenFoco({ onNav = () => {} }) {
 
   const start = () => { setDone(false); setRunning(true); };
   const pause = () => setRunning(false);
-  const reset = () => { setRunning(false); setRemaining(duration); setDone(false); };
+  const reset = () => { setRunning(false); setRemaining(duration); setDone(false); setReg(false); setSaved(null); };
   const setMinutes = (m) => {
     const s = m * 60;
     setDuration(s); setRemaining(s); setRunning(false); setDone(false);
@@ -3313,11 +3380,33 @@ function ScreenFoco({ onNav = () => {} }) {
   const ss = String(remaining % 60).padStart(2, '0');
   const pct = duration ? (1 - remaining / duration) * 100 : 0;
 
-  // calcula quantas páginas representam o tempo decorrido (assumindo 12 pág/sessão de 25 min)
-  const paginasNaSessao = Math.round(((duration - remaining) / 60) * 0.5);
-  const totalPaginas = Math.round((duration / 60) * 0.5);
-
   const b = (typeof window.currentBook === 'function' ? window.currentBook() : null) || BOOK_CURRENT;
+  const isDemo = !!window.__demoShelf || (typeof BOOK_CURRENT !== 'undefined' && b && b.id === BOOK_CURRENT.id);
+
+  // páginas previstas: pelo SEU ritmo (pág/hora do diário) quando existe; senão ~30 pág/hora
+  const stFoco = (typeof MG !== 'undefined' && MG.readingStats) ? MG.readingStats() : null;
+  const ppm = (stFoco && stFoco.pagesPerHour) ? stFoco.pagesPerHour / 60 : 0.5;
+  const decorrido = duration - remaining;            // segundos
+  const elapsedMin = Math.max(1, Math.round(decorrido / 60));
+  const paginasNaSessao = Math.round((decorrido / 60) * ppm);
+  const totalPaginas = Math.round((duration / 60) * ppm);
+
+  // abrir o registro: ao completar o tempo, sozinho; ou pelo botão "Encerrar e registrar"
+  const abrirRegistro = () => { setRunning(false); setRegPage(String((b && b.currentPage) || '')); setReg(true); };
+  React.useEffect(() => { if (done && !saved) abrirRegistro(); }, [done]);
+  const salvarSessao = (comPagina) => {
+    const cur = (b && b.currentPage) || 0;
+    const tot = (b && b.pages) || 0;
+    let p = comPagina ? (parseInt(regPage, 10) || 0) : 0;
+    if (tot && p > tot) p = tot;
+    const lidas = p > cur ? p - cur : 0;
+    if (typeof MG !== 'undefined' && MG.logReading) MG.logReading(lidas, isDemo ? null : (b && b.id), { minutes: elapsedMin, src: 'foco' });
+    if (!isDemo && p > cur && typeof MG !== 'undefined' && MG.updateBook) {
+      MG.updateBook(b.id, { currentPage: p, pct: tot ? Math.min(100, Math.round((p / tot) * 100)) : (b.pct || 0) });
+    }
+    setSaved({ min: elapsedMin, pages: lidas });
+    setReg(false); setDone(true);
+  };
 
   return (
     <div style={{ width: '100%', height: '100%', background: T.bone, overflow: 'auto', paddingBottom: 80, position: 'relative' }}>
@@ -3463,7 +3552,15 @@ function ScreenFoco({ onNav = () => {} }) {
             fontFamily: T.sans, fontSize: 14, fontWeight: 600, letterSpacing: 0.4,
           }}>Pausar</button>
         )}
-        {done && (
+        {!done && !reg && decorrido >= 30 && (
+          <button onClick={abrirRegistro} style={{
+            padding: '14px 16px', borderRadius: 12,
+            background: 'transparent', color: T.olive,
+            border: `1px solid ${T.olive}`, cursor: 'pointer',
+            fontFamily: T.sans, fontSize: 13, fontWeight: 600,
+          }}>Encerrar e registrar</button>
+        )}
+        {done && !reg && (
           <button onClick={reset} style={{
             flex: 1, padding: '14px', borderRadius: 12,
             background: T.olive, color: T.cream, border: 0, cursor: 'pointer',
@@ -3480,9 +3577,37 @@ function ScreenFoco({ onNav = () => {} }) {
         )}
       </div>
 
+      {/* registro da sessão → diário (minutos + páginas) */}
+      {reg && (
+        <div style={{ margin: '16px 24px 0', background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '14px 16px' }}>
+          <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 6 }}>Registrar a sessão</div>
+          <div style={{ fontFamily: T.serif, fontSize: 16, color: T.ink, marginBottom: 10 }}>
+            <strong style={{ color: T.terra }}>{elapsedMin} min</strong> com o livro. Em que página parou?
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13, fontFamily: T.serif }}>pág</span>
+            <input type="number" value={regPage} onChange={e => setRegPage(e.target.value)} autoFocus inputMode="numeric"
+              onKeyDown={e => { if (e.key === 'Enter') salvarSessao(true); }}
+              placeholder={String((b && b.currentPage) || 0)}
+              style={{ width: 80, padding: '8px 10px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 14 }}/>
+            {b && b.pages ? <span style={{ fontSize: 12, color: T.muted }}>/ {b.pages}</span> : null}
+            <button onClick={() => salvarSessao(true)} style={{ background: T.terra, color: T.cream, border: 0, borderRadius: 8, padding: '9px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Registrar</button>
+            <button onClick={() => salvarSessao(false)} style={{ background: 'transparent', color: T.muted, border: 0, padding: '9px 6px', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>só o tempo</button>
+          </div>
+          <div style={{ marginTop: 8, fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>
+            Entra no seu diário de hoje e atualiza o "Onde estou" do livro.
+          </div>
+        </div>
+      )}
+      {saved && (
+        <div style={{ margin: '16px 24px 0', textAlign: 'center', fontFamily: T.serif, fontSize: 14, color: T.olive }}>
+          ✓ Registrado: {saved.min} min{saved.pages ? ` · ${saved.pages} ${saved.pages === 1 ? 'página' : 'páginas'}` : ''}.
+        </div>
+      )}
+
       <div style={{ padding: '20px 24px 0', textAlign: 'center', fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>
         O livro se preenche conforme o tempo passa. <br/>
-        Quando completa, escreva uma nota ou volte amanhã.
+        Ao terminar, registre a sessão — ela conta no seu dia.
       </div>
     </div>
   );

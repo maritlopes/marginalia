@@ -217,18 +217,94 @@ const MG = {
     const s = load();
     return Array.isArray(s.readingLog) ? s.readingLog : [];
   },
-  logReading(pages, bookId) {
-    const n = parseInt(pages, 10);
-    if (!n || n <= 0) return null;
+  // Cada registro: { id, date, pages, minutes, bookId, src }. Páginas E/OU minutos —
+  // vale registrar só o tempo (Foco) ou só as páginas (Li hoje / Onde estou).
+  // src: 'hoje' (Li hoje na Home) · 'plano' (atualizou a página no Plano) · 'foco' (sessão do timer)
+  logReading(pages, bookId, opts) {
+    const o = opts || {};
+    const n = Math.max(0, parseInt(pages, 10) || 0);
+    const min = Math.max(0, parseInt(o.minutes, 10) || 0);
+    if (!n && !min) return null;
     const s = load();
     const log = Array.isArray(s.readingLog) ? s.readingLog : [];
     const d = new Date();
-    const date = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    const entry = { id: 'r_' + Date.now(), date, pages: n, bookId: bookId || null };
+    const date = o.date || (d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
+    const entry = { id: 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), date, pages: n, minutes: min, bookId: bookId || null, src: o.src || 'hoje' };
     s.readingLog = [entry, ...log];
     save(s);
     if (typeof window.__rerender === 'function') window.__rerender();
     return entry;
+  },
+  // meta diária — { pages, minutes } (qualquer um dos dois batido = dia cumprido); null = sem meta
+  getDailyGoal() {
+    const s = load();
+    const g = s.dailyGoal;
+    if (!g || (!g.pages && !g.minutes)) return null;
+    return { pages: parseInt(g.pages, 10) || 0, minutes: parseInt(g.minutes, 10) || 0 };
+  },
+  setDailyGoal(goal) {
+    const s = load();
+    const pages = goal ? Math.max(0, parseInt(goal.pages, 10) || 0) : 0;
+    const minutes = goal ? Math.max(0, parseInt(goal.minutes, 10) || 0) : 0;
+    s.dailyGoal = (pages || minutes) ? { pages, minutes } : null;
+    save(s);
+    if (typeof window.__rerender === 'function') window.__rerender();
+    return s.dailyGoal;
+  },
+  // Estatísticas do diário — tudo derivado do readingLog (nada é gravado).
+  // hoje · sequência de dias seguidos · últimos 7 dias (geral e do livro) ·
+  // páginas por hora · calendário do mês. bookId é opcional (ritmo daquele livro).
+  readingStats(bookId) {
+    const log = this.getReadingLog();
+    const keyOf = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+    const hojeK = keyOf(hoje);
+    const byDay = {};
+    for (const e of log) {
+      if (!e || !e.date) continue;
+      const d = byDay[e.date] || (byDay[e.date] = { pages: 0, minutes: 0 });
+      d.pages += e.pages || 0; d.minutes += e.minutes || 0;
+    }
+    const goal = this.getDailyGoal();
+    const cumpriu = (d) => !!goal && !!d && ((goal.pages > 0 && d.pages >= goal.pages) || (goal.minutes > 0 && d.minutes >= goal.minutes));
+    const leu = (d) => !!d && (d.pages > 0 || d.minutes > 0);
+    const hojeT = byDay[hojeK] || { pages: 0, minutes: 0 };
+    // sequência: dias seguidos com leitura terminando hoje — ou ontem, se hoje ainda não leu
+    let streak = 0; let hojeFalta = false;
+    { const c = new Date(hoje);
+      if (!leu(byDay[keyOf(c)])) { hojeFalta = true; c.setDate(c.getDate() - 1); }
+      while (leu(byDay[keyOf(c)])) { streak++; c.setDate(c.getDate() - 1); if (streak > 3660) break; } }
+    if (hojeFalta && streak === 0) hojeFalta = false;
+    // últimos 7 dias (hoje incluso)
+    const janela = (n) => { const ks = []; for (let i = 0; i < n; i++) { const c = new Date(hoje); c.setDate(hoje.getDate() - i); ks.push(keyOf(c)); } return ks; };
+    const k7 = janela(7);
+    const soma = (entries) => entries.reduce((a, e) => ({ pages: a.pages + (e.pages || 0), minutes: a.minutes + (e.minutes || 0), days: a.days.add(e.date) }), { pages: 0, minutes: 0, days: new Set() });
+    const e7 = log.filter(e => e && k7.includes(e.date));
+    const g7 = soma(e7);
+    const b7 = soma(bookId ? e7.filter(e => e.bookId === bookId) : []);
+    // páginas por hora: só registros com páginas E minutos (últimos 60 dias); precisa de ≥ 20 min somados
+    const k60 = janela(60);
+    const ambos = log.filter(e => e && k60.includes(e.date) && e.pages > 0 && e.minutes > 0);
+    const mAmbos = ambos.reduce((a, e) => a + e.minutes, 0);
+    const pAmbos = ambos.reduce((a, e) => a + e.pages, 0);
+    const pagesPerHour = mAmbos >= 20 ? Math.round(pAmbos / (mAmbos / 60)) : null;
+    // calendário do mês corrente
+    const y = hoje.getFullYear(), m = hoje.getMonth();
+    const nDias = new Date(y, m + 1, 0).getDate();
+    const mes = [];
+    for (let dd = 1; dd <= nDias; dd++) {
+      const k = keyOf(new Date(y, m, dd));
+      const d = byDay[k];
+      mes.push({ dia: dd, key: k, pages: d ? d.pages : 0, minutes: d ? d.minutes : 0, leu: leu(d), meta: cumpriu(d), hoje: k === hojeK, futuro: k > hojeK });
+    }
+    const primeiroDow = (new Date(y, m, 1).getDay() + 6) % 7; // 0 = segunda
+    const diasLidosMes = mes.filter(x => x.leu).length;
+    return {
+      goal, hoje: hojeT, hojeCumpriu: cumpriu(hojeT), streak, hojeFalta,
+      last7: { pages: g7.pages, minutes: g7.minutes, days: g7.days.size },
+      book7: { pages: b7.pages, minutes: b7.minutes, days: b7.days.size },
+      pagesPerHour, mes, primeiroDow, diasLidosMes,
+    };
   },
   removeReading(id) {
     const s = load();
