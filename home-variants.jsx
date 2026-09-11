@@ -242,6 +242,17 @@ function HomeVariantA({ onNav = () => {} }) {
     if (typeof MG !== 'undefined' && MG.logReading) MG.logReading(n, (b && b.id) || null, { minutes: m, src: 'hoje' });
     setAddP(''); setAddM('');
   };
+  // os OUTROS livros em leitura (além do principal) — linhas compactas, com "+" para somar neles
+  const outrosLendo = (window.BOOKS || []).filter((x) => x && !x.deleted && (x.status === 'reading' || x.status === 'paused') && b && x.id !== b.id);
+  const [addOpen, setAddOpen] = React.useState(null);
+  const [addP2, setAddP2] = React.useState('');
+  const [addM2, setAddM2] = React.useState('');
+  const somarEm = (id) => {
+    const n = parseInt(addP2, 10) || 0, m = parseInt(addM2, 10) || 0;
+    if (n <= 0 && m <= 0) return;
+    if (typeof MG !== 'undefined' && MG.logReading) MG.logReading(n, id, { minutes: m, src: 'hoje' });
+    setAddP2(''); setAddM2(''); setAddOpen(null);
+  };
   const apagarDia = () => { if (typeof MG !== 'undefined' && MG.setDayTotals) MG.setDayTotals(diaAtivo, { pages: 0, minutes: 0 }); setDiaSalvo(false); };
   const tituloLivro = (id) => { const bk = (window.BOOKS || []).find((x) => x.id === id); return bk ? bk.title : null; };
   const fmtDia = (k) => { const m = String(k).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${parseInt(m[3], 10)}/${m[2]}` : k; };
@@ -475,6 +486,48 @@ function HomeVariantA({ onNav = () => {} }) {
               <span style={{ fontSize: 11, color: T.brown }}>min</span>
               <div style={{ flex: 1 }}/>
               <button onClick={somarAgora} disabled={!(parseInt(addP, 10) || parseInt(addM, 10))} style={{ padding: '6px 12px', borderRadius: 8, border: 0, background: (parseInt(addP, 10) || parseInt(addM, 10)) ? T.terra : T.parchment, color: (parseInt(addP, 10) || parseInt(addM, 10)) ? T.cream : T.brown, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>+ somar</button>
+            </div>
+          )}
+          {/* também em leitura — todos os outros livros abertos agora */}
+          {!window.__demoShelf && outrosLendo.length > 0 && (
+            <div onClick={(e) => e.stopPropagation()} style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${T.hairline}`, cursor: 'default' }}>
+              <div style={{ fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: T.brown, fontWeight: 600, marginBottom: 6 }}>Também em leitura</div>
+              {outrosLendo.map((x) => {
+                const pctX = x.pages ? Math.min(100, Math.round(((x.currentPage || 0) / x.pages) * 100)) : (x.pct || 0);
+                const aberto = addOpen === x.id;
+                return (
+                  <div key={x.id} style={{ padding: '7px 0', borderTop: `1px dashed ${T.hairline}` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div onClick={() => { if (typeof window.__openBook === 'function') window.__openBook(x); }} style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, cursor: 'pointer' }}>
+                        <BookCover title={x.title} author={x.author} tone={x.tone} cover={x.cover} isbn={x.isbn} w={30} book={x}/>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontFamily: T.serif, fontSize: 14.5, color: T.ink, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.title}{x.status === 'paused' ? <span style={{ fontSize: 10, color: T.muted, fontFamily: T.sans }}> · pausado</span> : null}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                            <LinearProgress pct={pctX} height={2} style={{ flex: 1 }}/>
+                            <span style={{ fontSize: 10, fontFamily: T.mono, fontVariantNumeric: 'tabular-nums', color: T.muted }}>{x.pages ? `pág ${x.currentPage || 0} · ` : ''}{pctX}%</span>
+                          </div>
+                        </div>
+                      </div>
+                      <button onClick={() => { setAddOpen(aberto ? null : x.id); setAddP2(''); setAddM2(''); }} title="somar leitura neste livro" style={{ width: 28, height: 28, borderRadius: 999, border: `1px solid ${aberto ? T.ink : T.hairline}`, background: aberto ? T.ink : 'transparent', color: aberto ? T.cream : T.terra, fontSize: 16, lineHeight: 1, cursor: 'pointer', flexShrink: 0, padding: 0 }}>+</button>
+                    </div>
+                    {aberto && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 12, color: T.brown, fontFamily: T.serif }}>Li agora:</span>
+                        <input value={addP2} onChange={(e) => setAddP2(e.target.value)} inputMode="numeric" placeholder="0" autoFocus
+                          onKeyDown={(e) => e.key === 'Enter' && somarEm(x.id)}
+                          style={{ width: 46, padding: '6px 4px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, outline: 'none', textAlign: 'center' }}/>
+                        <span style={{ fontSize: 11, color: T.brown }}>pág</span>
+                        <input value={addM2} onChange={(e) => setAddM2(e.target.value)} inputMode="numeric" placeholder="0"
+                          onKeyDown={(e) => e.key === 'Enter' && somarEm(x.id)}
+                          style={{ width: 46, padding: '6px 4px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, outline: 'none', textAlign: 'center' }}/>
+                        <span style={{ fontSize: 11, color: T.brown }}>min</span>
+                        <div style={{ flex: 1 }}/>
+                        <button onClick={() => somarEm(x.id)} disabled={!(parseInt(addP2, 10) || parseInt(addM2, 10))} style={{ padding: '6px 12px', borderRadius: 8, border: 0, background: (parseInt(addP2, 10) || parseInt(addM2, 10)) ? T.terra : T.parchment, color: (parseInt(addP2, 10) || parseInt(addM2, 10)) ? T.cream : T.brown, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>+ somar</button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
