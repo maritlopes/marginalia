@@ -190,7 +190,7 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
             {!isDemo && b.status === 'read' && <MinhaAvaliacao book={b}/>}
 
             {/* plano de leitura real — atualizar página + cronograma por data-alvo */}
-            <PlanoLeitura book={b}/>
+            <PlanoLeitura book={b} isDemo={isDemo}/>
 
             {/* nos demais (lendo/tbr/pausado), a avaliação vem depois do plano */}
             {!isDemo && b.status !== 'read' && <MinhaAvaliacao book={b}/>}
@@ -500,10 +500,11 @@ function TempoDaObra({ book }) {
   );
 }
 
-function PlanoLeitura({ book }) {
+function PlanoLeitura({ book, isDemo = false }) {
   const b = book || {};
   const pages = b.pages || 0;
   const cur = b.currentPage || 0;
+  const isRead = b.status === 'read';
   const [editingPage, setEditingPage] = React.useState(false);
   const [pageInput, setPageInput] = React.useState(String(cur));
   const [goal, setGoal] = React.useState(b.goalFinishBy || '');
@@ -515,7 +516,20 @@ function PlanoLeitura({ book }) {
   const [wgPage, setWgPage] = React.useState('');
   const [wgDate, setWgDate] = React.useState('');
 
-  React.useEffect(() => { setGoal(b.goalFinishBy || ''); setEditingPage(false); setWgEditing(false); }, [b.id]);
+  // término — livro LIDO: a data em que terminou (editável, "Terminado em");
+  // livro em leitura: o gesto "terminei" (data sugerida = hoje, sempre visível e ajustável).
+  const fimISO = String(b.finishedAt || '').slice(0, 10);
+  const iniISO = String(b.startedAt || b.readingSince || '').slice(0, 10);
+  const [fimInput, setFimInput] = React.useState(fimISO);
+  const [fimErro, setFimErro] = React.useState('');
+  const [terminando, setTerminando] = React.useState(false);
+  const [fimNovo, setFimNovo] = React.useState(hojeLocalISO());
+
+  React.useEffect(() => {
+    setGoal(b.goalFinishBy || ''); setEditingPage(false); setWgEditing(false);
+    setTerminando(false); setFimErro(''); setFimNovo(hojeLocalISO());
+  }, [b.id]);
+  React.useEffect(() => { setFimInput(fimISO); }, [b.id, fimISO]);
 
   const abrirMetaSemana = () => {
     const d = new Date(); d.setDate(d.getDate() + 6);
@@ -568,7 +582,89 @@ function PlanoLeitura({ book }) {
     if (typeof MG !== 'undefined' && MG.updateBook) MG.updateBook(b.id, { goalFinishBy: val || null });
   };
 
-  const pct = pages ? Math.min(100, Math.round((cur / pages) * 100)) : 0;
+  // livro lido: editar a data de término (vazio = sem data; nunca inventamos)
+  const definirFim = (val) => {
+    setFimInput(val);
+    if (val && iniISO && val < iniISO) { setFimErro(`O fim não pode vir antes do início (${fmtDataLeitura(iniISO)}).`); return; }
+    setFimErro('');
+    if (typeof MG !== 'undefined' && MG.updateBook) MG.updateBook(b.id, { finishedAt: val || null });
+  };
+  // gesto "terminei": vira lido, com a data escolhida (hoje por padrão), 100%,
+  // e a meta da semana se encerra. A data-alvo fica guardada para o balanço.
+  const marcarTerminado = () => {
+    if (fimNovo && iniISO && fimNovo < iniISO) { setFimErro(`O fim não pode vir antes do início (${fmtDataLeitura(iniISO)}).`); return; }
+    setFimErro('');
+    const patch = { status: 'read', finishedAt: fimNovo || null, pct: 100, weekGoal: null };
+    if (pages) patch.currentPage = pages;
+    if (typeof MG !== 'undefined' && MG.updateBook) MG.updateBook(b.id, patch);
+    setTerminando(false);
+  };
+
+  const pct = isRead ? 100 : (pages ? Math.min(100, Math.round((cur / pages) * 100)) : 0);
+  const chegouAoFim = !isRead && pages > 0 && cur >= pages;
+
+  const cardStyle = { background: T.cream, borderRadius: 12, padding: '16px 18px', border: `1px solid ${T.hairline}`, marginBottom: 22 };
+  const dateStyle = { padding: '8px 10px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13 };
+  const hintStyle = { marginTop: 8, fontSize: 12, color: T.muted, fontFamily: T.serif, fontStyle: 'italic' };
+  const erroStyle = { marginTop: 8, fontSize: 12, color: T.terra, fontFamily: T.sans };
+
+  // ── livro LIDO: "Terminado em" no lugar do "Quero terminar até" ──
+  if (isRead) {
+    const partes = [];
+    if (iniISO && fimISO && fimISO >= iniISO) {
+      const dias = Math.round((new Date(fimISO + 'T00:00:00') - new Date(iniISO + 'T00:00:00')) / 86400000) + 1;
+      partes.push(`Iniciado em ${fmtDataLeitura(iniISO)} · ${dias} ${dias === 1 ? 'dia' : 'dias'} de leitura`);
+    } else if (iniISO) {
+      partes.push(`Iniciado em ${fmtDataLeitura(iniISO)}`);
+    }
+    if (pages) partes.push(`${pages} páginas`);
+    let balanco = null;
+    if (b.goalFinishBy && fimISO) {
+      const diff = Math.round((new Date(fimISO + 'T00:00:00') - new Date(b.goalFinishBy + 'T00:00:00')) / 86400000);
+      const mf = fmtDataLeitura(b.goalFinishBy);
+      const n = Math.abs(diff);
+      balanco = diff === 0 ? `Terminou no dia da meta (${mf}).`
+        : diff < 0 ? `Terminou ${n} ${n === 1 ? 'dia' : 'dias'} antes da meta (${mf}).`
+        : `Terminou ${n} ${n === 1 ? 'dia' : 'dias'} depois da meta (${mf}).`;
+    }
+    return (
+      <>
+        <SectionTitle>Plano de leitura</SectionTitle>
+        <div style={cardStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div>
+              <div style={{ fontSize: 11, color: T.muted, marginBottom: 2 }}>Leitura</div>
+              <div style={{ fontFamily: T.serif, fontSize: 19, fontWeight: 500, color: T.olive }}>✓ concluída</div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 11, color: T.muted, marginBottom: 2 }}>Progresso</div>
+              <div style={{ fontFamily: T.serif, fontSize: 19, fontWeight: 500 }}>100%</div>
+            </div>
+          </div>
+          <LinearProgress pct={100} height={4}/>
+
+          <div style={{ marginTop: 14, borderTop: `1px solid ${T.hairline}`, paddingTop: 14 }}>
+            <div style={{ fontSize: 11, color: T.muted, marginBottom: 6 }}>Terminado em</div>
+            <input type="date" value={fimInput} onChange={e => definirFim(e.target.value)} style={dateStyle}/>
+            {fimErro && <div style={erroStyle}>{fimErro}</div>}
+            {!fimInput && !fimErro && (
+              <div style={hintStyle}>
+                {b.readIn
+                  ? `Lido em ${b.readIn}. Se lembrar o dia, registre aqui — senão, deixe em branco.`
+                  : 'Não lembra a data? Deixe em branco — melhor sem data do que com data errada.'}
+              </div>
+            )}
+            {partes.length > 0 && (
+              <div style={{ marginTop: 10, fontSize: 12, color: T.brown, fontFamily: T.sans, lineHeight: 1.5 }}>{partes.join(' · ')}.</div>
+            )}
+            {balanco && (
+              <div style={{ marginTop: 4, fontSize: 13, fontFamily: T.serif, fontStyle: 'italic', color: T.ink }}>{balanco}</div>
+            )}
+          </div>
+        </div>
+      </>
+    );
+  }
 
   // cronograma
   let plano = null;
@@ -602,15 +698,37 @@ function PlanoLeitura({ book }) {
         tipo: 'ok',
         ritmo: Math.ceil(pagsRestantes / dias),
         pagsRestantes, dias, semanas,
-        fim: fim.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
+        // sem o ponto do mês abreviado ('set.') — a frase já fecha com ponto
+        fim: fim.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace(/\.$/, ''),
       };
     }
   }
 
+  // caixa "terminei": em destaque quando chegou à última página; discreta (via link) nos demais
+  const caixaTerminar = (destaque) => (
+    <div style={destaque
+      ? { background: 'rgba(94,107,62,0.08)', border: '1px solid rgba(94,107,62,0.35)', borderRadius: 10, padding: '12px 14px' }
+      : { marginTop: 12 }}>
+      {destaque && (
+        <div style={{ fontFamily: T.serif, fontSize: 15, color: T.ink, marginBottom: 8 }}>Você chegou ao fim. Travessia concluída. 🏁</div>
+      )}
+      <div style={{ fontSize: 11, color: T.muted, marginBottom: 6 }}>Terminado em</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <input type="date" value={fimNovo} onChange={e => setFimNovo(e.target.value)} style={dateStyle}/>
+        <button onClick={marcarTerminado} style={{ background: T.terra, color: T.cream, border: 0, borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Marcar como lido</button>
+        {!destaque && (
+          <button onClick={() => { setTerminando(false); setFimErro(''); }} style={{ background: 'transparent', color: T.muted, border: 0, padding: '8px 6px', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>cancelar</button>
+        )}
+      </div>
+      {fimErro && <div style={erroStyle}>{fimErro}</div>}
+      <div style={hintStyle}>A data já vem como hoje — ajuste se terminou antes. O livro passa a "lido" na estante.</div>
+    </div>
+  );
+
   return (
     <>
       <SectionTitle>Plano de leitura</SectionTitle>
-      <div style={{ background: T.cream, borderRadius: 12, padding: '16px 18px', border: `1px solid ${T.hairline}`, marginBottom: 22 }}>
+      <div style={cardStyle}>
         {/* onde estou */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <div>
@@ -618,6 +736,7 @@ function PlanoLeitura({ book }) {
             {editingPage ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <input type="number" value={pageInput} onChange={e => setPageInput(e.target.value)} autoFocus
+                  onKeyDown={e => { if (e.key === 'Enter') salvarPagina(); }}
                   style={{ width: 66, padding: '6px 8px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 14 }}/>
                 <span style={{ fontSize: 12, color: T.muted }}>/ {pages || '—'}</span>
                 <button onClick={salvarPagina} style={{ background: T.terra, color: T.cream, border: 0, borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>OK</button>
@@ -636,7 +755,8 @@ function PlanoLeitura({ book }) {
         </div>
         <LinearProgress pct={pct} height={4}/>
 
-        {/* meta da semana — planejamento semanal à mão, livro a livro */}
+        {/* meta da semana — planejamento semanal à mão, livro a livro (some ao chegar ao fim) */}
+        {!chegouAoFim && (
         <div style={{ marginTop: 14, borderTop: `1px solid ${T.hairline}`, paddingTop: 14 }}>
           <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 8 }}>
             Meta da semana
@@ -646,6 +766,7 @@ function PlanoLeitura({ book }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 13, fontFamily: T.serif, color: T.ink }}>chegar à pág</span>
                 <input type="number" value={wgPage} onChange={e => setWgPage(e.target.value)} autoFocus
+                  onKeyDown={e => { if (e.key === 'Enter') salvarMetaSemana(); }}
                   placeholder={pages ? `até ${pages}` : ''}
                   style={{ width: 70, padding: '6px 8px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 14 }}/>
                 <span style={{ fontSize: 13, fontFamily: T.serif, color: T.ink }}>até</span>
@@ -698,57 +819,62 @@ function PlanoLeitura({ book }) {
             </button>
           )}
         </div>
+        )}
 
-        {/* meta de término */}
+        {/* meta de término — ou, na última página, o gesto de terminar */}
         <div style={{ marginTop: 14, borderTop: `1px solid ${T.hairline}`, paddingTop: 14 }}>
-          <div style={{ fontSize: 11, color: T.muted, marginBottom: 6 }}>Quero terminar até</div>
-          <input type="date" value={goal} onChange={e => definirMeta(e.target.value)}
-            style={{ padding: '8px 10px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13 }}/>
-          {plano && plano.tipo === 'ok' && (
-            <div style={{ marginTop: 12, fontFamily: T.serif, fontSize: 15, lineHeight: 1.45, color: T.ink }}>
-              Leia <strong style={{ color: T.terra }}>~{plano.ritmo} páginas por dia</strong> para terminar até {plano.fim}.
-              <div style={{ fontSize: 11, color: T.muted, fontFamily: T.sans, marginTop: 4 }}>
-                Faltam {plano.pagsRestantes} páginas em {plano.dias} {plano.dias === 1 ? 'dia' : 'dias'}.
-              </div>
-            </div>
-          )}
-          {plano && plano.tipo === 'ok' && plano.semanas.length > 1 && (
-            <div style={{ marginTop: 14, borderTop: `1px dashed ${T.hairline}`, paddingTop: 12 }}>
-              <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 8 }}>
-                Metas semanais
-              </div>
-              {plano.semanas.map(s => (
-                <div key={s.k} style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
-                  padding: '6px 8px', borderRadius: 8, marginBottom: 2,
-                  background: s.k === 1 ? 'rgba(176,83,58,0.07)' : 'transparent',
-                }}>
-                  <div style={{ fontSize: 12, color: s.k === 1 ? T.terra : T.brown, fontWeight: s.k === 1 ? 700 : 400 }}>
-                    {s.k === 1 ? 'Esta semana' : `Semana ${s.k}`}
-                    <span style={{ color: T.muted, fontWeight: 400 }}> · até {s.data}</span>
-                  </div>
-                  <div style={{ fontSize: 12, color: T.ink }}>
-                    pág {s.ini}–<strong style={{ color: T.terra }}>{s.alvo}</strong>
+          {chegouAoFim && !isDemo ? caixaTerminar(true) : (
+            <>
+              <div style={{ fontSize: 11, color: T.muted, marginBottom: 6 }}>Quero terminar até</div>
+              <input type="date" value={goal} onChange={e => definirMeta(e.target.value)} style={dateStyle}/>
+              {plano && plano.tipo === 'ok' && (
+                <div style={{ marginTop: 12, fontFamily: T.serif, fontSize: 15, lineHeight: 1.45, color: T.ink }}>
+                  Leia <strong style={{ color: T.terra }}>~{plano.ritmo} páginas por dia</strong> para terminar até {plano.fim}.
+                  <div style={{ fontSize: 11, color: T.muted, fontFamily: T.sans, marginTop: 4 }}>
+                    Faltam {plano.pagsRestantes} páginas em {plano.dias} {plano.dias === 1 ? 'dia' : 'dias'}.
                   </div>
                 </div>
+              )}
+              {plano && plano.tipo === 'ok' && plano.semanas.length > 1 && (
+                <div style={{ marginTop: 14, borderTop: `1px dashed ${T.hairline}`, paddingTop: 12 }}>
+                  <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 8 }}>
+                    Metas semanais
+                  </div>
+                  {plano.semanas.map(s => (
+                    <div key={s.k} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                      padding: '6px 8px', borderRadius: 8, marginBottom: 2,
+                      background: s.k === 1 ? 'rgba(176,83,58,0.07)' : 'transparent',
+                    }}>
+                      <div style={{ fontSize: 12, color: s.k === 1 ? T.terra : T.brown, fontWeight: s.k === 1 ? 700 : 400 }}>
+                        {s.k === 1 ? 'Esta semana' : `Semana ${s.k}`}
+                        <span style={{ color: T.muted, fontWeight: 400 }}> · até {s.data}</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: T.ink }}>
+                        pág {s.ini}–<strong style={{ color: T.terra }}>{s.alvo}</strong>
+                      </div>
+                    </div>
+                  ))}
+                  <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 6 }}>
+                    As metas se reajustam conforme você atualiza a página.
+                  </div>
+                </div>
+              )}
+              {plano && plano.tipo !== 'ok' && (
+                <div style={{ marginTop: 12, fontFamily: T.serif, fontSize: 14, fontStyle: 'italic', color: T.brown }}>{plano.msg}</div>
+              )}
+              {!goal && pages > 0 && (
+                <div style={hintStyle}>Escolha uma data e eu sugiro um ritmo diário.</div>
+              )}
+              {!pages && (
+                <div style={hintStyle}>Adicione o total de páginas (no botão Editar) para eu calcular o ritmo.</div>
+              )}
+              {!isDemo && (terminando ? caixaTerminar(false) : (
+                <button onClick={() => setTerminando(true)} style={{ marginTop: 12, background: 'transparent', border: 0, color: T.olive, fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+                  ✓ Terminei este livro
+                </button>
               ))}
-              <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 6 }}>
-                As metas se reajustam conforme você atualiza a página.
-              </div>
-            </div>
-          )}
-          {plano && plano.tipo !== 'ok' && (
-            <div style={{ marginTop: 12, fontFamily: T.serif, fontSize: 14, fontStyle: 'italic', color: T.brown }}>{plano.msg}</div>
-          )}
-          {!goal && pages > 0 && (
-            <div style={{ marginTop: 8, fontSize: 12, color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>
-              Escolha uma data e eu sugiro um ritmo diário.
-            </div>
-          )}
-          {!pages && (
-            <div style={{ marginTop: 8, fontSize: 12, color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>
-              Adicione o total de páginas (no botão Editar) para eu calcular o ritmo.
-            </div>
+            </>
           )}
         </div>
       </div>
