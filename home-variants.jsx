@@ -211,7 +211,21 @@ function HomeVariantA({ onNav = () => {} }) {
   const abrirMeta = () => { setGoalP(goalD && goalD.pages ? String(goalD.pages) : ''); setGoalM(goalD && goalD.minutes ? String(goalD.minutes) : ''); setEditGoal(true); };
   const salvarMeta = () => { if (typeof MG !== 'undefined' && MG.setDailyGoal) MG.setDailyGoal({ pages: goalP, minutes: goalM }); setEditGoal(false); };
   const removerMeta = () => { if (typeof MG !== 'undefined' && MG.setDailyGoal) MG.setDailyGoal(null); setEditGoal(false); };
-  const nomeMes = new Date().toLocaleDateString('pt-BR', { month: 'long' });
+  const nomeMes = (() => { const n = new Date().toLocaleDateString('pt-BR', { month: 'long' }); return n.charAt(0).toUpperCase() + n.slice(1); })();
+  // registros do dia (tocar num dia do calendário) — para conferir e CORRIGIR o que foi lançado
+  const hojeK = (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
+  const [diaSel, setDiaSel] = React.useState(null);
+  const diaAtivo = diaSel || hojeK;
+  const registrosDia = ((typeof MG !== 'undefined' && MG.getReadingLog) ? MG.getReadingLog() : []).filter((e) => e && e.date === diaAtivo);
+  const [editReg, setEditReg] = React.useState(null);
+  const [editP, setEditP] = React.useState('');
+  const [editM, setEditM] = React.useState('');
+  const abrirEdicao = (e) => { setEditReg(e.id); setEditP(String(e.pages || '')); setEditM(String(e.minutes || '')); };
+  const salvarEdicao = () => { if (typeof MG !== 'undefined' && MG.updateReading) MG.updateReading(editReg, { pages: editP, minutes: editM }); setEditReg(null); };
+  const removerReg = (id) => { if (typeof MG !== 'undefined' && MG.removeReading) MG.removeReading(id); setEditReg(null); };
+  const tituloLivro = (id) => { const bk = (window.BOOKS || []).find((x) => x.id === id); return bk ? bk.title : null; };
+  const FONTE = { hoje: 'Li hoje', plano: 'Onde estou', foco: 'Foco' };
+  const fmtDia = (k) => { const m = String(k).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${parseInt(m[3], 10)}/${m[2]}` : k; };
 
   const registrarHoje = () => {
     const n = parseInt(hojePag, 10) || 0;
@@ -454,7 +468,7 @@ function HomeVariantA({ onNav = () => {} }) {
                   <span style={{ color: T.brown, fontStyle: 'italic' }}>Hoje ainda sem leitura.</span>
                 )}
               </div>
-              <div style={{ fontSize: 11, color: T.muted, marginTop: 3 }}>
+              <div style={{ fontSize: 12, color: T.brown, marginTop: 3 }}>
                 {goalD ? (
                   <>meta: {[goalD.pages ? `${goalD.pages} pág` : null, goalD.minutes ? `${goalD.minutes} min` : null].filter(Boolean).join(' ou ')} por dia · <button onClick={abrirMeta} style={{ background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>ajustar</button></>
                 ) : (
@@ -489,7 +503,7 @@ function HomeVariantA({ onNav = () => {} }) {
           )}
 
           {/* esta semana */}
-          <div style={{ fontSize: 9, letterSpacing: 0.8, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 6 }}>Esta semana</div>
+          <div style={{ fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', color: T.brown, fontWeight: 600, marginBottom: 6 }}>Esta semana</div>
           <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: 14 }}>
             <MicroStat n={stats.paginas} label="páginas" accent={T.terra}/>
             {st && st.last7.minutes > 0 && <MicroStat n={semana.minutos} label="minutos" accent={T.terra}/>}
@@ -497,32 +511,87 @@ function HomeVariantA({ onNav = () => {} }) {
             <MicroStat n={stats.ritmo > 0 ? stats.ritmo : '—'} label="pág/dia" accent={T.ochre}/>
           </div>
 
-          {/* calendário do mês — cheio = meta cumprida · claro = leu abaixo da meta */}
+          {/* calendário do mês — numerado e clicável: tocar num dia mostra (e corrige) os registros */}
           {st && (
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, letterSpacing: 0.8, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 6 }}>
-                <span>{nomeMes}</span>
-                <span>{st.diasLidosMes} {st.diasLidosMes === 1 ? 'dia' : 'dias'} com leitura</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                <span style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, fontWeight: 500 }}>{nomeMes}</span>
+                <span style={{ fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase', color: T.brown, fontWeight: 600 }}>{st.diasLidosMes} {st.diasLidosMes === 1 ? 'dia' : 'dias'} com leitura</span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
-                {['S', 'T', 'Q', 'Q', 'S', 'S', 'D'].map((l, i) => (
-                  <div key={'h' + i} style={{ textAlign: 'center', fontSize: 9, color: T.muted, fontFamily: T.mono }}>{l}</div>
+                {['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom'].map((l, i) => (
+                  <div key={'h' + i} style={{ textAlign: 'center', fontSize: 9, color: T.brown, fontFamily: T.sans, fontWeight: 600, letterSpacing: 0.4, paddingBottom: 2 }}>{l}</div>
                 ))}
                 {Array.from({ length: st.primeiroDow }).map((_, i) => <div key={'v' + i}/>)}
-                {st.mes.map((d) => (
-                  <div key={d.key} title={`${d.dia}: ${d.pages} pág · ${d.minutes} min`} style={{
-                    aspectRatio: '1', borderRadius: 4, minHeight: 14,
-                    background: d.meta ? T.terra : (d.leu ? 'rgba(176,83,58,0.38)' : (d.futuro ? 'transparent' : T.parchment)),
-                    border: d.hoje ? `1.5px solid ${T.ink}` : (d.futuro ? `1px dashed ${T.hairline}` : '1px solid transparent'),
-                    opacity: d.futuro ? 0.7 : 1, boxSizing: 'border-box',
-                  }}/>
-                ))}
+                {st.mes.map((d) => {
+                  const sel = d.key === diaAtivo;
+                  const bg = d.meta ? T.terra : (d.leu ? 'rgba(176,83,58,0.55)' : (d.futuro ? 'transparent' : T.parchment));
+                  const fg = d.meta ? T.cream : (d.leu ? T.ink : (d.futuro ? T.muted : T.brown));
+                  return (
+                    <button key={d.key} type="button" onClick={() => setDiaSel(d.key)} title={`${d.dia}: ${d.pages} pág · ${d.minutes} min`} style={{
+                      aspectRatio: '1', minHeight: 30, borderRadius: 6, padding: 0, cursor: 'pointer',
+                      background: bg, color: fg,
+                      border: sel ? `2px solid ${T.ink}` : (d.hoje ? `2px solid ${T.terra}` : (d.futuro ? `1px dashed ${T.hairline}` : `1px solid ${T.hairline}`)),
+                      boxSizing: 'border-box', fontFamily: T.sans, fontSize: 11, fontWeight: (d.hoje || sel) ? 700 : 500,
+                      opacity: d.futuro ? 0.55 : 1, WebkitTapHighlightColor: 'transparent',
+                    }}>{d.dia}</button>
+                  );
+                })}
               </div>
-              {goalD && (
-                <div style={{ fontSize: 10, color: T.muted, marginTop: 6, fontFamily: T.serif, fontStyle: 'italic' }}>
-                  cheio = meta cumprida · claro = leu, abaixo da meta
+              <div style={{ fontSize: 10.5, color: T.brown, marginTop: 6, fontFamily: T.serif, fontStyle: 'italic' }}>
+                {goalD ? 'cheio = meta cumprida · claro = leu, abaixo da meta · ' : 'claro = leu · '}toque num dia para ver e corrigir os registros
+              </div>
+
+              {/* registros do dia selecionado — conferir, editar, remover */}
+              <div style={{ marginTop: 12, background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 10, padding: '10px 12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: registrosDia.length ? 6 : 0 }}>
+                  <span style={{ fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', color: T.brown, fontWeight: 600 }}>
+                    Registros de {diaAtivo === hojeK ? 'hoje' : fmtDia(diaAtivo)}
+                  </span>
+                  {diaAtivo !== hojeK && (
+                    <button onClick={() => setDiaSel(null)} style={{ background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>voltar a hoje</button>
+                  )}
                 </div>
-              )}
+                {registrosDia.length === 0 ? (
+                  <div style={{ fontSize: 12, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 4 }}>Nenhum registro neste dia.</div>
+                ) : registrosDia.map((e) => (
+                  <div key={e.id} style={{ padding: '6px 0', borderTop: `1px solid ${T.hairline}` }}>
+                    {editReg === e.id ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <input value={editP} onChange={(ev) => setEditP(ev.target.value)} inputMode="numeric" autoFocus
+                          onKeyDown={(ev) => ev.key === 'Enter' && salvarEdicao()}
+                          style={{ width: 48, padding: '6px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, textAlign: 'center' }}/>
+                        <span style={{ fontSize: 11, color: T.brown }}>pág</span>
+                        <input value={editM} onChange={(ev) => setEditM(ev.target.value)} inputMode="numeric"
+                          onKeyDown={(ev) => ev.key === 'Enter' && salvarEdicao()}
+                          style={{ width: 48, padding: '6px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, textAlign: 'center' }}/>
+                        <span style={{ fontSize: 11, color: T.brown }}>min</span>
+                        <div style={{ flex: 1 }}/>
+                        <button onClick={salvarEdicao} style={{ background: T.terra, color: T.cream, border: 0, borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Salvar</button>
+                        <button onClick={() => setEditReg(null)} style={{ background: 'transparent', color: T.brown, border: `1px solid ${T.hairline}`, borderRadius: 8, padding: '6px 10px', fontSize: 12, cursor: 'pointer' }}>Cancelar</button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink }}>
+                            {e.pages ? <strong>{e.pages} pág</strong> : null}{e.pages && e.minutes ? ' · ' : ''}{e.minutes ? <strong>{e.minutes} min</strong> : null}
+                          </div>
+                          <div style={{ fontSize: 11, color: T.brown, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {tituloLivro(e.bookId) || 'sem livro'}{e.src && FONTE[e.src] ? ` · ${FONTE[e.src]}` : ''}
+                          </div>
+                        </div>
+                        <button onClick={() => abrirEdicao(e)} title="corrigir" style={{ background: 'transparent', border: `1px solid ${T.hairline}`, borderRadius: 8, padding: '5px 10px', color: T.terra, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>✎ corrigir</button>
+                        <button onClick={() => removerReg(e.id)} title="remover" aria-label="remover registro" style={{ background: 'transparent', border: 0, padding: '4px 6px', color: T.muted, fontSize: 16, lineHeight: 1, cursor: 'pointer' }}>×</button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {registrosDia.some((e) => e.src === 'plano' || e.src === 'foco') && (
+                  <div style={{ fontSize: 10.5, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 6 }}>
+                    Corrigir aqui muda só o diário; a página do livro se ajusta no "Onde estou".
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

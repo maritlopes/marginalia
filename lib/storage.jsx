@@ -306,6 +306,18 @@ const MG = {
       pagesPerHour, mes, primeiroDow, diasLidosMes,
     };
   },
+  // corrigir um registro (páginas e/ou minutos lançados errado); zerar os dois = remover
+  updateReading(id, patch) {
+    const s = load();
+    const log = Array.isArray(s.readingLog) ? s.readingLog : [];
+    const pages = Math.max(0, parseInt(patch && patch.pages, 10) || 0);
+    const minutes = Math.max(0, parseInt(patch && patch.minutes, 10) || 0);
+    s.readingLog = (!pages && !minutes)
+      ? log.filter(e => e.id !== id)
+      : log.map(e => e.id === id ? { ...e, pages, minutes, updatedAt: new Date().toISOString() } : e);
+    save(s);
+    if (typeof window.__rerender === 'function') window.__rerender();
+  },
   removeReading(id) {
     const s = load();
     s.readingLog = (Array.isArray(s.readingLog) ? s.readingLog : []).filter(e => e.id !== id);
