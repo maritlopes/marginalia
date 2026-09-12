@@ -233,6 +233,7 @@ function HomeVariantA({ onNav = () => {} }) {
     if (typeof MG !== 'undefined' && MG.setDayTotals) MG.setDayTotals(diaAtivo, { pages: diaP, minutes: diaM, bookId: livroDia });
     setDiaSalvo(true);
   };
+  const apagarDia = () => { if (typeof MG !== 'undefined' && MG.setDayTotals) MG.setDayTotals(diaAtivo, { pages: 0, minutes: 0 }); setDiaSalvo(false); };
   const tituloLivro = (id) => { const bk = (window.BOOKS || []).find((x) => x.id === id); return bk ? bk.title : null; };
   const fmtDia = (k) => { const m = String(k).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${parseInt(m[3], 10)}/${m[2]}` : k; };
 
