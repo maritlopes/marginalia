@@ -233,27 +233,6 @@ function HomeVariantA({ onNav = () => {} }) {
     if (typeof MG !== 'undefined' && MG.setDayTotals) MG.setDayTotals(diaAtivo, { pages: diaP, minutes: diaM, bookId: livroDia });
     setDiaSalvo(true);
   };
-  // registro rápido no cartão "Em leitura": SOMA ao dia de hoje, no livro do cartão
-  const [addP, setAddP] = React.useState('');
-  const [addM, setAddM] = React.useState('');
-  const somarAgora = () => {
-    const n = parseInt(addP, 10) || 0, m = parseInt(addM, 10) || 0;
-    if (n <= 0 && m <= 0) return;
-    if (typeof MG !== 'undefined' && MG.logReading) MG.logReading(n, (b && b.id) || null, { minutes: m, src: 'hoje' });
-    setAddP(''); setAddM('');
-  };
-  // os OUTROS livros em leitura (além do principal) — linhas compactas, com "+" para somar neles
-  const outrosLendo = (window.BOOKS || []).filter((x) => x && !x.deleted && (x.status === 'reading' || x.status === 'paused') && b && x.id !== b.id);
-  const [addOpen, setAddOpen] = React.useState(null);
-  const [addP2, setAddP2] = React.useState('');
-  const [addM2, setAddM2] = React.useState('');
-  const somarEm = (id) => {
-    const n = parseInt(addP2, 10) || 0, m = parseInt(addM2, 10) || 0;
-    if (n <= 0 && m <= 0) return;
-    if (typeof MG !== 'undefined' && MG.logReading) MG.logReading(n, id, { minutes: m, src: 'hoje' });
-    setAddP2(''); setAddM2(''); setAddOpen(null);
-  };
-  const apagarDia = () => { if (typeof MG !== 'undefined' && MG.setDayTotals) MG.setDayTotals(diaAtivo, { pages: 0, minutes: 0 }); setDiaSalvo(false); };
   const tituloLivro = (id) => { const bk = (window.BOOKS || []).find((x) => x.id === id); return bk ? bk.title : null; };
   const fmtDia = (k) => { const m = String(k).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${parseInt(m[3], 10)}/${m[2]}` : k; };
 
@@ -438,98 +417,11 @@ function HomeVariantA({ onNav = () => {} }) {
           );
         })()}
 
-        {/* EM LEITURA — versão compacta */}
+        {/* EM LEITURA — uma entrada IGUAL para cada livro aberto (o último registrado primeiro) */}
         <SectionRule label={tt('em_leitura')}/>
-        <div onClick={() => { if (typeof window.__openBook === 'function') window.__openBook(b); else onNav('book'); }} style={{
-          padding: '14px 14px 16px', background: T.cream, borderRadius: 12,
-          boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 6px 18px rgba(60,40,20,0.05)',
-          border: `1px solid ${T.hairline}`, cursor: 'pointer', marginBottom: 22,
-        }}>
-          <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-            <BookCover title={b.title} author={b.author} tone={b.tone}
-                       cover={b.cover} isbn={b.isbn} w={68} book={b}/>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 600 }}>
-                {b.theme}
-              </div>
-              <div style={{ fontFamily: T.serif, fontSize: 20, lineHeight: 1.1, fontWeight: 500, letterSpacing: -0.4, marginTop: 4 }}>
-                {b.title}
-              </div>
-              <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 12, color: T.brown, marginTop: 2 }}>
-                {b.author}{b.nobel && typeof NobelMark !== 'undefined' && <NobelMark nobel={b.nobel} size={12}/>}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-                <LinearProgress pct={b.pct} height={2} style={{ flex: 1 }}/>
-                <span style={{ fontSize: 10, fontFamily: T.mono, fontVariantNumeric: 'tabular-nums', color: T.muted }}>
-                  {b.pct}%
-                </span>
-              </div>
-            </div>
-          </div>
-          <button onClick={(e) => { e.stopPropagation(); if (typeof window.__openBook === 'function') window.__openBook(b); else onNav('book'); }} style={{
-            marginTop: 12, width: '100%', padding: '10px 0',
-            background: T.ink, color: T.cream, border: 0, borderRadius: 8,
-            fontFamily: T.sans, fontSize: 12, fontWeight: 600, letterSpacing: 0.4,
-            textTransform: 'uppercase', cursor: 'pointer',
-          }}>{tt('retomar_leitura')}</button>
-          {/* registro rápido: soma ao dia de hoje, neste livro */}
-          {!window.__demoShelf && (
-            <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.hairline}`, flexWrap: 'wrap', cursor: 'default' }}>
-              <span style={{ fontSize: 12, color: T.brown, fontFamily: T.serif }}>Li agora:</span>
-              <input value={addP} onChange={(e) => setAddP(e.target.value)} inputMode="numeric" placeholder="0"
-                onKeyDown={(e) => e.key === 'Enter' && somarAgora()}
-                style={{ width: 46, padding: '6px 4px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, outline: 'none', textAlign: 'center' }}/>
-              <span style={{ fontSize: 11, color: T.brown }}>pág</span>
-              <input value={addM} onChange={(e) => setAddM(e.target.value)} inputMode="numeric" placeholder="0"
-                onKeyDown={(e) => e.key === 'Enter' && somarAgora()}
-                style={{ width: 46, padding: '6px 4px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, outline: 'none', textAlign: 'center' }}/>
-              <span style={{ fontSize: 11, color: T.brown }}>min</span>
-              <div style={{ flex: 1 }}/>
-              <button onClick={somarAgora} disabled={!(parseInt(addP, 10) || parseInt(addM, 10))} style={{ padding: '6px 12px', borderRadius: 8, border: 0, background: (parseInt(addP, 10) || parseInt(addM, 10)) ? T.terra : T.parchment, color: (parseInt(addP, 10) || parseInt(addM, 10)) ? T.cream : T.brown, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>+ somar</button>
-            </div>
-          )}
-          {/* também em leitura — todos os outros livros abertos agora */}
-          {!window.__demoShelf && outrosLendo.length > 0 && (
-            <div onClick={(e) => e.stopPropagation()} style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${T.hairline}`, cursor: 'default' }}>
-              <div style={{ fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: T.brown, fontWeight: 600, marginBottom: 6 }}>Também em leitura</div>
-              {outrosLendo.map((x) => {
-                const pctX = x.pages ? Math.min(100, Math.round(((x.currentPage || 0) / x.pages) * 100)) : (x.pct || 0);
-                const aberto = addOpen === x.id;
-                return (
-                  <div key={x.id} style={{ padding: '7px 0', borderTop: `1px dashed ${T.hairline}` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div onClick={() => { if (typeof window.__openBook === 'function') window.__openBook(x); }} style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, cursor: 'pointer' }}>
-                        <BookCover title={x.title} author={x.author} tone={x.tone} cover={x.cover} isbn={x.isbn} w={30} book={x}/>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontFamily: T.serif, fontSize: 14.5, color: T.ink, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.title}{x.status === 'paused' ? <span style={{ fontSize: 10, color: T.muted, fontFamily: T.sans }}> · pausado</span> : null}</div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                            <LinearProgress pct={pctX} height={2} style={{ flex: 1 }}/>
-                            <span style={{ fontSize: 10, fontFamily: T.mono, fontVariantNumeric: 'tabular-nums', color: T.muted }}>{x.pages ? `pág ${x.currentPage || 0} · ` : ''}{pctX}%</span>
-                          </div>
-                        </div>
-                      </div>
-                      <button onClick={() => { setAddOpen(aberto ? null : x.id); setAddP2(''); setAddM2(''); }} title="somar leitura neste livro" style={{ width: 28, height: 28, borderRadius: 999, border: `1px solid ${aberto ? T.ink : T.hairline}`, background: aberto ? T.ink : 'transparent', color: aberto ? T.cream : T.terra, fontSize: 16, lineHeight: 1, cursor: 'pointer', flexShrink: 0, padding: 0 }}>+</button>
-                    </div>
-                    {aberto && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 12, color: T.brown, fontFamily: T.serif }}>Li agora:</span>
-                        <input value={addP2} onChange={(e) => setAddP2(e.target.value)} inputMode="numeric" placeholder="0" autoFocus
-                          onKeyDown={(e) => e.key === 'Enter' && somarEm(x.id)}
-                          style={{ width: 46, padding: '6px 4px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, outline: 'none', textAlign: 'center' }}/>
-                        <span style={{ fontSize: 11, color: T.brown }}>pág</span>
-                        <input value={addM2} onChange={(e) => setAddM2(e.target.value)} inputMode="numeric" placeholder="0"
-                          onKeyDown={(e) => e.key === 'Enter' && somarEm(x.id)}
-                          style={{ width: 46, padding: '6px 4px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, outline: 'none', textAlign: 'center' }}/>
-                        <span style={{ fontSize: 11, color: T.brown }}>min</span>
-                        <div style={{ flex: 1 }}/>
-                        <button onClick={() => somarEm(x.id)} disabled={!(parseInt(addP2, 10) || parseInt(addM2, 10))} style={{ padding: '6px 12px', borderRadius: 8, border: 0, background: (parseInt(addP2, 10) || parseInt(addM2, 10)) ? T.terra : T.parchment, color: (parseInt(addP2, 10) || parseInt(addM2, 10)) ? T.cream : T.brown, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>+ somar</button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+        <div style={{ marginBottom: 10 }}>
+          {(window.__demoShelf ? [b] : [b, ...(window.BOOKS || []).filter((x) => x && !x.deleted && (x.status === 'reading' || x.status === 'paused') && x.id !== b.id)])
+            .map((x) => <LeituraCard key={x.id} book={x} onNav={onNav} label={tt('retomar_leitura')}/>)}
         </div>
 
         {/* LEITURAS DO CLUBE — o app conhece o calendário; só aparece para quem tem livro do clube */}
@@ -1083,6 +975,66 @@ function SectionRule({ label, action, onAction }) {
       {action && (
         <div onClick={onAction} style={{ fontSize: 10, color: T.terra, letterSpacing: 0.6, fontWeight: 600, cursor: onAction ? 'pointer' : 'default' }}>
           {action}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// LeituraCard — a entrada de um livro em leitura na Home: capa, progresso, "Retomar"
+// e "Li agora" (soma no dia de hoje, neste livro). Uma igual para cada livro aberto.
+function LeituraCard({ book: x, onNav = () => {}, label = 'Retomar leitura' }) {
+  const [addP, setAddP] = React.useState('');
+  const [addM, setAddM] = React.useState('');
+  const abrir = () => { if (typeof window.__openBook === 'function') window.__openBook(x); else onNav('book'); };
+  const somar = () => {
+    const n = parseInt(addP, 10) || 0, m = parseInt(addM, 10) || 0;
+    if (n <= 0 && m <= 0) return;
+    if (typeof MG !== 'undefined' && MG.logReading) MG.logReading(n, x.id, { minutes: m, src: 'hoje' });
+    setAddP(''); setAddM('');
+  };
+  const pct = x.pages ? Math.min(100, Math.round(((x.currentPage || 0) / x.pages) * 100)) : (x.pct || 0);
+  const ativo = !!(parseInt(addP, 10) || parseInt(addM, 10));
+  const inp = { width: 46, padding: '6px 4px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, outline: 'none', textAlign: 'center' };
+  return (
+    <div onClick={abrir} style={{
+      padding: '14px 14px 16px', background: T.cream, borderRadius: 12,
+      boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 6px 18px rgba(60,40,20,0.05)',
+      border: `1px solid ${T.hairline}`, cursor: 'pointer', marginBottom: 12,
+    }}>
+      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+        <BookCover title={x.title} author={x.author} tone={x.tone} cover={x.cover} isbn={x.isbn} w={68} book={x}/>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: x.status === 'paused' ? T.muted : T.terra, fontWeight: 600 }}>
+            {x.status === 'paused' ? 'pausado' : (x.theme || 'lendo')}
+          </div>
+          <div style={{ fontFamily: T.serif, fontSize: 20, lineHeight: 1.1, fontWeight: 500, letterSpacing: -0.4, marginTop: 4 }}>{x.title}</div>
+          <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 12, color: T.brown, marginTop: 2 }}>
+            {x.author}{x.nobel && typeof NobelMark !== 'undefined' && <NobelMark nobel={x.nobel} size={12}/>}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+            <LinearProgress pct={pct} height={2} style={{ flex: 1 }}/>
+            <span style={{ fontSize: 10, fontFamily: T.mono, fontVariantNumeric: 'tabular-nums', color: T.muted, whiteSpace: 'nowrap' }}>
+              {x.pages ? `pág ${x.currentPage || 0} · ` : ''}{pct}%
+            </span>
+          </div>
+        </div>
+      </div>
+      <button onClick={(e) => { e.stopPropagation(); abrir(); }} style={{
+        marginTop: 12, width: '100%', padding: '10px 0',
+        background: T.ink, color: T.cream, border: 0, borderRadius: 8,
+        fontFamily: T.sans, fontSize: 12, fontWeight: 600, letterSpacing: 0.4,
+        textTransform: 'uppercase', cursor: 'pointer',
+      }}>{label}</button>
+      {!window.__demoShelf && (
+        <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.hairline}`, flexWrap: 'wrap', cursor: 'default' }}>
+          <span style={{ fontSize: 12, color: T.brown, fontFamily: T.serif }}>Li agora:</span>
+          <input value={addP} onChange={(e) => setAddP(e.target.value)} inputMode="numeric" placeholder="0" onKeyDown={(e) => e.key === 'Enter' && somar()} style={inp}/>
+          <span style={{ fontSize: 11, color: T.brown }}>pág</span>
+          <input value={addM} onChange={(e) => setAddM(e.target.value)} inputMode="numeric" placeholder="0" onKeyDown={(e) => e.key === 'Enter' && somar()} style={inp}/>
+          <span style={{ fontSize: 11, color: T.brown }}>min</span>
+          <div style={{ flex: 1 }}/>
+          <button onClick={somar} disabled={!ativo} style={{ padding: '6px 12px', borderRadius: 8, border: 0, background: ativo ? T.terra : T.parchment, color: ativo ? T.cream : T.brown, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>+ somar</button>
         </div>
       )}
     </div>
