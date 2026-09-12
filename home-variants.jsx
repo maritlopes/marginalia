@@ -985,18 +985,22 @@ function SectionRule({ label, action, onAction }) {
 // LeituraCard — a entrada de um livro em leitura na Home: capa, progresso, "Retomar"
 // e "Li agora" (soma no dia de hoje, neste livro). Uma igual para cada livro aberto.
 function LeituraCard({ book: x, onNav = () => {}, label = 'Retomar leitura' }) {
-  const [addP, setAddP] = React.useState('');
-  const [addM, setAddM] = React.useState('');
+  // "Página atual" — o MESMO dado do "Onde estou" do Plano de leitura. Avançar a página
+  // manda a diferença para o diário de hoje (páginas lidas neste livro); voltar só corrige.
+  const cur = x.currentPage || 0;
+  const [pag, setPag] = React.useState(String(cur || ''));
+  React.useEffect(() => { setPag(String(cur || '')); }, [x.id, cur]);
   const abrir = () => { if (typeof window.__openBook === 'function') window.__openBook(x); else onNav('book'); };
-  const somar = () => {
-    const n = parseInt(addP, 10) || 0, m = parseInt(addM, 10) || 0;
-    if (n <= 0 && m <= 0) return;
-    if (typeof MG !== 'undefined' && MG.logReading) MG.logReading(n, x.id, { minutes: m, src: 'hoje' });
-    setAddP(''); setAddM('');
+  const mudou = (parseInt(pag, 10) || 0) !== cur;
+  const salvarPagina = () => {
+    let p = Math.max(0, parseInt(pag, 10) || 0);
+    if (x.pages) p = Math.min(p, x.pages);
+    if (p === cur) return;
+    const pct = x.pages ? Math.min(100, Math.round((p / x.pages) * 100)) : (x.pct || 0);
+    if (p > cur && typeof MG !== 'undefined' && MG.logReading) MG.logReading(p - cur, x.id, { src: 'plano' });
+    if (typeof MG !== 'undefined' && MG.updateBook) MG.updateBook(x.id, { currentPage: p, pct });
   };
-  const pct = x.pages ? Math.min(100, Math.round(((x.currentPage || 0) / x.pages) * 100)) : (x.pct || 0);
-  const ativo = !!(parseInt(addP, 10) || parseInt(addM, 10));
-  const inp = { width: 46, padding: '6px 4px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, outline: 'none', textAlign: 'center' };
+  const pct = x.pages ? Math.min(100, Math.round((cur / x.pages) * 100)) : (x.pct || 0);
   return (
     <div onClick={abrir} style={{
       padding: '14px 14px 16px', background: T.cream, borderRadius: 12,
@@ -1015,9 +1019,7 @@ function LeituraCard({ book: x, onNav = () => {}, label = 'Retomar leitura' }) {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
             <LinearProgress pct={pct} height={2} style={{ flex: 1 }}/>
-            <span style={{ fontSize: 10, fontFamily: T.mono, fontVariantNumeric: 'tabular-nums', color: T.muted, whiteSpace: 'nowrap' }}>
-              {x.pages ? `pág ${x.currentPage || 0} · ` : ''}{pct}%
-            </span>
+            <span style={{ fontSize: 10, fontFamily: T.mono, fontVariantNumeric: 'tabular-nums', color: T.muted, whiteSpace: 'nowrap' }}>{pct}%</span>
           </div>
         </div>
       </div>
@@ -1028,14 +1030,13 @@ function LeituraCard({ book: x, onNav = () => {}, label = 'Retomar leitura' }) {
         textTransform: 'uppercase', cursor: 'pointer',
       }}>{label}</button>
       {!window.__demoShelf && (
-        <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.hairline}`, flexWrap: 'wrap', cursor: 'default' }}>
-          <span style={{ fontSize: 12, color: T.brown, fontFamily: T.serif }}>Li agora:</span>
-          <input value={addP} onChange={(e) => setAddP(e.target.value)} inputMode="numeric" placeholder="0" onKeyDown={(e) => e.key === 'Enter' && somar()} style={inp}/>
-          <span style={{ fontSize: 11, color: T.brown }}>pág</span>
-          <input value={addM} onChange={(e) => setAddM(e.target.value)} inputMode="numeric" placeholder="0" onKeyDown={(e) => e.key === 'Enter' && somar()} style={inp}/>
-          <span style={{ fontSize: 11, color: T.brown }}>min</span>
+        <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.hairline}`, cursor: 'default' }}>
+          <span style={{ fontSize: 12, color: T.brown, fontFamily: T.serif }}>Página atual:</span>
+          <input value={pag} onChange={(e) => setPag(e.target.value)} inputMode="numeric" placeholder="0" onKeyDown={(e) => e.key === 'Enter' && salvarPagina()}
+            style={{ width: 62, padding: '7px 6px', border: `1px solid ${mudou ? T.terra : T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 14, outline: 'none', textAlign: 'center' }}/>
+          <span style={{ fontSize: 11, color: T.muted }}>{x.pages ? `de ${x.pages}` : ''}</span>
           <div style={{ flex: 1 }}/>
-          <button onClick={somar} disabled={!ativo} style={{ padding: '6px 12px', borderRadius: 8, border: 0, background: ativo ? T.terra : T.parchment, color: ativo ? T.cream : T.brown, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>+ somar</button>
+          <button onClick={salvarPagina} disabled={!mudou} style={{ padding: '7px 14px', borderRadius: 8, border: 0, background: mudou ? T.terra : T.parchment, color: mudou ? T.cream : T.brown, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: mudou ? 'pointer' : 'default' }}>OK</button>
         </div>
       )}
     </div>
