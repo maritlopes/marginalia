@@ -4536,55 +4536,42 @@ function ScreenAcervo({ onNav = () => {} }) {
 }
 
 // ── Retrospectiva — "Seu ano em livros" ──────────────────────
+// Cronologia da leitura, ano a ano e mês a mês. Cada ano é uma seção
+// recolhível: o ano corrente (pela data do aparelho) abre sozinho; os
+// anteriores ficam fechados com um resumo — quando 2026 acaba, ele se
+// recolhe e 2027 começa aberto (mesmo vazio). Dentro do ano, os lidos
+// vão por mês de término, do mais antigo ao mais recente, com início e
+// fim editáveis no lugar (as datas são as do próprio livro — startedAt
+// e finishedAt — e cada ajuste volta pra estante via MG.updateBook).
 // Conta os lidos POR ANO: finishedAt (data real) ou readIn (só o ano, para
 // leituras cuja data exata não existe — nunca se inventa data). Lidos sem
 // ano nenhum ficam fora da conta, citados num rodapé discreto.
+const MESES_LONGOS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+function retroYearOf(b) {
+  if (b.finishedAt) { const y = parseInt(String(b.finishedAt).slice(0, 4), 10); if (y) return y; }
+  if (b.readIn) { const y = parseInt(b.readIn, 10); if (y) return y; }
+  return null;
+}
+function retroMonthOf(b) {
+  const m = String(b.finishedAt || '').match(/^\d{4}-(\d{2})/);
+  if (!m) return null;
+  const i = parseInt(m[1], 10) - 1;
+  return (i >= 0 && i < 12) ? i : null;
+}
+
 function ScreenRetrospectiva({ onNav = () => {} }) {
   const all = (window.BOOKS || []).filter(b => b && !b.deleted);
   const isRead = (b) => b.status === 'read'
     || (((typeof window.bookMark === 'function') ? window.bookMark(b) : b.mark) === 'read');
-  const yearOf = (b) => {
-    if (b.finishedAt) { const y = parseInt(String(b.finishedAt).slice(0, 4), 10); if (y) return y; }
-    if (b.readIn) { const y = parseInt(b.readIn, 10); if (y) return y; }
-    return null;
-  };
   const lidos = all.filter(isRead);
-  const anoAtual = new Date().getFullYear();
-  const anos = [...new Set(lidos.map(yearOf).filter(Boolean))].sort((a, b) => b - a);
-  const [ano, setAno] = React.useState(anos.includes(anoAtual) ? anoAtual : (anos[0] || anoAtual));
-
-  const doAno = React.useMemo(() =>
-    lidos.filter(b => yearOf(b) === ano).sort((a, b) => (a.title || '').localeCompare(b.title || '', 'pt-BR')),
-  [lidos, ano]);
-  const semAno = lidos.filter(b => yearOf(b) === null).length;
-  const avaliados = doAno.filter(b => Number(b.rating) > 0);
-  const media = avaliados.length ? (avaliados.reduce((s, b) => s + Number(b.rating || 0), 0) / avaliados.length) : null;
-  const nobels = doAno.filter(b => b.nobel).length;
-  const autores = [...new Set(doAno.map(b => (b.author || '').trim()).filter(Boolean))];
-  // páginas do ano = a soma das páginas dos LIVROS lidos (o que ela atravessou);
-  // se algum livro do ano não tem contagem, o número ganha um "+" (é pelo menos isso).
-  // O diário ("Li hoje") é outra medida — aparece como linha secundária.
-  const comPaginas = doAno.filter(b => Number(b.pages) > 0);
-  const paginas = comPaginas.reduce((s, b) => s + Number(b.pages), 0);
-  const paginasIncompletas = comPaginas.length < doAno.length;
+  const anoAtual = parseInt(hojeLocalISO().slice(0, 4), 10);
+  // o ano corrente aparece sempre (mesmo sem livro), pra virada do ano abrir a página nova
+  const anos = [...new Set([anoAtual, ...lidos.map(retroYearOf).filter(Boolean)])].sort((a, b) => b - a);
+  // aberto: só o ano corrente por padrão; os outros, recolhidos (toque pra abrir)
+  const [abertos, setAbertos] = React.useState(() => ({ [anoAtual]: true }));
+  const toggle = (y) => setAbertos(s => ({ ...s, [y]: !s[y] }));
+  const semAno = lidos.filter(b => retroYearOf(b) === null).length;
   const log = (typeof MG !== 'undefined' && MG.getReadingLog) ? MG.getReadingLog() : [];
-  const logAno = log.filter(e => String(e.date || '').startsWith(String(ano)));
-  const paginasDiario = logAno.reduce((s, e) => s + (e.pages || 0), 0);
-  const minutosDiario = logAno.reduce((s, e) => s + (e.minutes || 0), 0);
-  const horasDiario = Math.round(minutosDiario / 60);
-  const diasDiario = new Set(logAno.map(e => e.date)).size;
-  // por mês: páginas e minutos registrados (barras simples)
-  const porMes = Array.from({ length: 12 }, (_, i) => ({ m: i, pages: 0, minutes: 0 }));
-  for (const e of logAno) { const m = parseInt(String(e.date).slice(5, 7), 10) - 1; if (m >= 0 && m < 12) { porMes[m].pages += e.pages || 0; porMes[m].minutes += e.minutes || 0; } }
-  const maxMes = Math.max(1, ...porMes.map(x => x.pages));
-  const MESES1 = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
-
-  const statBox = (num, label) => (
-    <div style={{ flex: 1, background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '12px 8px', textAlign: 'center' }}>
-      <div style={{ fontFamily: T.serif, fontSize: 24, color: T.terra, lineHeight: 1 }}>{num}</div>
-      <div style={{ fontSize: 9.5, letterSpacing: 1.2, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginTop: 5 }}>{label}</div>
-    </div>
-  );
 
   return (
     <div style={{ width: '100%', height: '100%', background: T.bone, overflow: 'auto', paddingBottom: 120 }}>
@@ -4607,81 +4594,14 @@ function ScreenRetrospectiva({ onNav = () => {} }) {
         <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 12.5, color: T.terra, marginTop: 6 }}>
           "O que você atravessou — e o que atravessou você."
         </div>
-        {anos.length > 1 && (
-          <div style={{ display: 'flex', gap: 6, marginTop: 12, flexWrap: 'wrap' }}>
-            {anos.map(y => (
-              <button key={y} onClick={() => setAno(y)} style={{ padding: '7px 12px', borderRadius: 999, background: ano === y ? T.ink : 'transparent', color: ano === y ? T.cream : T.brown, border: `1px solid ${ano === y ? T.ink : T.hairline}`, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{y}</button>
-            ))}
-          </div>
-        )}
+        <div style={{ fontSize: 11.5, color: T.muted, fontFamily: T.sans, marginTop: 8, lineHeight: 1.5 }}>
+          A cronologia da sua leitura, mês a mês. Toque numa data para corrigir início ou fim.
+        </div>
 
-        {doAno.length === 0 ? (
-          <div style={{ padding: '36px 0', textAlign: 'center', color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>
-            Nenhum livro concluído em {ano} — ainda. A estante espera.
-          </div>
-        ) : (
-          <>
-            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-              {statBox(doAno.length, doAno.length === 1 ? 'livro lido' : 'livros lidos')}
-              {statBox(autores.length, autores.length === 1 ? 'voz' : 'vozes')}
-              {nobels > 0 && statBox(nobels, 'Nobel')}
-              {paginas > 0 && statBox(paginas.toLocaleString('pt-BR') + (paginasIncompletas ? '+' : ''), 'páginas')}
-            </div>
-            {media !== null && (
-              <div style={{ marginTop: 10, fontFamily: T.sans, fontSize: 12, color: T.brown, textAlign: 'center' }}>
-                média das suas estrelas: <span style={{ color: T.terra, fontWeight: 600 }}>{media.toFixed(1).replace('.', ',')} ★</span>
-              </div>
-            )}
-            {paginasDiario > 0 && (
-              <div style={{ marginTop: 4, fontFamily: T.sans, fontSize: 11, color: T.muted, textAlign: 'center' }}>
-                no seu diário de leitura: {paginasDiario.toLocaleString('pt-BR')} páginas registradas em {ano}
-              </div>
-            )}
-            {/* o tempo com os livros — do diário (minutos registrados) */}
-            {(minutosDiario > 0 || paginasDiario > 0) && (
-              <div style={{ marginTop: 16, background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '12px 14px' }}>
-                <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.muted, fontWeight: 700, marginBottom: 8 }}>Seu tempo com os livros em {ano}</div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {minutosDiario >= 60 && statBox(horasDiario + 'h', 'de leitura')}
-                  {statBox(diasDiario, diasDiario === 1 ? 'dia lendo' : 'dias lendo')}
-                  {diasDiario > 0 && statBox(Math.round(paginasDiario / diasDiario), 'pág/dia')}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 64, marginTop: 12 }}>
-                  {porMes.map((x) => (
-                    <div key={x.m} title={`${x.pages} pág · ${x.minutes} min`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
-                      <div style={{ width: '100%', height: `${Math.max(x.pages > 0 ? 6 : 2, Math.round((x.pages / maxMes) * 52))}px`, background: x.pages > 0 ? T.terra : T.parchment, borderRadius: 3 }}/>
-                      <div style={{ fontSize: 9, color: T.muted, fontFamily: T.mono, marginTop: 4 }}>{MESES1[x.m]}</div>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ fontSize: 10.5, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 6 }}>páginas registradas por mês{minutosDiario > 0 ? ` · ${Math.round(minutosDiario / 60)}h${String(minutosDiario % 60).padStart(2, '0')} no total` : ''}</div>
-              </div>
-            )}
-
-            <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.muted, fontWeight: 700, margin: '22px 0 4px' }}>
-              As leituras de {ano}
-            </div>
-            {doAno.map(b => (
-              <div key={b.id} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '10px 0', borderBottom: `1px solid ${T.hairline}` }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: T.serif, fontSize: 15, color: T.ink, lineHeight: 1.25 }}>
-                    {b.title}{b.nobel && <img src="/nobel-medal.png" alt="Nobel" style={{ width: 13, height: 13, marginLeft: 6, verticalAlign: 'baseline', opacity: 0.9 }}/>}
-                  </div>
-                  {b.author && <div style={{ fontFamily: T.sans, fontSize: 11.5, color: T.muted, marginTop: 2 }}>{b.author}</div>}
-                </div>
-                {Number(b.rating) > 0 && (
-                  <div style={{ color: T.ochre, fontSize: 12, letterSpacing: 1, flexShrink: 0 }}>{'★'.repeat(Number(b.rating))}</div>
-                )}
-              </div>
-            ))}
-
-            {autores.length > 1 && (
-              <div style={{ marginTop: 18, fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, color: T.brown, lineHeight: 1.6 }}>
-                As vozes que acompanharam você: {autores.join(' · ')}.
-              </div>
-            )}
-          </>
-        )}
+        {anos.map(y => (
+          <RetroAno key={y} ano={y} atual={y === anoAtual} aberto={!!abertos[y]} onToggle={() => toggle(y)}
+            livros={lidos.filter(b => retroYearOf(b) === y)} log={log}/>
+        ))}
 
         {semAno > 0 && (
           <div style={{ marginTop: 22, fontSize: 11.5, color: T.muted, fontFamily: T.sans, lineHeight: 1.5 }}>
@@ -4690,6 +4610,236 @@ function ScreenRetrospectiva({ onNav = () => {} }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// Um ano da retrospectiva: cabeçalho recolhível + números + tempo + meses.
+function RetroAno({ ano, atual, aberto, onToggle, livros, log }) {
+  const doAno = livros;
+  const avaliados = doAno.filter(b => Number(b.rating) > 0);
+  const media = avaliados.length ? (avaliados.reduce((s, b) => s + Number(b.rating || 0), 0) / avaliados.length) : null;
+  const nobels = doAno.filter(b => b.nobel).length;
+  const autores = [...new Set(doAno.map(b => (b.author || '').trim()).filter(Boolean))];
+  // páginas do ano = a soma das páginas dos LIVROS lidos (o que ela atravessou);
+  // se algum livro do ano não tem contagem, o número ganha um "+" (é pelo menos isso).
+  // O diário ("Li hoje") é outra medida — aparece como linha secundária.
+  const comPaginas = doAno.filter(b => Number(b.pages) > 0);
+  const paginas = comPaginas.reduce((s, b) => s + Number(b.pages), 0);
+  const paginasIncompletas = comPaginas.length < doAno.length;
+  const logAno = (log || []).filter(e => String(e.date || '').startsWith(String(ano)));
+  const paginasDiario = logAno.reduce((s, e) => s + (e.pages || 0), 0);
+  const minutosDiario = logAno.reduce((s, e) => s + (e.minutes || 0), 0);
+  const horasDiario = Math.round(minutosDiario / 60);
+  const diasDiario = new Set(logAno.map(e => e.date)).size;
+  // por mês: páginas e minutos registrados (barras simples)
+  const porMes = Array.from({ length: 12 }, (_, i) => ({ m: i, pages: 0, minutes: 0 }));
+  for (const e of logAno) { const m = parseInt(String(e.date).slice(5, 7), 10) - 1; if (m >= 0 && m < 12) { porMes[m].pages += e.pages || 0; porMes[m].minutes += e.minutes || 0; } }
+  const maxMes = Math.max(1, ...porMes.map(x => x.pages));
+  const MESES1 = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+
+  // cronologia: meses em ordem (jan → dez), e dentro do mês pela data de término;
+  // lido só com o ano (readIn, sem dia) vai pra um grupo à parte no fim.
+  const meses = [];
+  for (let m = 0; m < 12; m++) {
+    const doMes = doAno.filter(b => retroMonthOf(b) === m)
+      .sort((a, b) => String(a.finishedAt).localeCompare(String(b.finishedAt)) || (a.title || '').localeCompare(b.title || '', 'pt-BR'));
+    if (doMes.length) meses.push({ m, livros: doMes });
+  }
+  const semMes = doAno.filter(b => retroMonthOf(b) === null)
+    .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'pt-BR'));
+
+  const statBox = (num, label) => (
+    <div style={{ flex: 1, background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '12px 8px', textAlign: 'center' }}>
+      <div style={{ fontFamily: T.serif, fontSize: 24, color: T.terra, lineHeight: 1 }}>{num}</div>
+      <div style={{ fontSize: 9.5, letterSpacing: 1.2, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginTop: 5 }}>{label}</div>
+    </div>
+  );
+
+  const resumo = doAno.length === 0
+    ? (atual ? 'em curso' : 'nenhum lido')
+    : `${doAno.length} ${doAno.length === 1 ? 'livro' : 'livros'}${atual ? ' · em curso' : ''}`;
+
+  return (
+    <div style={{ marginTop: 18, borderTop: `1px solid ${T.hairline}` }}>
+      {/* cabeçalho do ano — recolhe/abre */}
+      <button onClick={onToggle} aria-expanded={aberto} style={{
+        width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '14px 0',
+        background: 'transparent', border: 0, cursor: 'pointer', textAlign: 'left',
+      }}>
+        <span style={{ fontFamily: T.serif, fontSize: 24, color: aberto ? T.ink : T.brown, letterSpacing: -0.4, lineHeight: 1 }}>{ano}</span>
+        <span style={{ flex: 1, fontSize: 11.5, color: T.muted, fontFamily: T.sans }}>{resumo}</span>
+        <span style={{ display: 'inline-flex', transform: aberto ? 'rotate(90deg)' : 'none', transition: 'transform .15s', color: T.terra }}>
+          <Icon name="arrowRight" size={16} color={T.terra}/>
+        </span>
+      </button>
+
+      {aberto && (doAno.length === 0 ? (
+        <div style={{ padding: '18px 0 28px', textAlign: 'center', color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>
+          Nenhum livro concluído em {ano} — ainda. A estante espera.
+        </div>
+      ) : (
+        <div style={{ paddingBottom: 12 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {statBox(doAno.length, doAno.length === 1 ? 'livro lido' : 'livros lidos')}
+            {statBox(autores.length, autores.length === 1 ? 'voz' : 'vozes')}
+            {nobels > 0 && statBox(nobels, 'Nobel')}
+            {paginas > 0 && statBox(paginas.toLocaleString('pt-BR') + (paginasIncompletas ? '+' : ''), 'páginas')}
+          </div>
+          {media !== null && (
+            <div style={{ marginTop: 10, fontFamily: T.sans, fontSize: 12, color: T.brown, textAlign: 'center' }}>
+              média das suas estrelas: <span style={{ color: T.terra, fontWeight: 600 }}>{media.toFixed(1).replace('.', ',')} ★</span>
+            </div>
+          )}
+          {paginasDiario > 0 && (
+            <div style={{ marginTop: 4, fontFamily: T.sans, fontSize: 11, color: T.muted, textAlign: 'center' }}>
+              no seu diário de leitura: {paginasDiario.toLocaleString('pt-BR')} páginas registradas em {ano}
+            </div>
+          )}
+          {/* o tempo com os livros — do diário (minutos registrados) */}
+          {(minutosDiario > 0 || paginasDiario > 0) && (
+            <div style={{ marginTop: 16, background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '12px 14px' }}>
+              <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.muted, fontWeight: 700, marginBottom: 8 }}>Seu tempo com os livros em {ano}</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {minutosDiario >= 60 && statBox(horasDiario + 'h', 'de leitura')}
+                {statBox(diasDiario, diasDiario === 1 ? 'dia lendo' : 'dias lendo')}
+                {diasDiario > 0 && statBox(Math.round(paginasDiario / diasDiario), 'pág/dia')}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 64, marginTop: 12 }}>
+                {porMes.map((x) => (
+                  <div key={x.m} title={`${x.pages} pág · ${x.minutes} min`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
+                    <div style={{ width: '100%', height: `${Math.max(x.pages > 0 ? 6 : 2, Math.round((x.pages / maxMes) * 52))}px`, background: x.pages > 0 ? T.terra : T.parchment, borderRadius: 3 }}/>
+                    <div style={{ fontSize: 9, color: T.muted, fontFamily: T.mono, marginTop: 4 }}>{MESES1[x.m]}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: 10.5, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 6 }}>páginas registradas por mês{minutosDiario > 0 ? ` · ${Math.round(minutosDiario / 60)}h${String(minutosDiario % 60).padStart(2, '0')} no total` : ''}</div>
+            </div>
+          )}
+
+          <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.muted, fontWeight: 700, margin: '22px 0 2px' }}>
+            As leituras de {ano}, mês a mês
+          </div>
+          {meses.map(({ m, livros: doMes }) => (
+            <div key={m} style={{ marginTop: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, paddingBottom: 4, borderBottom: `1px solid ${T.terra}` }}>
+                <span style={{ fontFamily: T.serif, fontSize: 16, color: T.terra }}>{MESES_LONGOS[m]}</span>
+                <span style={{ fontSize: 10.5, color: T.muted, fontFamily: T.mono }}>{doMes.length}</span>
+              </div>
+              {doMes.map(b => <RetroLivro key={b.id} b={b}/>)}
+            </div>
+          ))}
+          {semMes.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, paddingBottom: 4, borderBottom: `1px solid ${T.hairline}` }}>
+                <span style={{ fontFamily: T.serif, fontSize: 16, color: T.brown }}>Sem mês marcado</span>
+                <span style={{ fontSize: 10.5, color: T.muted, fontFamily: T.mono }}>{semMes.length}</span>
+              </div>
+              <div style={{ fontSize: 10.5, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 6 }}>
+                Lidos em {ano}, mas sem o dia. Se lembrar, registre o fim — o livro entra no mês certo.
+              </div>
+              {semMes.map(b => <RetroLivro key={b.id} b={b}/>)}
+            </div>
+          )}
+
+          {autores.length > 1 && (
+            <div style={{ marginTop: 18, fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, color: T.brown, lineHeight: 1.6 }}>
+              As vozes que acompanharam você: {autores.join(' · ')}.
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Uma linha da cronologia: título, autor, estrelas e as datas de início/fim.
+// As datas vêm do livro (startedAt / finishedAt) e se editam no lugar; vazio =
+// sem data (nunca inventamos). Salva só no "salvar" — digitar a data aos
+// poucos não faz o livro pular de mês no meio. Fim antes do início não salva.
+function RetroLivro({ b }) {
+  const iniISO = String(b.startedAt || b.readingSince || '').slice(0, 10);
+  const fimISO = String(b.finishedAt || '').slice(0, 10);
+  const [editando, setEditando] = React.useState(false);
+  const [ini, setIni] = React.useState(iniISO);
+  const [fim, setFim] = React.useState(fimISO);
+  const [erro, setErro] = React.useState('');
+  React.useEffect(() => { setIni(iniISO); setFim(fimISO); }, [iniISO, fimISO]);
+
+  const abrir = () => { setIni(iniISO); setFim(fimISO); setErro(''); setEditando(true); };
+  const cancelar = () => { setIni(iniISO); setFim(fimISO); setErro(''); setEditando(false); };
+  const salvar = () => {
+    if (ini && fim && fim < ini) { setErro(`O fim não pode vir antes do início (${fmtDataLeitura(ini)}).`); return; }
+    setErro('');
+    const patch = {};
+    if (ini !== iniISO) patch.startedAt = ini || null;
+    if (fim !== fimISO) patch.finishedAt = fim || null;
+    if (Object.keys(patch).length && typeof MG !== 'undefined' && MG.updateBook && b.id) MG.updateBook(b.id, patch);
+    setEditando(false);
+  };
+
+  const legenda = (() => {
+    const sameYear = iniISO && fimISO && iniISO.slice(0, 4) === fimISO.slice(0, 4);
+    const i = fmtDataLeitura(iniISO, sameYear);
+    const f = fmtDataLeitura(fimISO);
+    if (i && f) return `${i} — ${f}`;
+    if (f) return `terminado em ${f}`;
+    if (i) return `iniciado em ${i} · sem fim marcado`;
+    return b.readIn ? `lido em ${b.readIn} · sem datas` : 'sem datas';
+  })();
+  const dias = (iniISO && fimISO && fimISO >= iniISO)
+    ? Math.round((new Date(fimISO + 'T00:00:00') - new Date(iniISO + 'T00:00:00')) / 86400000) + 1
+    : null;
+
+  const dateStyle = { padding: '7px 8px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.cream, color: T.ink, fontFamily: T.sans, fontSize: 12.5, outline: 'none', minWidth: 0, width: '100%' };
+  const lbl = { fontSize: 9.5, letterSpacing: 1.2, textTransform: 'uppercase', color: T.muted, fontWeight: 600 };
+
+  return (
+    <div style={{ padding: '10px 0', borderBottom: `1px solid ${T.hairline}` }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: T.serif, fontSize: 15, color: T.ink, lineHeight: 1.25 }}>
+            {b.title}{b.nobel && <img src="/nobel-medal.png" alt="Nobel" style={{ width: 13, height: 13, marginLeft: 6, verticalAlign: 'baseline', opacity: 0.9 }}/>}
+          </div>
+          {b.author && <div style={{ fontFamily: T.sans, fontSize: 11.5, color: T.muted, marginTop: 2 }}>{b.author}</div>}
+        </div>
+        {Number(b.rating) > 0 && (
+          <div style={{ color: T.ochre, fontSize: 12, letterSpacing: 1, flexShrink: 0 }}>{'★'.repeat(Number(b.rating))}</div>
+        )}
+      </div>
+      {editando ? (
+        <div style={{ marginTop: 8 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <label style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <span style={lbl}>Início</span>
+              <input type="date" value={ini} max={fim || undefined} onChange={e => { setIni(e.target.value); setErro(''); }} style={dateStyle}/>
+            </label>
+            <label style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <span style={lbl}>Fim</span>
+              <input type="date" value={fim} min={ini || undefined} onChange={e => { setFim(e.target.value); setErro(''); }} style={dateStyle}/>
+            </label>
+          </div>
+          {erro && <div style={{ marginTop: 6, fontSize: 11.5, color: T.terra, fontFamily: T.sans }}>{erro}</div>}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+            <button onClick={salvar} style={{ background: T.terra, color: T.cream, border: 0, borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>salvar</button>
+            <button onClick={cancelar} style={{ background: 'transparent', color: T.muted, border: 0, padding: '8px 4px', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>cancelar</button>
+          </div>
+          {!erro && (
+            <div style={{ marginTop: 6, fontSize: 10.5, color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>
+              Mudou o fim? O livro muda de mês (ou de ano) sozinho. Sem data certa, deixe em branco.
+            </div>
+          )}
+        </div>
+      ) : (
+        <button onClick={abrir} title="Editar datas de leitura" style={{
+          marginTop: 5, background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
+          fontFamily: T.sans, fontSize: 11.5, color: (iniISO || fimISO) ? T.brown : T.muted,
+          display: 'inline-flex', alignItems: 'center', gap: 6, textAlign: 'left',
+        }}>
+          <span>{legenda}{dias ? ` · ${dias} ${dias === 1 ? 'dia' : 'dias'}` : ''}</span>
+          <span style={{ fontSize: 10, color: T.terra, textDecoration: 'underline' }}>editar</span>
+        </button>
+      )}
     </div>
   );
 }
