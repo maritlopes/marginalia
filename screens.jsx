@@ -4547,15 +4547,25 @@ function ScreenAcervo({ onNav = () => {} }) {
 // leituras cuja data exata não existe — nunca se inventa data). Lidos sem
 // ano nenhum ficam fora da conta, citados num rodapé discreto.
 const MESES_LONGOS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+// A data que situa o livro na cronologia: o fim; sem fim, o início (quem
+// tem início vai pro mês do início); sem nenhum, só o ano (readIn).
+function retroDateOf(b) {
+  const fim = String(b.finishedAt || '').slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(fim)) return fim;
+  const ini = String(b.startedAt || b.readingSince || '').slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(ini)) return ini;
+  return null;
+}
 function retroYearOf(b) {
-  if (b.finishedAt) { const y = parseInt(String(b.finishedAt).slice(0, 4), 10); if (y) return y; }
+  const d = retroDateOf(b);
+  if (d) { const y = parseInt(d.slice(0, 4), 10); if (y) return y; }
   if (b.readIn) { const y = parseInt(b.readIn, 10); if (y) return y; }
   return null;
 }
 function retroMonthOf(b) {
-  const m = String(b.finishedAt || '').match(/^\d{4}-(\d{2})/);
-  if (!m) return null;
-  const i = parseInt(m[1], 10) - 1;
+  const d = retroDateOf(b);
+  if (!d) return null;
+  const i = parseInt(d.slice(5, 7), 10) - 1;
   return (i >= 0 && i < 12) ? i : null;
 }
 
@@ -4643,7 +4653,7 @@ function RetroAno({ ano, atual, aberto, onToggle, livros, log }) {
   const meses = [];
   for (let m = 0; m < 12; m++) {
     const doMes = doAno.filter(b => retroMonthOf(b) === m)
-      .sort((a, b) => String(a.finishedAt).localeCompare(String(b.finishedAt)) || (a.title || '').localeCompare(b.title || '', 'pt-BR'));
+      .sort((a, b) => retroDateOf(a).localeCompare(retroDateOf(b)) || (a.title || '').localeCompare(b.title || '', 'pt-BR'));
     if (doMes.length) meses.push({ m, livros: doMes });
   }
   const semMes = doAno.filter(b => retroMonthOf(b) === null)
@@ -4736,7 +4746,7 @@ function RetroAno({ ano, atual, aberto, onToggle, livros, log }) {
                 <span style={{ fontSize: 10.5, color: T.muted, fontFamily: T.mono }}>{semMes.length}</span>
               </div>
               <div style={{ fontSize: 10.5, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 6 }}>
-                Lidos em {ano}, mas sem o dia. Se lembrar, registre o fim — o livro entra no mês certo.
+                Lidos em {ano}, mas sem dia nenhum. Se lembrar o início ou o fim, registre — o livro entra no mês certo.
               </div>
               {semMes.map(b => <RetroLivro key={b.id} b={b}/>)}
             </div>
