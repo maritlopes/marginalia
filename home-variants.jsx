@@ -435,13 +435,13 @@ function HomeVariantA({ onNav = () => {} }) {
               {metas.slice(0, 3).map((m) => {
                 const quando = m.dias === 0 ? 'é hoje' : (m.dias === 1 ? 'é amanhã' : `faltam ${m.dias} dias`);
                 return (
-                  <button key={m.id} type="button" onClick={() => onNav('grupos')} style={{
+                  <button key={m.id} type="button" onClick={() => onNav(m.rota || 'grupos')} style={{
                     width: '100%', textAlign: 'left', cursor: 'pointer',
                     background: T.paper, border: `1px solid ${T.hairline}`, borderLeft: `3px solid ${T.terra}`,
                     borderRadius: 10, padding: '9px 12px', display: 'block',
                   }}>
                     <div style={{ fontSize: 9, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 700 }}>
-                      Círculos · {m.grupo}
+                      {m.origem === 'minha' ? 'Desafio' : 'Círculos'} · {m.grupo}
                     </div>
                     <div style={{ fontFamily: T.serif, fontSize: 13.5, color: T.ink, marginTop: 2, lineHeight: 1.3 }}>
                       {m.titulo} — <span style={{ fontStyle: 'italic' }}>{m.meta}</span>

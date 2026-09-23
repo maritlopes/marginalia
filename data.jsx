@@ -695,7 +695,7 @@ function metasColetivasProximas(janela, hojeISO) {
       origem: c.minha ? 'minha' : 'clube', id: c.clube.id + ':' + c.meta.data,
       grupo: c.clube.nome, titulo: c.livro.title, autor: c.livro.author,
       meta: c.meta.meta, abertura: !!c.meta.abertura,
-      data: c.meta.data, dias: c.diasMeta, rota: 'grupos',
+      data: c.meta.data, dias: c.diasMeta, rota: c.minha ? 'metas' : 'grupos',
     });
   }
   return out.sort((a, b) => a.dias - b.dias);

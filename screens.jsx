@@ -2191,12 +2191,17 @@ function ClubeLivroBloco({ livro, meta, book, emCurso, editando, onEditar, onSal
 // DESAFIOS E CLUBES — a mesma coisa em dois estados: a lista de livros que você
 // montou (desafio seu) e a que veio pronta de um clube. Vira clube quando há gente
 // lendo junto. Os clubes prontos ficam em data.jsx; os seus, no seu estado.
-function ClubeNoCirculo() {
+function ListasDeLeitura({ apenas = 'todas' }) {
   const [editando, setEditando] = React.useState(null); // `${id}|${título}`
   const [verTudo, setVerTudo] = React.useState(null);
   const [editSerie, setEditSerie] = React.useState(null); // null | 'nova' | id da série
-  const lista = (!window.__demoShelf && typeof window.clubeAgora === 'function') ? window.clubeAgora() : [];
+  const todasAsListas = (!window.__demoShelf && typeof window.clubeAgora === 'function') ? window.clubeAgora() : [];
+  const lista = apenas === 'clubes' ? todasAsListas.filter((c) => !c.minha)
+              : apenas === 'minhas' ? todasAsListas.filter((c) => c.minha)
+              : todasAsListas;
+  const souCirculos = apenas === 'clubes';
   if (window.__demoShelf) return null;
+  if (souCirculos && !lista.length) return null;
   const chave = (cid, t) => cid + '|' + t;
   const alterna = (k) => setEditando((cur) => (cur === k ? null : k));
 
@@ -2219,10 +2224,12 @@ function ClubeNoCirculo() {
   return (
     <div style={{ padding: '18px 24px 0' }}>
       <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 4 }}>
-        Desafios e clubes
+        {souCirculos ? 'Clubes' : 'Seus desafios'}
       </div>
       <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', marginBottom: 12, lineHeight: 1.45 }}>
-        Livros que conversam entre si, lidos em série. O desafio é seu; vira clube quando há gente lendo junto.
+        {souCirculos
+          ? 'Listas que você lê com gente — os calendários dos clubes de que participa.'
+          : 'Livros que conversam entre si, lidos em série. O desafio é seu; quando alguém lê junto, ele vira clube e aparece nos Círculos.'}
       </div>
 
       {lista.map((c) => {
@@ -2238,7 +2245,7 @@ function ClubeNoCirculo() {
           <div key={cid} style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 14, padding: '16px 18px', marginBottom: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
               <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: c.minha ? T.olive : T.terra, fontWeight: 600 }}>
-                {c.minha ? 'Seu desafio' : `${c.clube.nome} · ${c.clube.sub}`}
+                {c.minha ? (souCirculos ? 'Seu desafio · compartilhado' : `${c.total} livros`) : `${c.clube.nome} · ${c.clube.sub}`}
               </div>
               {c.minha && <button onClick={() => setEditSerie(cid)} style={{ background: 'transparent', border: 0, color: T.muted, fontSize: 11.5, cursor: 'pointer', textDecoration: 'underline', whiteSpace: 'nowrap' }}>✎ a lista</button>}
             </div>
@@ -2307,9 +2314,9 @@ function ClubeNoCirculo() {
         );
       })}
 
-      {editSerie === 'nova'
+      {!souCirculos && (editSerie === 'nova'
         ? <SerieEditor onFechar={() => setEditSerie(null)}/>
-        : <button onClick={() => setEditSerie('nova')} style={btnNovo}>+ Criar um desafio — uma lista de livros</button>}
+        : <button onClick={() => setEditSerie('nova')} style={btnNovo}>+ Criar um desafio — uma lista de livros</button>)}
     </div>
   );
 }
@@ -2427,7 +2434,7 @@ function ScreenGruposCloud({ onNav = () => {} }) {
         </div>
       ) : (
         <>
-          <ClubeNoCirculo/>
+          <ListasDeLeitura apenas="clubes"/>
 
           <div style={{ padding: '18px 24px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
             {groups.length === 0 && (
@@ -2992,35 +2999,8 @@ function ScreenMetas({ onNav = () => {} }) {
         </a>
       </div>
 
-      {/* LISTAS DE LEITURA — desafios seus e clubes; o cartão inteiro vive nos Círculos */}
-      {(() => {
-        const listas = (!window.__demoShelf && typeof window.clubeAgora === 'function') ? window.clubeAgora() : [];
-        if (!listas.length) return null;
-        return (
-          <div style={{ padding: '16px 24px 0' }}>
-            <SectionLabel color={T.olive}>Listas de leitura · {listas.length}</SectionLabel>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
-              {listas.map((c) => (
-                <button key={c.clube.id} onClick={() => onNav('grupos')} style={{
-                  width: '100%', textAlign: 'left', cursor: 'pointer', background: T.cream,
-                  border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '13px 15px',
-                }}>
-                  <div style={{ fontSize: 9.5, letterSpacing: 1.4, textTransform: 'uppercase', color: c.minha ? T.olive : T.terra, fontWeight: 700 }}>
-                    {c.minha ? 'Seu desafio' : 'Clube'}
-                  </div>
-                  <div style={{ fontFamily: T.serif, fontSize: 16, color: T.ink, marginTop: 2, lineHeight: 1.2 }}>{c.clube.nome}</div>
-                  <div style={{ fontSize: 11.5, color: T.brown, fontFamily: T.sans, marginTop: 3 }}>
-                    {c.lidos} de {c.total} lidos · lendo <em style={{ fontFamily: T.serif }}>{c.livro.title}</em> →
-                  </div>
-                </button>
-              ))}
-            </div>
-            <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 8, lineHeight: 1.4 }}>
-              Livros que conversam entre si. Você monta e acompanha nos Círculos.
-            </div>
-          </div>
-        );
-      })()}
+      {/* SEUS DESAFIOS — as listas de livros que você montou (o cartão inteiro vive aqui) */}
+      <ListasDeLeitura apenas="minhas"/>
 
       {/* metas em curso */}
       {ativas.length > 0 ? (
