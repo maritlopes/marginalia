@@ -613,6 +613,24 @@ function clubeAgora(hojeISO) {
   return out;
 }
 
+// METAS DE LEITURA COLETIVA com prazo próximo — a fonte da linha de aviso na Home.
+// Hoje vem só do calendário dos clubes (as únicas metas de grupo que têm data);
+// quando um desafio de círculo ganhar data, é aqui que ele entra, sem mexer na Home.
+function metasColetivasProximas(janela, hojeISO) {
+  const lim = (janela == null ? 4 : janela); // janela curta: aviso, não ruído fixo na Home
+  const out = [];
+  for (const c of clubeAgora(hojeISO)) {
+    if (!c.meta || c.diasMeta == null || c.diasMeta < 0 || c.diasMeta > lim) continue;
+    out.push({
+      origem: 'clube', id: c.clube.id + ':' + c.meta.data,
+      grupo: c.clube.nome, titulo: c.livro.title, autor: c.livro.author,
+      meta: c.meta.meta, abertura: !!c.meta.abertura,
+      data: c.meta.data, dias: c.diasMeta, rota: 'grupos',
+    });
+  }
+  return out.sort((a, b) => a.dias - b.dias);
+}
+
 // ─────────────────────────────────────────────────────────────
 // FRASES MARCANTES — citações de livros para a seção "Para guardar".
 // A home escolhe uma por dia (gira pela coleção). { pt, en, autor, obra }
@@ -1077,7 +1095,7 @@ function nobelForAuthor(author) {
   return null;
 }
 
-Object.assign(window, { CLUBES, clubeAgora, livroDoClubeNoAcervo,
+Object.assign(window, { CLUBES, clubeAgora, livroDoClubeNoAcervo, metasColetivasProximas,
   NOBEL_LAUREATES, nobelForAuthor,
   BOOK_CURRENT, NOTES_SEED, BOOKS_SEED, THEMES_STUDY, ACTIVITY,
   PONTES, PONTE_CATS, GLOSSARIO, ECOS_CURADOS, curatedEcos,

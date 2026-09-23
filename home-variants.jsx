@@ -425,59 +425,35 @@ function HomeVariantA({ onNav = () => {} }) {
             .map((x) => <LeituraCard key={x.id} book={x} onNav={onNav} label={tt('retomar_leitura')}/>)}
         </div>
 
-        {/* LEITURAS DO CLUBE — o app conhece o calendário; só aparece para quem tem livro do clube */}
+        {/* METAS DOS CÍRCULOS — linha discreta: qualquer meta de grupo com prazo próximo, que leva aos Círculos */}
         {(() => {
-          const lista = (typeof window.clubeAgora === 'function') ? window.clubeAgora() : [];
-          if (!lista.length) return null;
+          const metas = (!window.__demoShelf && typeof window.metasColetivasProximas === 'function') ? window.metasColetivasProximas() : [];
+          if (!metas.length) return null;
           const fmt = (iso) => { const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${parseInt(m[3], 10)}/${m[2]}` : iso; };
-          const btn = { padding: '7px 12px', borderRadius: 8, border: `1px solid ${T.terra}`, background: 'transparent', color: T.terra, fontFamily: T.sans, fontSize: 11.5, fontWeight: 600, cursor: 'pointer' };
-          const ok = { fontSize: 11.5, color: T.olive, fontFamily: T.sans, fontWeight: 600, padding: '7px 0' };
-          return lista.map((c) => {
-            const bk = c.book; const cur = (bk && bk.currentPage) || 0; const tot = (bk && bk.pages) || 0;
-            const naEstante = !!(bk && bk.status);
-            const lido = !!(bk && bk.status === 'read');
-            const ritmo = (tot && cur < tot && c.diasFim > 0) ? Math.ceil((tot - cur) / c.diasFim) : null;
-            const metaJa = !!(bk && bk.goalFinishBy === c.livro.fim);
-            const wgJa = !!(bk && bk.weekGoal && c.meta && c.meta.page && bk.weekGoal.page === c.meta.page);
-            const quando = c.diasMeta === 0 ? 'é hoje' : (c.diasMeta === 1 ? 'amanhã' : `faltam ${c.diasMeta} dias`);
-            return (
-              <div key={c.clube.id}>
-                <SectionRule label="Leituras do clube"/>
-                <div style={{ background: T.paper, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '14px 16px', marginBottom: 22 }}>
-                  <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 600 }}>{c.clube.nome} · {c.clube.sub}</div>
-                  <div onClick={() => { if (bk && typeof window.__openBook === 'function') window.__openBook(bk); }} style={{ fontFamily: T.serif, fontSize: 19, lineHeight: 1.15, fontWeight: 500, letterSpacing: -0.3, marginTop: 4, color: T.ink, cursor: bk ? 'pointer' : 'default' }}>{c.livro.title}</div>
-                  <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 12.5, color: T.brown, marginTop: 2 }}>
-                    {c.livro.author} · {c.aindaNaoAbriu ? `abre em ${fmt(c.livro.abre)}` : `de ${fmt(c.livro.abre)} a ${fmt(c.livro.fim)}`}
-                  </div>
-                  {c.meta && (
-                    <div style={{ marginTop: 10, padding: '8px 10px', background: 'rgba(176,83,58,0.07)', borderRadius: 8 }}>
-                      <div style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: T.terra, fontWeight: 700 }}>
-                        {c.meta.abertura ? 'Abertura' : 'Meta da semana'} · sáb {fmt(c.meta.data)} · {quando}
-                      </div>
-                      <div style={{ fontFamily: T.serif, fontSize: 15, color: T.ink, marginTop: 2 }}>{c.meta.meta}</div>
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 22 }}>
+              {metas.slice(0, 3).map((m) => {
+                const quando = m.dias === 0 ? 'é hoje' : (m.dias === 1 ? 'é amanhã' : `faltam ${m.dias} dias`);
+                return (
+                  <button key={m.id} type="button" onClick={() => onNav('grupos')} style={{
+                    width: '100%', textAlign: 'left', cursor: 'pointer',
+                    background: T.paper, border: `1px solid ${T.hairline}`, borderLeft: `3px solid ${T.terra}`,
+                    borderRadius: 10, padding: '9px 12px', display: 'block',
+                  }}>
+                    <div style={{ fontSize: 9, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 700 }}>
+                      Círculos · {m.grupo}
                     </div>
-                  )}
-                  <div style={{ fontSize: 12, color: T.brown, marginTop: 10, fontFamily: T.sans, lineHeight: 1.5 }}>
-                    {!bk ? 'Ainda não está na sua biblioteca.'
-                      : lido ? '✓ Você já leu este.'
-                      : !naEstante ? 'Está no seu acervo, adormecido.'
-                      : tot ? <>Você está na <strong>pág {cur}</strong> de {tot}{ritmo ? <> · ~<strong style={{ color: T.terra }}>{ritmo} pág/dia</strong> até {fmt(c.livro.fim)}</> : null}</>
-                      : 'Na sua estante — sem total de páginas (ponha no Editar para eu calcular o ritmo).'}
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                    {bk && !naEstante && <button onClick={() => { if (typeof window.__tirarPoeira === 'function') window.__tirarPoeira(bk); }} style={btn}>Despertar para a estante</button>}
-                    {bk && naEstante && !lido && !metaJa && <button onClick={() => { if (typeof MG !== 'undefined') MG.updateBook(bk.id, { goalFinishBy: c.livro.fim }); }} style={btn}>Meta no plano: terminar até {fmt(c.livro.fim)}</button>}
-                    {bk && naEstante && !lido && metaJa && <span style={ok}>✓ Meta do plano: até {fmt(c.livro.fim)}</span>}
-                    {bk && naEstante && !lido && c.meta && c.meta.page && !wgJa && c.meta.page > cur && <button onClick={() => { if (typeof MG !== 'undefined') MG.updateBook(bk.id, { weekGoal: { from: cur, page: c.meta.page, until: c.meta.data } }); }} style={btn}>Meta da semana: pág {c.meta.page}</button>}
-                    {bk && naEstante && !lido && wgJa && <span style={ok}>✓ Meta da semana: pág {c.meta.page}</span>}
-                  </div>
-                  {c.proximo && (
-                    <div style={{ fontSize: 11, color: T.muted, marginTop: 8, fontFamily: T.serif, fontStyle: 'italic' }}>Depois: {c.proximo.title} · abre {fmt(c.proximo.abre)}</div>
-                  )}
-                </div>
-              </div>
-            );
-          });
+                    <div style={{ fontFamily: T.serif, fontSize: 13.5, color: T.ink, marginTop: 2, lineHeight: 1.3 }}>
+                      {m.titulo} — <span style={{ fontStyle: 'italic' }}>{m.meta}</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: T.brown, fontFamily: T.sans, marginTop: 3 }}>
+                      {m.abertura ? 'abertura' : 'meta'} {fmt(m.data)} · <strong style={{ color: m.dias <= 1 ? T.terra : T.brown }}>{quando}</strong> →
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          );
         })()}
 
         {/* SUA LEITURA, DIA A DIA — hoje + sequência + semana + calendário do mês + Li hoje */}
