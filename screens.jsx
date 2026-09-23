@@ -4928,6 +4928,7 @@ function RetroAno({ ano, atual, aberto, onToggle, livros, log }) {
               <div style={{ display: 'flex', gap: 8 }}>
                 {statBox(diasDiario, diasDiario === 1 ? 'dia lendo' : 'dias lendo')}
                 {statBox(paginasDiario.toLocaleString('pt-BR'), 'páginas registradas')}
+                {diasDiario > 0 && statBox(Math.round(paginasDiario / diasDiario), 'pág/dia')}
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 64, marginTop: 12 }}>
                 {porMes.map((x) => (
