@@ -351,6 +351,16 @@ const MG = {
     return all;
   },
 
+  // qual livro do clube está em curso, quando ela quer dizer à mão (clube sem calendário
+  // ou fora da ordem). Fica no mesmo balaio dos ajustes, sob a chave de controle `_atual`.
+  getClubeAtual(clubeId) {
+    const c = this.getClubeAjustes()[clubeId];
+    return (c && typeof c._atual === 'string') ? c._atual : null;
+  },
+  setClubeAtual(clubeId, titulo) {
+    return this.setClubeAjuste(clubeId, '_atual', titulo || null);
+  },
+
   // Estatísticas do diário — tudo derivado do readingLog (nada é gravado).
   // hoje · sequência de dias seguidos · últimos 7 dias (geral e do livro) ·
   // páginas por hora · calendário do mês. bookId é opcional (ritmo daquele livro).

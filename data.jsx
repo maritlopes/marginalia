@@ -583,6 +583,22 @@ const CLUBES = [
         metas: [{ data: '2027-04-24', meta: 'Livro I · capítulo XVII' }, { data: '2027-05-01', meta: 'Livro I · capítulo XXVII' }, { data: '2027-05-08', meta: 'Livro II · capítulo VII' }, { data: '2027-05-15', meta: 'Livro II · capítulo XX' }, { data: '2027-05-22', meta: 'Livro II · capítulo XXXVI' }, { data: '2027-05-29', meta: 'até o final' }] },
     ],
   },
+  {
+    id: 'horror07', nome: 'Horror [na literatura]', sub: '07 · Ingens Liber · CLSL', tema: 'O medo como forma literária',
+    // sem calendário publicado: os livros vêm na ordem de leitura, sem janela nem meta.
+    // O livro em curso é o que estiver 'lendo' na estante (ou o que ela marcar no app),
+    // e as datas entram pelo editor dos Círculos quando o clube as divulgar.
+    livros: [
+      { title: 'Drácula', author: 'Bram Stoker', keys: ['dracula'] },
+      { title: 'A Volta do Parafuso', author: 'Henry James', keys: ['volta do parafuso'] },
+      { title: 'A Assombração da Casa da Colina', author: 'Shirley Jackson', keys: ['casa da colina'] },
+      { title: 'Os Perigos de Fumar na Cama', author: 'Mariana Enríquez', keys: ['perigos de fumar'] },
+      { title: 'Voladoras', author: 'Mónica Ojeda', keys: ['voladoras'] },
+      { title: 'O Médico e o Monstro', author: 'Robert Louis Stevenson', keys: ['medico e o monstro'] },
+      { title: 'Kappa e o Levante Imaginário', author: 'Ryūnosuke Akutagawa', keys: ['kappa e o levante'] },
+      { title: 'O Corvo', author: 'Edgar Allan Poe', keys: ['o corvo'], extra: true },
+    ],
+  },
 ];
 const _normTitulo = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 // o livro do acervo que corresponde a um livro do clube (prefere quem está na Estante)
@@ -598,15 +614,20 @@ function livroDoClubeNoAcervo(lc) {
 function clubeAjustado(c) {
   const aj = (window.MG && window.MG.getClubeAjustes) ? (window.MG.getClubeAjustes()[c.id] || null) : null;
   if (!aj) return c;
-  const livros = c.livros.map((l) => {
-    const a = aj[l.title];
-    if (!a) return l;
+  let livros = c.livros.map((l) => {
+    const a = aj[l.title];   // as chaves que começam com '_' são controle (ex.: _atual), não livro
+    if (!a || typeof a !== 'object') return l;
     const metas = Array.isArray(a.metas)
       ? a.metas.slice().sort((x, y) => String(x.data).localeCompare(String(y.data)))
       : l.metas;
     return { ...l, abre: a.abre || l.abre, fim: a.fim || l.fim, metas, ajustado: true };
-  }).sort((x, y) => String(x.abre).localeCompare(String(y.abre)));
-  return { ...c, livros, inicio: livros[0] ? livros[0].abre : c.inicio, fim: livros[livros.length - 1] ? livros[livros.length - 1].fim : c.fim };
+  });
+  // só reordena por data quando TODOS têm janela; clube sem calendário mantém a ordem de leitura
+  if (livros.every((l) => l.abre)) livros = livros.slice().sort((x, y) => String(x.abre).localeCompare(String(y.abre)));
+  const comData = livros.filter((l) => l.abre && l.fim);
+  return { ...c, livros,
+    inicio: comData.length ? comData[0].abre : c.inicio,
+    fim: comData.length === livros.length ? comData[comData.length - 1].fim : c.fim };
 }
 // todos os clubes já ajustados — para as telas que mostram o calendário inteiro
 function clubesCalendario() { return CLUBES.map(clubeAjustado); }
@@ -617,18 +638,31 @@ function clubeAgora(hojeISO) {
   const out = [];
   for (const c0 of CLUBES) {
     const c = clubeAjustado(c0);
-    if (hoje > c.fim) continue;
-    const temAlgum = c.livros.some(l => livroDoClubeNoAcervo(l));
-    if (!temAlgum) continue;
-    let idx = c.livros.findIndex(l => hoje >= l.abre && hoje < l.fim);
-    if (idx < 0) idx = c.livros.findIndex(l => hoje < l.abre);
+    if (c.fim && hoje > c.fim) continue;      // clube inteiro já terminou (só quando tem calendário)
+    const livrosComBook = c.livros.map(l => ({ l, b: livroDoClubeNoAcervo(l) }));
+    if (!livrosComBook.some(x => x.b)) continue;
+    const lido = (x) => !!(x.b && (x.b.status === 'read' || (!x.b.status && x.b.mark === 'read')));
+    const lendo = (x) => !!(x.b && (x.b.status === 'reading' || x.b.status === 'paused'));
+    // qual livro está em curso: a marca dela primeiro, depois a janela do calendário,
+    // depois o que está aberto na estante, depois o próximo por ler.
+    const marcado = (window.MG && window.MG.getClubeAtual) ? window.MG.getClubeAtual(c.id) : null;
+    let idx = marcado ? c.livros.findIndex(l => l.title === marcado) : -1;
+    if (idx < 0) idx = c.livros.findIndex(l => l.abre && l.fim && hoje >= l.abre && hoje < l.fim);
+    if (idx < 0) idx = livrosComBook.findIndex(lendo);
+    if (idx < 0) idx = c.livros.findIndex(l => l.abre && hoje < l.abre);
+    if (idx < 0) idx = livrosComBook.findIndex(x => !lido(x));
     if (idx < 0) idx = c.livros.length - 1;
     const livro = c.livros[idx];
+    const dias = (iso) => (iso ? Math.round((new Date(iso + 'T00:00:00') - new Date(hoje + 'T00:00:00')) / 86400000) : null);
     // antes da abertura, a próxima data é a própria abertura (Lendo ao vivo)
-    const meta = hoje < livro.abre ? { data: livro.abre, meta: 'Lendo ao vivo — as primeiras páginas', abertura: true } : (livro.metas.find(m => m.data >= hoje) || null);
+    const meta = (livro.abre && hoje < livro.abre)
+      ? { data: livro.abre, meta: 'Lendo ao vivo — as primeiras páginas', abertura: true }
+      : ((livro.metas || []).find(m => m.data >= hoje) || null);
     const proximo = c.livros[idx + 1] || null;
-    const dias = (iso) => Math.round((new Date(iso + 'T00:00:00') - new Date(hoje + 'T00:00:00')) / 86400000);
-    out.push({ clube: c, livro, aindaNaoAbriu: hoje < livro.abre, meta, diasMeta: meta ? dias(meta.data) : null, diasFim: dias(livro.fim), proximo, book: livroDoClubeNoAcervo(livro) });
+    out.push({ clube: c, livro, semCalendario: !c.livros.some(l => l.abre && l.fim),
+      aindaNaoAbriu: !!(livro.abre && hoje < livro.abre), meta,
+      diasMeta: meta ? dias(meta.data) : null, diasFim: dias(livro.fim), proximo,
+      book: livrosComBook[idx].b, lidos: livrosComBook.filter(lido).length, total: c.livros.length });
   }
   return out;
 }

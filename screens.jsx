@@ -1938,10 +1938,13 @@ function AppAdminPanel() {
 // deixa corrigir datas e metas quando o clube muda o calendário.
 // ─────────────────────────────────────────────────────────────
 const _fmtDiaMes = (iso) => { const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${parseInt(m[3], 10)}/${m[2]}` : (iso || ''); };
-const _diasAte = (iso) => Math.round((new Date(String(iso) + 'T00:00:00') - new Date(new Date().toDateString())) / 86400000);
-const _quandoTxt = (d) => (d == null ? '' : (d === 0 ? 'é hoje' : (d === 1 ? 'amanhã' : (d < 0 ? 'já passou' : `faltam ${d} dias`))));
+const _diasAte = (iso) => (iso ? Math.round((new Date(String(iso) + 'T00:00:00') - new Date(new Date().toDateString())) / 86400000) : null);
+const _quandoTxt = (d) => (d == null || isNaN(d) ? '' : (d === 0 ? 'é hoje' : (d === 1 ? 'amanhã' : (d < 0 ? 'já passou' : `faltam ${d} dias`))));
+const _clubeLido = (bk) => !!(bk && (bk.status === 'read' || (!bk.status && bk.mark === 'read')));
 
-// editor do calendário de UM livro do clube — datas e metas semanais
+// editor do calendário de UM livro do clube — datas e metas semanais.
+// Clube sem calendário publicado pode ficar só com as metas (ou sem nada) — as
+// datas entram quando o clube divulgar.
 function ClubeLivroEditor({ clubeId, livro, onFechar }) {
   const seed = ((window.CLUBES || []).find((c) => c.id === clubeId) || { livros: [] }).livros.find((l) => l.title === livro.title) || null;
   const [abre, setAbre] = React.useState(livro.abre || '');
@@ -1956,8 +1959,8 @@ function ClubeLivroEditor({ clubeId, livro, onFechar }) {
 
   const mudarMeta = (i, campo, v) => setMetas((ms) => ms.map((m, j) => (j === i ? { ...m, [campo]: v } : m)));
   const salvar = () => {
-    if (!abre || !fim) { setErro('Preencha a abertura e o fim.'); return; }
-    if (fim < abre) { setErro('O fim não pode vir antes da abertura.'); return; }
+    if ((abre && !fim) || (!abre && fim)) { setErro('Ponha as duas datas — ou deixe as duas em branco.'); return; }
+    if (abre && fim && fim < abre) { setErro('O fim não pode vir antes da abertura.'); return; }
     const ms = metas
       .filter((m) => m.data && String(m.meta || '').trim())
       .map((m) => { const o = { data: m.data, meta: String(m.meta).trim() }; const p = parseInt(m.page, 10); if (p > 0) o.page = p; return o; })
@@ -1970,7 +1973,7 @@ function ClubeLivroEditor({ clubeId, livro, onFechar }) {
   return (
     <div style={{ marginTop: 10, background: T.bone, border: `1px solid ${T.hairline}`, borderRadius: 10, padding: '12px 12px 10px' }}>
       <div style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: T.muted, fontWeight: 700, marginBottom: 8 }}>
-        Ajustar o calendário — {livro.title}
+        Datas e metas — {livro.title}
       </div>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', fontSize: 11.5, color: T.brown, fontFamily: T.sans }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>abre em
@@ -2013,24 +2016,28 @@ function ClubeLivroBloco({ clubeId, livro, meta, book, emCurso, editando, onEdit
   const cur = (bk && bk.currentPage) || 0;
   const tot = (bk && bk.pages) || 0;
   const naEstante = !!(bk && bk.status);
-  const lido = !!(bk && bk.status === 'read');
+  const lido = _clubeLido(bk);
+  const temJanela = !!(livro.abre && livro.fim);
   const diasFim = _diasAte(livro.fim);
   const diasAbre = _diasAte(livro.abre);
   const diasMeta = meta ? _diasAte(meta.data) : null;
   const ritmo = (tot && cur < tot && diasFim > 0) ? Math.ceil((tot - cur) / diasFim) : null;
-  const metaJa = !!(bk && bk.goalFinishBy === livro.fim);
+  const metaJa = !!(bk && livro.fim && bk.goalFinishBy === livro.fim);
   const wgJa = !!(bk && bk.weekGoal && meta && meta.page && bk.weekGoal.page === meta.page);
   const btn = { padding: '7px 12px', borderRadius: 8, border: `1px solid ${T.terra}`, background: 'transparent', color: T.terra, fontFamily: T.sans, fontSize: 11.5, fontWeight: 600, cursor: 'pointer' };
   const ok = { fontSize: 11.5, color: T.olive, fontFamily: T.sans, fontWeight: 600, padding: '7px 0' };
+  const eyebrow = emCurso
+    ? 'Lendo agora'
+    : (livro.abre ? `A seguir · abre ${_fmtDiaMes(livro.abre)}${diasAbre >= 0 ? ` · ${_quandoTxt(diasAbre)}` : ''}` : 'A seguir');
 
   return (
     <div style={emCurso ? null : { marginTop: 14, paddingTop: 14, borderTop: `1px solid ${T.hairline}` }}>
       <div style={{ fontSize: 9.5, letterSpacing: 1.4, textTransform: 'uppercase', color: emCurso ? T.terra : T.muted, fontWeight: 700 }}>
-        {emCurso ? 'Lendo agora' : `A seguir · abre ${_fmtDiaMes(livro.abre)}${diasAbre >= 0 ? ` · ${_quandoTxt(diasAbre)}` : ''}`}
+        {eyebrow}{livro.extra ? ' · extra' : ''}
       </div>
       <div onClick={() => { if (bk && typeof window.__openBook === 'function') window.__openBook(bk); }} style={{ fontFamily: T.serif, fontSize: emCurso ? 19 : 17, lineHeight: 1.15, fontWeight: 500, letterSpacing: -0.3, marginTop: 3, color: T.ink, cursor: bk ? 'pointer' : 'default' }}>{livro.title}</div>
       <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 12.5, color: T.brown, marginTop: 2 }}>
-        {livro.author} · de {_fmtDiaMes(livro.abre)} a {_fmtDiaMes(livro.fim)}{livro.ajustado ? ' · ajustado por você' : ''}
+        {livro.author}{temJanela ? ` · de ${_fmtDiaMes(livro.abre)} a ${_fmtDiaMes(livro.fim)}` : ''}{livro.ajustado ? ' · ajustado por você' : ''}
       </div>
 
       {meta && (
@@ -2066,8 +2073,8 @@ function ClubeLivroBloco({ clubeId, livro, meta, book, emCurso, editando, onEdit
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
             {bk && !naEstante && <button onClick={() => { if (typeof window.__tirarPoeira === 'function') window.__tirarPoeira(bk); }} style={btn}>Despertar para a estante</button>}
-            {bk && naEstante && !lido && !metaJa && <button onClick={() => { if (typeof MG !== 'undefined') MG.updateBook(bk.id, { goalFinishBy: livro.fim }); }} style={btn}>Meta no plano: terminar até {_fmtDiaMes(livro.fim)}</button>}
-            {bk && naEstante && !lido && metaJa && <span style={ok}>✓ Meta do plano: até {_fmtDiaMes(livro.fim)}</span>}
+            {bk && naEstante && !lido && livro.fim && !metaJa && <button onClick={() => { if (typeof MG !== 'undefined') MG.updateBook(bk.id, { goalFinishBy: livro.fim }); }} style={btn}>Meta no plano: terminar até {_fmtDiaMes(livro.fim)}</button>}
+            {bk && naEstante && !lido && livro.fim && metaJa && <span style={ok}>✓ Meta do plano: até {_fmtDiaMes(livro.fim)}</span>}
             {bk && naEstante && !lido && meta && meta.page && !wgJa && meta.page > cur && <button onClick={() => { if (typeof MG !== 'undefined') MG.updateBook(bk.id, { weekGoal: { from: cur, page: meta.page, until: meta.data } }); }} style={btn}>Meta da semana: pág {meta.page}</button>}
             {bk && naEstante && !lido && wgJa && <span style={ok}>✓ Meta da semana: pág {meta.page}</span>}
           </div>
@@ -2076,7 +2083,7 @@ function ClubeLivroBloco({ clubeId, livro, meta, book, emCurso, editando, onEdit
 
       {!editando && (
         <button onClick={onEditar} style={{ background: 'transparent', border: 0, padding: '8px 0 0', color: T.muted, fontSize: 11.5, cursor: 'pointer', textDecoration: 'underline', fontFamily: T.sans }}>
-          ✎ ajustar datas e metas
+          {temJanela ? '✎ ajustar datas e metas' : '✎ pôr datas e metas'}
         </button>
       )}
       {editando && <ClubeLivroEditor clubeId={clubeId} livro={livro} onFechar={onEditar}/>}
@@ -2098,18 +2105,22 @@ function ClubeNoCirculo() {
         Leituras do clube
       </div>
       <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', marginBottom: 12, lineHeight: 1.45 }}>
-        O calendário que você segue com o clube — o livro de agora, o que vem a seguir e o seu ritmo.
+        Os calendários que você segue — o livro de agora, o que vem a seguir e o seu ritmo.
       </div>
       {lista.map((c) => {
         const prox = c.proximo;
-        const metaProx = prox ? (prox.metas || [])[0] : null;
+        const metaProx = prox ? ((prox.metas || [])[0] || null) : null;
         const todos = (c.clube.livros || []);
+        const atualTitulo = c.livro.title;
         return (
           <div key={c.clube.id} style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 14, padding: '16px 18px', marginBottom: 12 }}>
-            <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 600, marginBottom: 8 }}>{c.clube.nome} · {c.clube.sub}</div>
+            <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 600 }}>{c.clube.nome} · {c.clube.sub}</div>
+            <div style={{ fontSize: 11, color: T.muted, fontFamily: T.sans, marginTop: 2, marginBottom: 8 }}>
+              {c.lidos} de {c.total} lidos{c.semCalendario ? ' · sem calendário publicado' : ''}
+            </div>
 
             <ClubeLivroBloco clubeId={c.clube.id} livro={c.livro} meta={c.meta} book={c.book} emCurso
-              editando={editando === chave(c.clube.id, c.livro.title)} onEditar={() => alterna(chave(c.clube.id, c.livro.title))}/>
+              editando={editando === chave(c.clube.id, atualTitulo)} onEditar={() => alterna(chave(c.clube.id, atualTitulo))}/>
 
             {prox && (
               <ClubeLivroBloco clubeId={c.clube.id} livro={prox} meta={metaProx} book={window.livroDoClubeNoAcervo ? window.livroDoClubeNoAcervo(prox) : null} emCurso={false}
@@ -2119,26 +2130,44 @@ function ClubeNoCirculo() {
             {todos.length > 2 && (
               <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${T.hairline}` }}>
                 <button onClick={() => setVerTudo((v) => (v === c.clube.id ? null : c.clube.id))} style={{ background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: T.sans }}>
-                  {verTudo === c.clube.id ? 'esconder o calendário completo' : `o calendário completo · ${todos.length} livros →`}
+                  {verTudo === c.clube.id ? 'esconder a lista completa' : `a lista completa · ${todos.length} livros →`}
                 </button>
                 {verTudo === c.clube.id && (
                   <div style={{ marginTop: 10 }}>
                     {todos.map((l) => {
                       const k = chave(c.clube.id, l.title);
-                      const atual = l.title === c.livro.title;
+                      const atual = l.title === atualTitulo;
+                      const bkL = window.livroDoClubeNoAcervo ? window.livroDoClubeNoAcervo(l) : null;
+                      const lidoL = _clubeLido(bkL);
+                      const estado = atual ? 'lendo agora' : (lidoL ? '✓ lido' : (bkL ? (bkL.status ? 'na estante' : 'no acervo') : 'fora da biblioteca'));
                       return (
                         <div key={l.title} style={{ padding: '8px 0', borderBottom: `1px solid ${T.hairline}` }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
-                            <div style={{ fontFamily: T.serif, fontSize: 14, color: atual ? T.terra : T.ink, lineHeight: 1.2 }}>{l.title}</div>
-                            <button onClick={() => alterna(k)} style={{ background: 'transparent', border: 0, color: T.muted, fontSize: 11.5, cursor: 'pointer', textDecoration: 'underline', whiteSpace: 'nowrap', fontFamily: T.sans }}>✎ ajustar</button>
+                            <div style={{ fontFamily: T.serif, fontSize: 14, color: atual ? T.terra : (lidoL ? T.muted : T.ink), lineHeight: 1.2 }}>
+                              {l.title}{l.extra ? ' · extra' : ''}
+                            </div>
+                            <button onClick={() => alterna(k)} style={{ background: 'transparent', border: 0, color: T.muted, fontSize: 11.5, cursor: 'pointer', textDecoration: 'underline', whiteSpace: 'nowrap', fontFamily: T.sans }}>✎ datas</button>
                           </div>
                           <div style={{ fontSize: 11, color: T.muted, fontFamily: T.sans, marginTop: 2 }}>
-                            {_fmtDiaMes(l.abre)} — {_fmtDiaMes(l.fim)} · {(l.metas || []).length} {((l.metas || []).length === 1) ? 'meta' : 'metas'}{l.ajustado ? ' · ajustado' : ''}
+                            {(l.abre && l.fim) ? `${_fmtDiaMes(l.abre)} — ${_fmtDiaMes(l.fim)} · ` : ''}
+                            {(l.metas || []).length ? `${l.metas.length} ${l.metas.length === 1 ? 'meta' : 'metas'} · ` : ''}
+                            <span style={{ color: atual ? T.terra : T.muted }}>{estado}</span>
+                            {l.ajustado ? ' · ajustado' : ''}
                           </div>
+                          {!atual && !lidoL && (
+                            <button onClick={() => { if (typeof MG !== 'undefined') MG.setClubeAtual(c.clube.id, l.title); }} style={{ background: 'transparent', border: 0, padding: '4px 0 0', color: T.terra, fontSize: 11, cursor: 'pointer', fontFamily: T.sans, fontWeight: 600 }}>
+                              é este que estamos lendo →
+                            </button>
+                          )}
                           {editando === k && <ClubeLivroEditor clubeId={c.clube.id} livro={l} onFechar={() => alterna(k)}/>}
                         </div>
                       );
                     })}
+                    {(typeof MG !== 'undefined' && MG.getClubeAtual && MG.getClubeAtual(c.clube.id)) && (
+                      <button onClick={() => MG.setClubeAtual(c.clube.id, null)} style={{ background: 'transparent', border: 0, padding: '10px 0 0', color: T.muted, fontSize: 11, cursor: 'pointer', textDecoration: 'underline', fontFamily: T.sans }}>
+                        deixar o app escolher o livro em curso
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
