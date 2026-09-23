@@ -604,9 +604,22 @@ const _normTitulo = (t) => String(t || '').toLowerCase().normalize('NFD').replac
 // o livro do acervo que corresponde a um livro do clube (prefere quem está na Estante)
 function livroDoClubeNoAcervo(lc) {
   const bs = (window.BOOKS || []).filter(b => b && !b.deleted);
-  const hits = bs.filter(b => { const n = _normTitulo(b.title); return lc.keys.some(k => n.includes(k)); });
+  if (lc.bookId) { const exato = bs.find(b => b.id === lc.bookId); if (exato) return exato; }
+  const chaves = (lc.keys && lc.keys.length) ? lc.keys : [_normTitulo(lc.title)];
+  const hits = bs.filter(b => { const n = _normTitulo(b.title); return chaves.some(k => k && n.includes(k)); });
   if (!hits.length) return null;
   return hits.find(b => b.status) || hits[0];
+}
+// OS DESAFIOS DELA (challenges type 'series') no mesmo formato dos clubes: uma lista
+// de livros que conversam entre si. Desafio é dela; vira clube quando outras pessoas
+// leem junto. Os clubes prontos vêm de CLUBES; estes, do estado (sincroniza).
+function seriesDaLeitora() {
+  const cs = (window.MG && window.MG.getChallenges) ? window.MG.getChallenges() : [];
+  return cs.filter(c => c && c.type === 'series').map(c => ({
+    id: 'ch:' + c.id, chId: c.id, origem: 'minha',
+    nome: c.title || 'Sem nome', sub: c.theme || '', tema: c.theme || '',
+    livros: Array.isArray(c.livros) ? c.livros : [],
+  }));
 }
 // o calendário do clube com os ajustes dela por cima (MG.getClubeAjustes): o seed
 // de CLUBES é o calendário publicado; se o clube mudar uma data ou uma meta, ela
@@ -636,11 +649,14 @@ function clubesCalendario() { return CLUBES.map(clubeAjustado); }
 function clubeAgora(hojeISO) {
   const hoje = hojeISO || (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
   const out = [];
-  for (const c0 of CLUBES) {
-    const c = clubeAjustado(c0);
+  const todos = CLUBES.map(c => ({ ...c, origem: 'clube' })).concat(seriesDaLeitora());
+  for (const c0 of todos) {
+    const c = c0.origem === 'minha' ? c0 : clubeAjustado(c0);
+    if (!c.livros || !c.livros.length) continue;
     if (c.fim && hoje > c.fim) continue;      // clube inteiro já terminou (só quando tem calendário)
     const livrosComBook = c.livros.map(l => ({ l, b: livroDoClubeNoAcervo(l) }));
-    if (!livrosComBook.some(x => x.b)) continue;
+    // clube pronto só aparece para quem tem algum dos livros; o desafio dela é dela, aparece sempre
+    if (c.origem !== 'minha' && !livrosComBook.some(x => x.b)) continue;
     const lido = (x) => !!(x.b && (x.b.status === 'read' || (!x.b.status && x.b.mark === 'read')));
     const lendo = (x) => !!(x.b && (x.b.status === 'reading' || x.b.status === 'paused'));
     // qual livro está em curso: a marca dela primeiro, depois a janela do calendário,
@@ -656,10 +672,10 @@ function clubeAgora(hojeISO) {
     const dias = (iso) => (iso ? Math.round((new Date(iso + 'T00:00:00') - new Date(hoje + 'T00:00:00')) / 86400000) : null);
     // antes da abertura, a próxima data é a própria abertura (Lendo ao vivo)
     const meta = (livro.abre && hoje < livro.abre)
-      ? { data: livro.abre, meta: 'Lendo ao vivo — as primeiras páginas', abertura: true }
+      ? { data: livro.abre, meta: c.origem === 'minha' ? 'Começo da leitura' : 'Lendo ao vivo — as primeiras páginas', abertura: true }
       : ((livro.metas || []).find(m => m.data >= hoje) || null);
     const proximo = c.livros[idx + 1] || null;
-    out.push({ clube: c, livro, semCalendario: !c.livros.some(l => l.abre && l.fim),
+    out.push({ clube: c, minha: c.origem === 'minha', livro, semCalendario: !c.livros.some(l => l.abre && l.fim),
       aindaNaoAbriu: !!(livro.abre && hoje < livro.abre), meta,
       diasMeta: meta ? dias(meta.data) : null, diasFim: dias(livro.fim), proximo,
       book: livrosComBook[idx].b, lidos: livrosComBook.filter(lido).length, total: c.livros.length });
@@ -676,7 +692,7 @@ function metasColetivasProximas(janela, hojeISO) {
   for (const c of clubeAgora(hojeISO)) {
     if (!c.meta || c.diasMeta == null || c.diasMeta < 0 || c.diasMeta > lim) continue;
     out.push({
-      origem: 'clube', id: c.clube.id + ':' + c.meta.data,
+      origem: c.minha ? 'minha' : 'clube', id: c.clube.id + ':' + c.meta.data,
       grupo: c.clube.nome, titulo: c.livro.title, autor: c.livro.author,
       meta: c.meta.meta, abertura: !!c.meta.abertura,
       data: c.meta.data, dias: c.diasMeta, rota: 'grupos',
@@ -1149,7 +1165,7 @@ function nobelForAuthor(author) {
   return null;
 }
 
-Object.assign(window, { CLUBES, clubeAgora, livroDoClubeNoAcervo, clubeAjustado, clubesCalendario, metasColetivasProximas,
+Object.assign(window, { CLUBES, clubeAgora, livroDoClubeNoAcervo, clubeAjustado, clubesCalendario, seriesDaLeitora, metasColetivasProximas,
   NOBEL_LAUREATES, nobelForAuthor,
   BOOK_CURRENT, NOTES_SEED, BOOKS_SEED, THEMES_STUDY, ACTIVITY,
   PONTES, PONTE_CATS, GLOSSARIO, ECOS_CURADOS, curatedEcos,

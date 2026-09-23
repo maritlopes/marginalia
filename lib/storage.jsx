@@ -479,12 +479,13 @@ const MG = {
   // Cada meta: { id, title, type, target, period, startsAt, endsAt, filter, color, createdAt }
   // type: 'count' | 'pages' | 'theme' | 'author' | 'free'
   // period: 'month' | 'bimester' | 'trimester' | 'semester' | 'year' | 'custom' | 'open'
-  getChallenges() { return load().challenges || []; },
+  getChallenges() { return (load().challenges || []).filter(c => c && !c.deleted); },
   addChallenge(challenge) {
     const s = load();
     s.challenges = s.challenges || [];
     const id = challenge.id || ('m_' + Date.now().toString(36));
-    const created = { id, createdAt: new Date().toISOString(), ...challenge };
+    const agora = new Date().toISOString();
+    const created = { id, createdAt: agora, ...challenge, updatedAt: agora };
     s.challenges.push(created);
     save(s);
     if (typeof window.__rerender === 'function') window.__rerender();
@@ -492,13 +493,17 @@ const MG = {
   },
   updateChallenge(id, patch) {
     const s = load();
-    s.challenges = (s.challenges || []).map(c => c.id === id ? { ...c, ...patch } : c);
+    const agora = new Date().toISOString();
+    s.challenges = (s.challenges || []).map(c => c.id === id ? { ...c, ...patch, updatedAt: agora } : c);
     save(s);
     if (typeof window.__rerender === 'function') window.__rerender();
   },
+  // remoção por LÁPIDE: o merge une por id e nunca apaga — sem a lápide, a cópia
+  // velha de outro aparelho ressuscitaria a meta (mesma regra dos livros).
   removeChallenge(id) {
     const s = load();
-    s.challenges = (s.challenges || []).filter(c => c.id !== id);
+    const agora = new Date().toISOString();
+    s.challenges = (s.challenges || []).map(c => c && c.id === id ? { id, deleted: true, updatedAt: agora } : c);
     save(s);
     if (typeof window.__rerender === 'function') window.__rerender();
   },

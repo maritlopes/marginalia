@@ -1942,11 +1942,9 @@ const _diasAte = (iso) => (iso ? Math.round((new Date(String(iso) + 'T00:00:00')
 const _quandoTxt = (d) => (d == null || isNaN(d) ? '' : (d === 0 ? 'é hoje' : (d === 1 ? 'amanhã' : (d < 0 ? 'já passou' : `faltam ${d} dias`))));
 const _clubeLido = (bk) => !!(bk && (bk.status === 'read' || (!bk.status && bk.mark === 'read')));
 
-// editor do calendário de UM livro do clube — datas e metas semanais.
-// Clube sem calendário publicado pode ficar só com as metas (ou sem nada) — as
-// datas entram quando o clube divulgar.
-function ClubeLivroEditor({ clubeId, livro, onFechar }) {
-  const seed = ((window.CLUBES || []).find((c) => c.id === clubeId) || { livros: [] }).livros.find((l) => l.title === livro.title) || null;
+// editor das datas e metas de UM livro — serve tanto ao clube pronto (grava nos
+// ajustes) quanto ao desafio dela (grava dentro da própria lista).
+function ClubeLivroEditor({ livro, onSalvar, onRestaurar, onFechar }) {
   const [abre, setAbre] = React.useState(livro.abre || '');
   const [fim, setFim] = React.useState(livro.fim || '');
   const [metas, setMetas] = React.useState((livro.metas || []).map((m) => ({ data: m.data || '', meta: m.meta || '', page: m.page || '' })));
@@ -1955,7 +1953,6 @@ function ClubeLivroEditor({ clubeId, livro, onFechar }) {
   const inp = { padding: '6px 8px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 12 };
   const btnSalvar = { background: T.terra, color: T.cream, border: 0, borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer' };
   const btnGhost = { background: 'transparent', color: T.brown, border: `1px solid ${T.hairline}`, borderRadius: 8, padding: '8px 14px', fontSize: 12, cursor: 'pointer' };
-  const linkish = { background: 'transparent', border: 0, padding: '8px 4px', color: T.muted, fontSize: 11.5, cursor: 'pointer', textDecoration: 'underline' };
 
   const mudarMeta = (i, campo, v) => setMetas((ms) => ms.map((m, j) => (j === i ? { ...m, [campo]: v } : m)));
   const salvar = () => {
@@ -1965,10 +1962,9 @@ function ClubeLivroEditor({ clubeId, livro, onFechar }) {
       .filter((m) => m.data && String(m.meta || '').trim())
       .map((m) => { const o = { data: m.data, meta: String(m.meta).trim() }; const p = parseInt(m.page, 10); if (p > 0) o.page = p; return o; })
       .sort((x, y) => x.data.localeCompare(y.data));
-    if (typeof MG !== 'undefined') MG.setClubeAjuste(clubeId, livro.title, { abre, fim, metas: ms });
+    onSalvar({ abre, fim, metas: ms });
     onFechar();
   };
-  const restaurar = () => { if (typeof MG !== 'undefined') MG.setClubeAjuste(clubeId, livro.title, null); onFechar(); };
 
   return (
     <div style={{ marginTop: 10, background: T.bone, border: `1px solid ${T.hairline}`, borderRadius: 10, padding: '12px 12px 10px' }}>
@@ -2004,14 +2000,115 @@ function ClubeLivroEditor({ clubeId, livro, onFechar }) {
       <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         <button onClick={salvar} style={btnSalvar}>Salvar</button>
         <button onClick={onFechar} style={btnGhost}>Cancelar</button>
-        {livro.ajustado && seed && <button onClick={restaurar} style={linkish}>voltar ao calendário do clube</button>}
+        {livro.ajustado && onRestaurar && <button onClick={() => { onRestaurar(); onFechar(); }} style={{ background: 'transparent', border: 0, padding: '8px 4px', color: T.muted, fontSize: 11.5, cursor: 'pointer', textDecoration: 'underline' }}>voltar ao calendário do clube</button>}
       </div>
     </div>
   );
 }
 
-// um livro do clube dentro do cartão: em curso (completo) ou a seguir (enxuto)
-function ClubeLivroBloco({ clubeId, livro, meta, book, emCurso, editando, onEditar }) {
+// criar/editar um DESAFIO dela: nome, tema e a lista de livros que conversam entre si
+function SerieEditor({ serie, onFechar }) {
+  const ch = serie || null;
+  const [nome, setNome] = React.useState(ch ? ch.nome : '');
+  const [tema, setTema] = React.useState(ch ? ch.tema : '');
+  const [livros, setLivros] = React.useState(ch ? (ch.livros || []).slice() : []);
+  const [busca, setBusca] = React.useState('');
+  const [manual, setManual] = React.useState(false);
+  const [mt, setMt] = React.useState('');
+  const [ma, setMa] = React.useState('');
+  const [erro, setErro] = React.useState(null);
+
+  const inp = { width: '100%', padding: '8px 10px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 13, outline: 'none' };
+  const btnSalvar = { background: T.terra, color: T.cream, border: 0, borderRadius: 8, padding: '9px 18px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' };
+  const btnGhost = { background: 'transparent', color: T.brown, border: `1px solid ${T.hairline}`, borderRadius: 8, padding: '9px 14px', fontSize: 12.5, cursor: 'pointer' };
+
+  const jaTem = (t) => livros.some((l) => buscaNorm(l.title) === buscaNorm(t));
+  const achados = busca.trim().length >= 2
+    ? (window.BOOKS || []).filter((b) => b && !b.deleted && (buscaNorm(b.title).includes(buscaNorm(busca)) || buscaNorm(b.author || '').includes(buscaNorm(busca)))).filter((b) => !jaTem(b.title)).slice(0, 6)
+    : [];
+  const addDoAcervo = (b) => { setLivros((ls) => [...ls, { title: b.title, author: b.author || '', bookId: b.id }]); setBusca(''); };
+  const addManual = () => { if (!mt.trim()) return; setLivros((ls) => [...ls, { title: mt.trim(), author: ma.trim() }]); setMt(''); setMa(''); };
+  const mover = (i, d) => setLivros((ls) => { const n = ls.slice(); const j = i + d; if (j < 0 || j >= n.length) return ls; const t = n[i]; n[i] = n[j]; n[j] = t; return n; });
+
+  const salvar = () => {
+    if (!nome.trim()) { setErro('Dê um nome ao desafio.'); return; }
+    if (!livros.length) { setErro('Acrescente ao menos um livro.'); return; }
+    if (typeof MG === 'undefined') return;
+    if (ch) MG.updateChallenge(ch.chId, { title: nome.trim(), theme: tema.trim(), livros });
+    else MG.addChallenge({ type: 'series', title: nome.trim(), theme: tema.trim(), livros, period: 'open' });
+    onFechar();
+  };
+  const apagar = () => {
+    if (!ch || !window.confirm('Apagar este desafio? Os livros continuam na sua biblioteca.')) return;
+    MG.removeChallenge(ch.chId); onFechar();
+  };
+
+  return (
+    <div style={{ background: T.cream, border: `1px solid ${T.terra}`, borderRadius: 14, padding: '16px 18px', marginBottom: 12 }}>
+      <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 10 }}>
+        {ch ? 'Editar o desafio' : 'Novo desafio — uma lista de livros que conversam'}
+      </div>
+      <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome (ex.: Os épicos, de Homero a Dante)" autoFocus style={{ ...inp, marginBottom: 8 }}/>
+      <input value={tema} onChange={(e) => setTema(e.target.value)} placeholder="O fio que os liga (ex.: epopeia e tragédia)" style={{ ...inp, marginBottom: 12 }}/>
+
+      <div style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: T.muted, fontWeight: 700, marginBottom: 6 }}>
+        Os livros {livros.length ? `· ${livros.length}` : ''}
+      </div>
+      {livros.length === 0 && <div style={{ fontSize: 12, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginBottom: 8 }}>Nenhum ainda — busque no seu acervo abaixo ou acrescente à mão.</div>}
+      {livros.map((l, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 0', borderTop: `1px solid ${T.hairline}` }}>
+          <span style={{ fontFamily: T.mono, fontSize: 11, color: T.muted, width: 16, flexShrink: 0 }}>{i + 1}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.2, overflowWrap: 'anywhere' }}>{l.title}</div>
+            <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>{l.author || 'sem autor'}{l.bookId ? ' · do seu acervo' : ''}</div>
+          </div>
+          <button onClick={() => mover(i, -1)} title="subir" style={{ background: 'transparent', border: 0, color: T.muted, fontSize: 13, cursor: 'pointer', padding: '0 2px' }}>↑</button>
+          <button onClick={() => mover(i, 1)} title="descer" style={{ background: 'transparent', border: 0, color: T.muted, fontSize: 13, cursor: 'pointer', padding: '0 2px' }}>↓</button>
+          <button onClick={() => setLivros((ls) => ls.filter((_, j) => j !== i))} title="tirar da lista" style={{ background: 'transparent', border: 0, color: T.muted, fontSize: 16, lineHeight: 1, cursor: 'pointer', padding: '0 2px' }}>×</button>
+        </div>
+      ))}
+
+      <div style={{ marginTop: 12 }}>
+        <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="buscar no meu acervo…" style={inp}/>
+        {achados.map((b) => (
+          <button key={b.id} onClick={() => addDoAcervo(b)} style={{ width: '100%', textAlign: 'left', background: T.bone, border: `1px solid ${T.hairline}`, borderRadius: 8, padding: '8px 10px', marginTop: 6, cursor: 'pointer' }}>
+            <div style={{ fontFamily: T.serif, fontSize: 13.5, color: T.ink }}>{b.title}</div>
+            <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>{b.author || 'sem autor'}</div>
+          </button>
+        ))}
+        {busca.trim().length >= 2 && achados.length === 0 && (
+          <div style={{ fontSize: 11.5, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 6 }}>Nada no acervo com esse nome — acrescente à mão.</div>
+        )}
+      </div>
+
+      {manual ? (
+        <div style={{ marginTop: 10, background: T.bone, border: `1px solid ${T.hairline}`, borderRadius: 10, padding: 10 }}>
+          <input value={mt} onChange={(e) => setMt(e.target.value)} placeholder="título" style={{ ...inp, marginBottom: 6 }}/>
+          <input value={ma} onChange={(e) => setMa(e.target.value)} placeholder="autor" onKeyDown={(e) => e.key === 'Enter' && addManual()} style={{ ...inp, marginBottom: 8 }}/>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={addManual} style={btnSalvar}>Acrescentar</button>
+            <button onClick={() => setManual(false)} style={btnGhost}>fechar</button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => setManual(true)} style={{ ...btnGhost, borderStyle: 'dashed', width: '100%', marginTop: 8 }}>+ acrescentar um livro à mão</button>
+      )}
+
+      {erro && <div style={{ marginTop: 10, padding: '8px 10px', background: '#F4D9D0', borderRadius: 8, fontSize: 11.5, color: '#8E3E2A' }}>{erro}</div>}
+      <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+        <button onClick={salvar} style={btnSalvar}>{ch ? 'Salvar' : 'Criar o desafio'}</button>
+        <button onClick={onFechar} style={btnGhost}>Cancelar</button>
+        {ch && <button onClick={apagar} style={{ background: 'transparent', border: 0, padding: '9px 4px', color: T.muted, fontSize: 11.5, cursor: 'pointer', textDecoration: 'underline' }}>apagar este desafio</button>}
+      </div>
+      <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 10, lineHeight: 1.45 }}>
+        Datas e metas de cada livro entram depois, no cartão — e são opcionais.
+      </div>
+    </div>
+  );
+}
+
+// um livro do percurso: em curso (completo) ou a seguir (enxuto)
+function ClubeLivroBloco({ livro, meta, book, emCurso, editando, onEditar, onSalvarDatas, onRestaurarDatas }) {
   const bk = book;
   const cur = (bk && bk.currentPage) || 0;
   const tot = (bk && bk.pages) || 0;
@@ -2086,56 +2183,90 @@ function ClubeLivroBloco({ clubeId, livro, meta, book, emCurso, editando, onEdit
           {temJanela ? '✎ ajustar datas e metas' : '✎ pôr datas e metas'}
         </button>
       )}
-      {editando && <ClubeLivroEditor clubeId={clubeId} livro={livro} onFechar={onEditar}/>}
+      {editando && <ClubeLivroEditor livro={livro} onSalvar={onSalvarDatas} onRestaurar={onRestaurarDatas} onFechar={onEditar}/>}
     </div>
   );
 }
 
+// DESAFIOS E CLUBES — a mesma coisa em dois estados: a lista de livros que você
+// montou (desafio seu) e a que veio pronta de um clube. Vira clube quando há gente
+// lendo junto. Os clubes prontos ficam em data.jsx; os seus, no seu estado.
 function ClubeNoCirculo() {
-  const [editando, setEditando] = React.useState(null); // `${clubeId}|${título}`
-  const [verTudo, setVerTudo] = React.useState(null);   // clubeId com o calendário aberto
+  const [editando, setEditando] = React.useState(null); // `${id}|${título}`
+  const [verTudo, setVerTudo] = React.useState(null);
+  const [editSerie, setEditSerie] = React.useState(null); // null | 'nova' | id da série
   const lista = (!window.__demoShelf && typeof window.clubeAgora === 'function') ? window.clubeAgora() : [];
-  if (!lista.length) return null;
+  if (window.__demoShelf) return null;
   const chave = (cid, t) => cid + '|' + t;
   const alterna = (k) => setEditando((cur) => (cur === k ? null : k));
+
+  // onde cada edição de datas vai parar: nos ajustes (clube pronto) ou dentro da lista (desafio seu)
+  const salvarDatas = (c, titulo) => (aj) => {
+    if (typeof MG === 'undefined') return;
+    if (c.minha) {
+      const ch = (MG.getChallenges() || []).find((x) => x.id === c.clube.chId);
+      if (!ch) return;
+      const livros = (ch.livros || []).map((l) => (l.title === titulo ? { ...l, abre: aj.abre || '', fim: aj.fim || '', metas: aj.metas || [] } : l));
+      MG.updateChallenge(c.clube.chId, { livros });
+    } else {
+      MG.setClubeAjuste(c.clube.id, titulo, aj);
+    }
+  };
+  const restaurarDatas = (c, titulo) => (c.minha ? null : () => MG.setClubeAjuste(c.clube.id, titulo, null));
+
+  const btnNovo = { width: '100%', padding: '12px 0', background: 'transparent', color: T.ink, border: `1px dashed ${T.hairline}`, borderRadius: 12, fontFamily: T.sans, fontSize: 12.5, fontWeight: 600, cursor: 'pointer' };
 
   return (
     <div style={{ padding: '18px 24px 0' }}>
       <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 4 }}>
-        Leituras do clube
+        Desafios e clubes
       </div>
       <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', marginBottom: 12, lineHeight: 1.45 }}>
-        Os calendários que você segue — o livro de agora, o que vem a seguir e o seu ritmo.
+        Livros que conversam entre si, lidos em série. O desafio é seu; vira clube quando há gente lendo junto.
       </div>
+
       {lista.map((c) => {
         const prox = c.proximo;
         const metaProx = prox ? ((prox.metas || [])[0] || null) : null;
         const todos = (c.clube.livros || []);
         const atualTitulo = c.livro.title;
+        const cid = c.clube.id;
+        if (editSerie === cid) {
+          return <SerieEditor key={cid} serie={c.clube} onFechar={() => setEditSerie(null)}/>;
+        }
         return (
-          <div key={c.clube.id} style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 14, padding: '16px 18px', marginBottom: 12 }}>
-            <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 600 }}>{c.clube.nome} · {c.clube.sub}</div>
-            <div style={{ fontSize: 11, color: T.muted, fontFamily: T.sans, marginTop: 2, marginBottom: 8 }}>
-              {c.lidos} de {c.total} lidos{c.semCalendario ? ' · sem calendário publicado' : ''}
+          <div key={cid} style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 14, padding: '16px 18px', marginBottom: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
+              <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: c.minha ? T.olive : T.terra, fontWeight: 600 }}>
+                {c.minha ? 'Seu desafio' : `${c.clube.nome} · ${c.clube.sub}`}
+              </div>
+              {c.minha && <button onClick={() => setEditSerie(cid)} style={{ background: 'transparent', border: 0, color: T.muted, fontSize: 11.5, cursor: 'pointer', textDecoration: 'underline', whiteSpace: 'nowrap' }}>✎ a lista</button>}
+            </div>
+            {c.minha && <div style={{ fontFamily: T.serif, fontSize: 17, color: T.ink, marginTop: 2, lineHeight: 1.15 }}>{c.clube.nome}</div>}
+            {c.minha && c.clube.tema && <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', marginTop: 1 }}>{c.clube.tema}</div>}
+            <div style={{ fontSize: 11, color: T.muted, fontFamily: T.sans, marginTop: 3, marginBottom: 8 }}>
+              {c.lidos} de {c.total} lidos{c.semCalendario ? ' · sem calendário' : ''}
             </div>
 
-            <ClubeLivroBloco clubeId={c.clube.id} livro={c.livro} meta={c.meta} book={c.book} emCurso
-              editando={editando === chave(c.clube.id, atualTitulo)} onEditar={() => alterna(chave(c.clube.id, atualTitulo))}/>
+            <ClubeLivroBloco livro={c.livro} meta={c.meta} book={c.book} emCurso
+              editando={editando === chave(cid, atualTitulo)} onEditar={() => alterna(chave(cid, atualTitulo))}
+              onSalvarDatas={salvarDatas(c, atualTitulo)} onRestaurarDatas={restaurarDatas(c, atualTitulo)}/>
 
             {prox && (
-              <ClubeLivroBloco clubeId={c.clube.id} livro={prox} meta={metaProx} book={window.livroDoClubeNoAcervo ? window.livroDoClubeNoAcervo(prox) : null} emCurso={false}
-                editando={editando === chave(c.clube.id, prox.title)} onEditar={() => alterna(chave(c.clube.id, prox.title))}/>
+              <ClubeLivroBloco livro={prox} meta={metaProx} book={window.livroDoClubeNoAcervo ? window.livroDoClubeNoAcervo(prox) : null} emCurso={false}
+                editando={editando === chave(cid, prox.title)} onEditar={() => alterna(chave(cid, prox.title))}
+                onSalvarDatas={salvarDatas(c, prox.title)} onRestaurarDatas={restaurarDatas(c, prox.title)}/>
             )}
 
             {todos.length > 2 && (
               <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${T.hairline}` }}>
-                <button onClick={() => setVerTudo((v) => (v === c.clube.id ? null : c.clube.id))} style={{ background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: T.sans }}>
-                  {verTudo === c.clube.id ? 'esconder a lista completa' : `a lista completa · ${todos.length} livros →`}
+                <button onClick={() => setVerTudo((v) => (v === cid ? null : cid))} style={{ background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: T.sans }}>
+                  {verTudo === cid ? 'esconder a lista completa' : `a lista completa · ${todos.length} livros →`}
                 </button>
-                {verTudo === c.clube.id && (
+                {verTudo === cid && (
                   <div style={{ marginTop: 10 }}>
                     {todos.map((l) => {
-                      const k = chave(c.clube.id, l.title);
+                      const k = chave(cid, l.title);
                       const atual = l.title === atualTitulo;
                       const bkL = window.livroDoClubeNoAcervo ? window.livroDoClubeNoAcervo(l) : null;
                       const lidoL = _clubeLido(bkL);
@@ -2155,16 +2286,16 @@ function ClubeNoCirculo() {
                             {l.ajustado ? ' · ajustado' : ''}
                           </div>
                           {!atual && !lidoL && (
-                            <button onClick={() => { if (typeof MG !== 'undefined') MG.setClubeAtual(c.clube.id, l.title); }} style={{ background: 'transparent', border: 0, padding: '4px 0 0', color: T.terra, fontSize: 11, cursor: 'pointer', fontFamily: T.sans, fontWeight: 600 }}>
+                            <button onClick={() => { if (typeof MG !== 'undefined') MG.setClubeAtual(cid, l.title); }} style={{ background: 'transparent', border: 0, padding: '4px 0 0', color: T.terra, fontSize: 11, cursor: 'pointer', fontFamily: T.sans, fontWeight: 600 }}>
                               é este que estamos lendo →
                             </button>
                           )}
-                          {editando === k && <ClubeLivroEditor clubeId={c.clube.id} livro={l} onFechar={() => alterna(k)}/>}
+                          {editando === k && <ClubeLivroEditor livro={l} onSalvar={salvarDatas(c, l.title)} onRestaurar={restaurarDatas(c, l.title)} onFechar={() => alterna(k)}/>}
                         </div>
                       );
                     })}
-                    {(typeof MG !== 'undefined' && MG.getClubeAtual && MG.getClubeAtual(c.clube.id)) && (
-                      <button onClick={() => MG.setClubeAtual(c.clube.id, null)} style={{ background: 'transparent', border: 0, padding: '10px 0 0', color: T.muted, fontSize: 11, cursor: 'pointer', textDecoration: 'underline', fontFamily: T.sans }}>
+                    {(typeof MG !== 'undefined' && MG.getClubeAtual && MG.getClubeAtual(cid)) && (
+                      <button onClick={() => MG.setClubeAtual(cid, null)} style={{ background: 'transparent', border: 0, padding: '10px 0 0', color: T.muted, fontSize: 11, cursor: 'pointer', textDecoration: 'underline', fontFamily: T.sans }}>
                         deixar o app escolher o livro em curso
                       </button>
                     )}
@@ -2175,6 +2306,10 @@ function ClubeNoCirculo() {
           </div>
         );
       })}
+
+      {editSerie === 'nova'
+        ? <SerieEditor onFechar={() => setEditSerie(null)}/>
+        : <button onClick={() => setEditSerie('nova')} style={btnNovo}>+ Criar um desafio — uma lista de livros</button>}
     </div>
   );
 }
@@ -2792,12 +2927,14 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
 // ─────────────────────────────────────────────────────────────
 function ScreenMetas({ onNav = () => {} }) {
   const challenges = (typeof MG !== 'undefined' && MG.getChallenges) ? MG.getChallenges() : [];
-  const ativas = challenges.filter(c => {
+  // os desafios-lista (type 'series') não são meta numérica — têm seção própria abaixo
+  const metasNum = challenges.filter(c => c && c.type !== 'series');
+  const ativas = metasNum.filter(c => {
     if (c.period === 'open') return true;
     if (!c.endsAt) return true;
     return new Date(c.endsAt).getTime() >= Date.now();
   });
-  const finalizadas = challenges.filter(c => {
+  const finalizadas = metasNum.filter(c => {
     if (c.period === 'open') return false;
     return c.endsAt && new Date(c.endsAt).getTime() < Date.now();
   });
@@ -2855,6 +2992,36 @@ function ScreenMetas({ onNav = () => {} }) {
         </a>
       </div>
 
+      {/* LISTAS DE LEITURA — desafios seus e clubes; o cartão inteiro vive nos Círculos */}
+      {(() => {
+        const listas = (!window.__demoShelf && typeof window.clubeAgora === 'function') ? window.clubeAgora() : [];
+        if (!listas.length) return null;
+        return (
+          <div style={{ padding: '16px 24px 0' }}>
+            <SectionLabel color={T.olive}>Listas de leitura · {listas.length}</SectionLabel>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
+              {listas.map((c) => (
+                <button key={c.clube.id} onClick={() => onNav('grupos')} style={{
+                  width: '100%', textAlign: 'left', cursor: 'pointer', background: T.cream,
+                  border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '13px 15px',
+                }}>
+                  <div style={{ fontSize: 9.5, letterSpacing: 1.4, textTransform: 'uppercase', color: c.minha ? T.olive : T.terra, fontWeight: 700 }}>
+                    {c.minha ? 'Seu desafio' : 'Clube'}
+                  </div>
+                  <div style={{ fontFamily: T.serif, fontSize: 16, color: T.ink, marginTop: 2, lineHeight: 1.2 }}>{c.clube.nome}</div>
+                  <div style={{ fontSize: 11.5, color: T.brown, fontFamily: T.sans, marginTop: 3 }}>
+                    {c.lidos} de {c.total} lidos · lendo <em style={{ fontFamily: T.serif }}>{c.livro.title}</em> →
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 8, lineHeight: 1.4 }}>
+              Livros que conversam entre si. Você monta e acompanha nos Círculos.
+            </div>
+          </div>
+        );
+      })()}
+
       {/* metas em curso */}
       {ativas.length > 0 ? (
         <div style={{ padding: '16px 24px 0' }}>
@@ -2902,9 +3069,8 @@ function ScreenMetas({ onNav = () => {} }) {
         }}>
           <Icon name="sparkle" size={16} color={T.ochre}/>
           <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, lineHeight: 1.45 }}>
-            Por enquanto, seus desafios são <em>pessoais</em> — um contrato só com você.
-            Em breve você poderá convidar amigos; quando o compartilhamento chegar,
-            o ingresso será livre.
+            Uma meta é um contrato só com você. Uma <em>lista de leitura</em> é um desafio —
+            e vira clube quando há gente lendo junto: monte a sua nos Círculos.
           </div>
         </div>
       </div>
