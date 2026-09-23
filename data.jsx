@@ -592,11 +592,31 @@ function livroDoClubeNoAcervo(lc) {
   if (!hits.length) return null;
   return hits.find(b => b.status) || hits[0];
 }
+// o calendário do clube com os ajustes dela por cima (MG.getClubeAjustes): o seed
+// de CLUBES é o calendário publicado; se o clube mudar uma data ou uma meta, ela
+// corrige no app e é a correção que manda. Livro ajustado ganha `ajustado: true`.
+function clubeAjustado(c) {
+  const aj = (window.MG && window.MG.getClubeAjustes) ? (window.MG.getClubeAjustes()[c.id] || null) : null;
+  if (!aj) return c;
+  const livros = c.livros.map((l) => {
+    const a = aj[l.title];
+    if (!a) return l;
+    const metas = Array.isArray(a.metas)
+      ? a.metas.slice().sort((x, y) => String(x.data).localeCompare(String(y.data)))
+      : l.metas;
+    return { ...l, abre: a.abre || l.abre, fim: a.fim || l.fim, metas, ajustado: true };
+  }).sort((x, y) => String(x.abre).localeCompare(String(y.abre)));
+  return { ...c, livros, inicio: livros[0] ? livros[0].abre : c.inicio, fim: livros[livros.length - 1] ? livros[livros.length - 1].fim : c.fim };
+}
+// todos os clubes já ajustados — para as telas que mostram o calendário inteiro
+function clubesCalendario() { return CLUBES.map(clubeAjustado); }
+
 // estado do clube HOJE: livro em curso (ou o próximo, antes do início), próxima meta semanal, próximo livro
 function clubeAgora(hojeISO) {
   const hoje = hojeISO || (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
   const out = [];
-  for (const c of CLUBES) {
+  for (const c0 of CLUBES) {
+    const c = clubeAjustado(c0);
     if (hoje > c.fim) continue;
     const temAlgum = c.livros.some(l => livroDoClubeNoAcervo(l));
     if (!temAlgum) continue;
@@ -1095,7 +1115,7 @@ function nobelForAuthor(author) {
   return null;
 }
 
-Object.assign(window, { CLUBES, clubeAgora, livroDoClubeNoAcervo, metasColetivasProximas,
+Object.assign(window, { CLUBES, clubeAgora, livroDoClubeNoAcervo, clubeAjustado, clubesCalendario, metasColetivasProximas,
   NOBEL_LAUREATES, nobelForAuthor,
   BOOK_CURRENT, NOTES_SEED, BOOKS_SEED, THEMES_STUDY, ACTIVITY,
   PONTES, PONTE_CATS, GLOSSARIO, ECOS_CURADOS, curatedEcos,

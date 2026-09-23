@@ -330,6 +330,27 @@ const MG = {
     if (typeof window.__rerender === 'function') window.__rerender();
     return s.dailyGoal;
   },
+  // AJUSTES DO CALENDÁRIO DO CLUBE — quando o clube muda uma data ou uma meta,
+  // ela corrige no app e a correção vale por cima do calendário de data.jsx:
+  //   clubeAjustes = { [clubeId]: { [título do livro]: { abre, fim, metas:[{data,meta,page?}] } } }
+  // Chave escalar do estado (como dailyGoal): sincroniza pelo `...older, ...newer`
+  // do mergeStates — vence o aparelho que gravou por último.
+  getClubeAjustes() {
+    const s = load();
+    return (s.clubeAjustes && typeof s.clubeAjustes === 'object') ? s.clubeAjustes : {};
+  },
+  setClubeAjuste(clubeId, livroTitle, ajuste) {
+    const s = load();
+    const all = (s.clubeAjustes && typeof s.clubeAjustes === 'object') ? { ...s.clubeAjustes } : {};
+    const doClube = { ...(all[clubeId] || {}) };
+    if (ajuste) doClube[livroTitle] = ajuste; else delete doClube[livroTitle];
+    if (Object.keys(doClube).length) all[clubeId] = doClube; else delete all[clubeId];
+    s.clubeAjustes = all;
+    save(s);
+    if (typeof window.__rerender === 'function') window.__rerender();
+    return all;
+  },
+
   // Estatísticas do diário — tudo derivado do readingLog (nada é gravado).
   // hoje · sequência de dias seguidos · últimos 7 dias (geral e do livro) ·
   // páginas por hora · calendário do mês. bookId é opcional (ritmo daquele livro).

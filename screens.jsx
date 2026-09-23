@@ -1931,63 +1931,217 @@ function AppAdminPanel() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// LEITURAS DO CLUBE — o calendário do clube (data.jsx CLUBES) vive aqui, nos
-// Círculos: leitura de clube é leitura com gente. A Home só guarda uma linha de
-// aviso quando a meta está perto. Só aparece para quem tem livro do clube.
+// LEITURAS DO CLUBE — o calendário do clube (data.jsx CLUBES + os ajustes dela)
+// vive aqui, nos Círculos: leitura de clube é leitura com gente. A Home só guarda
+// uma linha de aviso quando a meta está perto. Só aparece para quem tem livro do
+// clube na biblioteca. Mostra o livro EM CURSO e o PRÓXIMO (que já tem data), e
+// deixa corrigir datas e metas quando o clube muda o calendário.
 // ─────────────────────────────────────────────────────────────
-function ClubeNoCirculo() {
-  const lista = (!window.__demoShelf && typeof window.clubeAgora === 'function') ? window.clubeAgora() : [];
-  if (!lista.length) return null;
-  const fmt = (iso) => { const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${parseInt(m[3], 10)}/${m[2]}` : iso; };
+const _fmtDiaMes = (iso) => { const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${parseInt(m[3], 10)}/${m[2]}` : (iso || ''); };
+const _diasAte = (iso) => Math.round((new Date(String(iso) + 'T00:00:00') - new Date(new Date().toDateString())) / 86400000);
+const _quandoTxt = (d) => (d == null ? '' : (d === 0 ? 'é hoje' : (d === 1 ? 'amanhã' : (d < 0 ? 'já passou' : `faltam ${d} dias`))));
+
+// editor do calendário de UM livro do clube — datas e metas semanais
+function ClubeLivroEditor({ clubeId, livro, onFechar }) {
+  const seed = ((window.CLUBES || []).find((c) => c.id === clubeId) || { livros: [] }).livros.find((l) => l.title === livro.title) || null;
+  const [abre, setAbre] = React.useState(livro.abre || '');
+  const [fim, setFim] = React.useState(livro.fim || '');
+  const [metas, setMetas] = React.useState((livro.metas || []).map((m) => ({ data: m.data || '', meta: m.meta || '', page: m.page || '' })));
+  const [erro, setErro] = React.useState(null);
+
+  const inp = { padding: '6px 8px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 12 };
+  const btnSalvar = { background: T.terra, color: T.cream, border: 0, borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer' };
+  const btnGhost = { background: 'transparent', color: T.brown, border: `1px solid ${T.hairline}`, borderRadius: 8, padding: '8px 14px', fontSize: 12, cursor: 'pointer' };
+  const linkish = { background: 'transparent', border: 0, padding: '8px 4px', color: T.muted, fontSize: 11.5, cursor: 'pointer', textDecoration: 'underline' };
+
+  const mudarMeta = (i, campo, v) => setMetas((ms) => ms.map((m, j) => (j === i ? { ...m, [campo]: v } : m)));
+  const salvar = () => {
+    if (!abre || !fim) { setErro('Preencha a abertura e o fim.'); return; }
+    if (fim < abre) { setErro('O fim não pode vir antes da abertura.'); return; }
+    const ms = metas
+      .filter((m) => m.data && String(m.meta || '').trim())
+      .map((m) => { const o = { data: m.data, meta: String(m.meta).trim() }; const p = parseInt(m.page, 10); if (p > 0) o.page = p; return o; })
+      .sort((x, y) => x.data.localeCompare(y.data));
+    if (typeof MG !== 'undefined') MG.setClubeAjuste(clubeId, livro.title, { abre, fim, metas: ms });
+    onFechar();
+  };
+  const restaurar = () => { if (typeof MG !== 'undefined') MG.setClubeAjuste(clubeId, livro.title, null); onFechar(); };
+
+  return (
+    <div style={{ marginTop: 10, background: T.bone, border: `1px solid ${T.hairline}`, borderRadius: 10, padding: '12px 12px 10px' }}>
+      <div style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: T.muted, fontWeight: 700, marginBottom: 8 }}>
+        Ajustar o calendário — {livro.title}
+      </div>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', fontSize: 11.5, color: T.brown, fontFamily: T.sans }}>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>abre em
+          <input type="date" value={abre} onChange={(e) => setAbre(e.target.value)} style={inp}/>
+        </label>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>termina em
+          <input type="date" value={fim} onChange={(e) => setFim(e.target.value)} style={inp}/>
+        </label>
+      </div>
+
+      <div style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: T.muted, fontWeight: 700, margin: '12px 0 6px' }}>Metas</div>
+      {metas.length === 0 && <div style={{ fontSize: 11.5, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginBottom: 6 }}>Nenhuma meta — acrescente abaixo.</div>}
+      {metas.map((m, i) => (
+        <div key={i} style={{ border: `1px dashed ${T.hairline}`, borderRadius: 8, padding: 8, marginBottom: 6 }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <input type="date" value={m.data} onChange={(e) => mudarMeta(i, 'data', e.target.value)} style={{ ...inp, flex: 1, minWidth: 0 }}/>
+            <button onClick={() => setMetas((ms) => ms.filter((_, j) => j !== i))} title="remover esta meta" style={{ background: 'transparent', border: 0, color: T.muted, fontSize: 16, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>×</button>
+          </div>
+          <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+            <input value={m.meta} onChange={(e) => mudarMeta(i, 'meta', e.target.value)} placeholder="até o capítulo…" style={{ ...inp, flex: 1, minWidth: 0 }}/>
+            <input value={m.page} onChange={(e) => mudarMeta(i, 'page', e.target.value)} inputMode="numeric" placeholder="pág" title="página (opcional) — é o que deixa o app preencher a Meta da semana no plano" style={{ ...inp, width: 54, textAlign: 'center' }}/>
+          </div>
+        </div>
+      ))}
+      <button onClick={() => setMetas((ms) => [...ms, { data: '', meta: '', page: '' }])} style={{ ...btnGhost, borderStyle: 'dashed', marginTop: 2 }}>+ acrescentar meta</button>
+
+      {erro && <div style={{ marginTop: 10, padding: '8px 10px', background: '#F4D9D0', borderRadius: 8, fontSize: 11.5, color: '#8E3E2A' }}>{erro}</div>}
+      <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+        <button onClick={salvar} style={btnSalvar}>Salvar</button>
+        <button onClick={onFechar} style={btnGhost}>Cancelar</button>
+        {livro.ajustado && seed && <button onClick={restaurar} style={linkish}>voltar ao calendário do clube</button>}
+      </div>
+    </div>
+  );
+}
+
+// um livro do clube dentro do cartão: em curso (completo) ou a seguir (enxuto)
+function ClubeLivroBloco({ clubeId, livro, meta, book, emCurso, editando, onEditar }) {
+  const bk = book;
+  const cur = (bk && bk.currentPage) || 0;
+  const tot = (bk && bk.pages) || 0;
+  const naEstante = !!(bk && bk.status);
+  const lido = !!(bk && bk.status === 'read');
+  const diasFim = _diasAte(livro.fim);
+  const diasAbre = _diasAte(livro.abre);
+  const diasMeta = meta ? _diasAte(meta.data) : null;
+  const ritmo = (tot && cur < tot && diasFim > 0) ? Math.ceil((tot - cur) / diasFim) : null;
+  const metaJa = !!(bk && bk.goalFinishBy === livro.fim);
+  const wgJa = !!(bk && bk.weekGoal && meta && meta.page && bk.weekGoal.page === meta.page);
   const btn = { padding: '7px 12px', borderRadius: 8, border: `1px solid ${T.terra}`, background: 'transparent', color: T.terra, fontFamily: T.sans, fontSize: 11.5, fontWeight: 600, cursor: 'pointer' };
   const ok = { fontSize: 11.5, color: T.olive, fontFamily: T.sans, fontWeight: 600, padding: '7px 0' };
+
+  return (
+    <div style={emCurso ? null : { marginTop: 14, paddingTop: 14, borderTop: `1px solid ${T.hairline}` }}>
+      <div style={{ fontSize: 9.5, letterSpacing: 1.4, textTransform: 'uppercase', color: emCurso ? T.terra : T.muted, fontWeight: 700 }}>
+        {emCurso ? 'Lendo agora' : `A seguir · abre ${_fmtDiaMes(livro.abre)}${diasAbre >= 0 ? ` · ${_quandoTxt(diasAbre)}` : ''}`}
+      </div>
+      <div onClick={() => { if (bk && typeof window.__openBook === 'function') window.__openBook(bk); }} style={{ fontFamily: T.serif, fontSize: emCurso ? 19 : 17, lineHeight: 1.15, fontWeight: 500, letterSpacing: -0.3, marginTop: 3, color: T.ink, cursor: bk ? 'pointer' : 'default' }}>{livro.title}</div>
+      <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 12.5, color: T.brown, marginTop: 2 }}>
+        {livro.author} · de {_fmtDiaMes(livro.abre)} a {_fmtDiaMes(livro.fim)}{livro.ajustado ? ' · ajustado por você' : ''}
+      </div>
+
+      {meta && (
+        <div style={{ marginTop: 10, padding: '8px 10px', background: emCurso ? 'rgba(176,83,58,0.07)' : T.bone, borderRadius: 8 }}>
+          <div style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: emCurso ? T.terra : T.brown, fontWeight: 700 }}>
+            {meta.abertura ? 'Abertura' : (emCurso ? 'Meta da semana' : 'Primeira meta')} · {_fmtDiaMes(meta.data)}{diasMeta != null ? ` · ${_quandoTxt(diasMeta)}` : ''}
+          </div>
+          <div style={{ fontFamily: T.serif, fontSize: emCurso ? 15 : 14, color: T.ink, marginTop: 2 }}>{meta.meta}</div>
+        </div>
+      )}
+
+      {!emCurso && (livro.metas || []).length > 1 && (
+        <details style={{ marginTop: 8 }}>
+          <summary style={{ fontSize: 11.5, color: T.terra, cursor: 'pointer', fontFamily: T.sans, fontWeight: 600 }}>as {livro.metas.length} metas deste livro</summary>
+          <div style={{ marginTop: 6 }}>
+            {livro.metas.map((m, i) => (
+              <div key={i} style={{ fontSize: 11.5, color: T.brown, fontFamily: T.sans, padding: '3px 0' }}>
+                <span style={{ color: T.muted }}>{_fmtDiaMes(m.data)}</span> · {m.meta}
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+
+      {emCurso && (
+        <>
+          <div style={{ fontSize: 12, color: T.brown, marginTop: 10, fontFamily: T.sans, lineHeight: 1.5 }}>
+            {!bk ? 'Ainda não está na sua biblioteca.'
+              : lido ? '✓ Você já leu este.'
+              : !naEstante ? 'Está no seu acervo, adormecido.'
+              : tot ? <>Você está na <strong>pág {cur}</strong> de {tot}{ritmo ? <> · ~<strong style={{ color: T.terra }}>{ritmo} pág/dia</strong> até {_fmtDiaMes(livro.fim)}</> : null}</>
+              : 'Na sua estante — sem total de páginas (ponha no Editar para eu calcular o ritmo).'}
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+            {bk && !naEstante && <button onClick={() => { if (typeof window.__tirarPoeira === 'function') window.__tirarPoeira(bk); }} style={btn}>Despertar para a estante</button>}
+            {bk && naEstante && !lido && !metaJa && <button onClick={() => { if (typeof MG !== 'undefined') MG.updateBook(bk.id, { goalFinishBy: livro.fim }); }} style={btn}>Meta no plano: terminar até {_fmtDiaMes(livro.fim)}</button>}
+            {bk && naEstante && !lido && metaJa && <span style={ok}>✓ Meta do plano: até {_fmtDiaMes(livro.fim)}</span>}
+            {bk && naEstante && !lido && meta && meta.page && !wgJa && meta.page > cur && <button onClick={() => { if (typeof MG !== 'undefined') MG.updateBook(bk.id, { weekGoal: { from: cur, page: meta.page, until: meta.data } }); }} style={btn}>Meta da semana: pág {meta.page}</button>}
+            {bk && naEstante && !lido && wgJa && <span style={ok}>✓ Meta da semana: pág {meta.page}</span>}
+          </div>
+        </>
+      )}
+
+      {!editando && (
+        <button onClick={onEditar} style={{ background: 'transparent', border: 0, padding: '8px 0 0', color: T.muted, fontSize: 11.5, cursor: 'pointer', textDecoration: 'underline', fontFamily: T.sans }}>
+          ✎ ajustar datas e metas
+        </button>
+      )}
+      {editando && <ClubeLivroEditor clubeId={clubeId} livro={livro} onFechar={onEditar}/>}
+    </div>
+  );
+}
+
+function ClubeNoCirculo() {
+  const [editando, setEditando] = React.useState(null); // `${clubeId}|${título}`
+  const [verTudo, setVerTudo] = React.useState(null);   // clubeId com o calendário aberto
+  const lista = (!window.__demoShelf && typeof window.clubeAgora === 'function') ? window.clubeAgora() : [];
+  if (!lista.length) return null;
+  const chave = (cid, t) => cid + '|' + t;
+  const alterna = (k) => setEditando((cur) => (cur === k ? null : k));
+
   return (
     <div style={{ padding: '18px 24px 0' }}>
       <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 4 }}>
         Leituras do clube
       </div>
       <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', marginBottom: 12, lineHeight: 1.45 }}>
-        O calendário que você segue com o clube — livro em curso, meta da semana e o seu ritmo.
+        O calendário que você segue com o clube — o livro de agora, o que vem a seguir e o seu ritmo.
       </div>
       {lista.map((c) => {
-        const bk = c.book; const cur = (bk && bk.currentPage) || 0; const tot = (bk && bk.pages) || 0;
-        const naEstante = !!(bk && bk.status);
-        const lido = !!(bk && bk.status === 'read');
-        const ritmo = (tot && cur < tot && c.diasFim > 0) ? Math.ceil((tot - cur) / c.diasFim) : null;
-        const metaJa = !!(bk && bk.goalFinishBy === c.livro.fim);
-        const wgJa = !!(bk && bk.weekGoal && c.meta && c.meta.page && bk.weekGoal.page === c.meta.page);
-        const quando = c.diasMeta === 0 ? 'é hoje' : (c.diasMeta === 1 ? 'amanhã' : `faltam ${c.diasMeta} dias`);
+        const prox = c.proximo;
+        const metaProx = prox ? (prox.metas || [])[0] : null;
+        const todos = (c.clube.livros || []);
         return (
           <div key={c.clube.id} style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 14, padding: '16px 18px', marginBottom: 12 }}>
-            <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 600 }}>{c.clube.nome} · {c.clube.sub}</div>
-            <div onClick={() => { if (bk && typeof window.__openBook === 'function') window.__openBook(bk); }} style={{ fontFamily: T.serif, fontSize: 19, lineHeight: 1.15, fontWeight: 500, letterSpacing: -0.3, marginTop: 4, color: T.ink, cursor: bk ? 'pointer' : 'default' }}>{c.livro.title}</div>
-            <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 12.5, color: T.brown, marginTop: 2 }}>
-              {c.livro.author} · {c.aindaNaoAbriu ? `abre em ${fmt(c.livro.abre)}` : `de ${fmt(c.livro.abre)} a ${fmt(c.livro.fim)}`}
-            </div>
-            {c.meta && (
-              <div style={{ marginTop: 10, padding: '8px 10px', background: 'rgba(176,83,58,0.07)', borderRadius: 8 }}>
-                <div style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: T.terra, fontWeight: 700 }}>
-                  {c.meta.abertura ? 'Abertura' : 'Meta da semana'} · sáb {fmt(c.meta.data)} · {quando}
-                </div>
-                <div style={{ fontFamily: T.serif, fontSize: 15, color: T.ink, marginTop: 2 }}>{c.meta.meta}</div>
-              </div>
+            <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 600, marginBottom: 8 }}>{c.clube.nome} · {c.clube.sub}</div>
+
+            <ClubeLivroBloco clubeId={c.clube.id} livro={c.livro} meta={c.meta} book={c.book} emCurso
+              editando={editando === chave(c.clube.id, c.livro.title)} onEditar={() => alterna(chave(c.clube.id, c.livro.title))}/>
+
+            {prox && (
+              <ClubeLivroBloco clubeId={c.clube.id} livro={prox} meta={metaProx} book={window.livroDoClubeNoAcervo ? window.livroDoClubeNoAcervo(prox) : null} emCurso={false}
+                editando={editando === chave(c.clube.id, prox.title)} onEditar={() => alterna(chave(c.clube.id, prox.title))}/>
             )}
-            <div style={{ fontSize: 12, color: T.brown, marginTop: 10, fontFamily: T.sans, lineHeight: 1.5 }}>
-              {!bk ? 'Ainda não está na sua biblioteca.'
-                : lido ? '✓ Você já leu este.'
-                : !naEstante ? 'Está no seu acervo, adormecido.'
-                : tot ? <>Você está na <strong>pág {cur}</strong> de {tot}{ritmo ? <> · ~<strong style={{ color: T.terra }}>{ritmo} pág/dia</strong> até {fmt(c.livro.fim)}</> : null}</>
-                : 'Na sua estante — sem total de páginas (ponha no Editar para eu calcular o ritmo).'}
-            </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-              {bk && !naEstante && <button onClick={() => { if (typeof window.__tirarPoeira === 'function') window.__tirarPoeira(bk); }} style={btn}>Despertar para a estante</button>}
-              {bk && naEstante && !lido && !metaJa && <button onClick={() => { if (typeof MG !== 'undefined') MG.updateBook(bk.id, { goalFinishBy: c.livro.fim }); }} style={btn}>Meta no plano: terminar até {fmt(c.livro.fim)}</button>}
-              {bk && naEstante && !lido && metaJa && <span style={ok}>✓ Meta do plano: até {fmt(c.livro.fim)}</span>}
-              {bk && naEstante && !lido && c.meta && c.meta.page && !wgJa && c.meta.page > cur && <button onClick={() => { if (typeof MG !== 'undefined') MG.updateBook(bk.id, { weekGoal: { from: cur, page: c.meta.page, until: c.meta.data } }); }} style={btn}>Meta da semana: pág {c.meta.page}</button>}
-              {bk && naEstante && !lido && wgJa && <span style={ok}>✓ Meta da semana: pág {c.meta.page}</span>}
-            </div>
-            {c.proximo && (
-              <div style={{ fontSize: 11, color: T.muted, marginTop: 8, fontFamily: T.serif, fontStyle: 'italic' }}>Depois: {c.proximo.title} · abre {fmt(c.proximo.abre)}</div>
+
+            {todos.length > 2 && (
+              <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${T.hairline}` }}>
+                <button onClick={() => setVerTudo((v) => (v === c.clube.id ? null : c.clube.id))} style={{ background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: T.sans }}>
+                  {verTudo === c.clube.id ? 'esconder o calendário completo' : `o calendário completo · ${todos.length} livros →`}
+                </button>
+                {verTudo === c.clube.id && (
+                  <div style={{ marginTop: 10 }}>
+                    {todos.map((l) => {
+                      const k = chave(c.clube.id, l.title);
+                      const atual = l.title === c.livro.title;
+                      return (
+                        <div key={l.title} style={{ padding: '8px 0', borderBottom: `1px solid ${T.hairline}` }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
+                            <div style={{ fontFamily: T.serif, fontSize: 14, color: atual ? T.terra : T.ink, lineHeight: 1.2 }}>{l.title}</div>
+                            <button onClick={() => alterna(k)} style={{ background: 'transparent', border: 0, color: T.muted, fontSize: 11.5, cursor: 'pointer', textDecoration: 'underline', whiteSpace: 'nowrap', fontFamily: T.sans }}>✎ ajustar</button>
+                          </div>
+                          <div style={{ fontSize: 11, color: T.muted, fontFamily: T.sans, marginTop: 2 }}>
+                            {_fmtDiaMes(l.abre)} — {_fmtDiaMes(l.fim)} · {(l.metas || []).length} {((l.metas || []).length === 1) ? 'meta' : 'metas'}{l.ajustado ? ' · ajustado' : ''}
+                          </div>
+                          {editando === k && <ClubeLivroEditor clubeId={c.clube.id} livro={l} onFechar={() => alterna(k)}/>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         );
@@ -4707,12 +4861,10 @@ function RetroAno({ ano, atual, aberto, onToggle, livros, log }) {
   const paginasIncompletas = comPaginas.length < doAno.length;
   const logAno = (log || []).filter(e => String(e.date || '').startsWith(String(ano)));
   const paginasDiario = logAno.reduce((s, e) => s + (e.pages || 0), 0);
-  const minutosDiario = logAno.reduce((s, e) => s + (e.minutes || 0), 0);
-  const horasDiario = Math.round(minutosDiario / 60);
   const diasDiario = new Set(logAno.map(e => e.date)).size;
-  // por mês: páginas e minutos registrados (barras simples)
-  const porMes = Array.from({ length: 12 }, (_, i) => ({ m: i, pages: 0, minutes: 0 }));
-  for (const e of logAno) { const m = parseInt(String(e.date).slice(5, 7), 10) - 1; if (m >= 0 && m < 12) { porMes[m].pages += e.pages || 0; porMes[m].minutes += e.minutes || 0; } }
+  // por mês: páginas registradas (barras simples)
+  const porMes = Array.from({ length: 12 }, (_, i) => ({ m: i, pages: 0 }));
+  for (const e of logAno) { const m = parseInt(String(e.date).slice(5, 7), 10) - 1; if (m >= 0 && m < 12) porMes[m].pages += e.pages || 0; }
   const maxMes = Math.max(1, ...porMes.map(x => x.pages));
   const MESES1 = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 
@@ -4769,29 +4921,23 @@ function RetroAno({ ano, atual, aberto, onToggle, livros, log }) {
               média das suas estrelas: <span style={{ color: T.terra, fontWeight: 600 }}>{media.toFixed(1).replace('.', ',')} ★</span>
             </div>
           )}
+          {/* o seu diário em {ano} — dias lendo e páginas (horas ficaram de fora: ela quase não registra tempo) */}
           {paginasDiario > 0 && (
-            <div style={{ marginTop: 4, fontFamily: T.sans, fontSize: 11, color: T.muted, textAlign: 'center' }}>
-              no seu diário de leitura: {paginasDiario.toLocaleString('pt-BR')} páginas registradas em {ano}
-            </div>
-          )}
-          {/* o tempo com os livros — do diário (minutos registrados) */}
-          {(minutosDiario > 0 || paginasDiario > 0) && (
             <div style={{ marginTop: 16, background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '12px 14px' }}>
-              <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.muted, fontWeight: 700, marginBottom: 8 }}>Seu tempo com os livros em {ano}</div>
+              <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.muted, fontWeight: 700, marginBottom: 8 }}>Seu diário de leitura em {ano}</div>
               <div style={{ display: 'flex', gap: 8 }}>
-                {minutosDiario >= 60 && statBox(horasDiario + 'h', 'de leitura')}
                 {statBox(diasDiario, diasDiario === 1 ? 'dia lendo' : 'dias lendo')}
-                {diasDiario > 0 && statBox(Math.round(paginasDiario / diasDiario), 'pág/dia')}
+                {statBox(paginasDiario.toLocaleString('pt-BR'), 'páginas registradas')}
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 64, marginTop: 12 }}>
                 {porMes.map((x) => (
-                  <div key={x.m} title={`${x.pages} pág · ${x.minutes} min`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
+                  <div key={x.m} title={`${x.pages} pág`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
                     <div style={{ width: '100%', height: `${Math.max(x.pages > 0 ? 6 : 2, Math.round((x.pages / maxMes) * 52))}px`, background: x.pages > 0 ? T.terra : T.parchment, borderRadius: 3 }}/>
                     <div style={{ fontSize: 9, color: T.muted, fontFamily: T.mono, marginTop: 4 }}>{MESES1[x.m]}</div>
                   </div>
                 ))}
               </div>
-              <div style={{ fontSize: 10.5, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 6 }}>páginas registradas por mês{minutosDiario > 0 ? ` · ${Math.round(minutosDiario / 60)}h${String(minutosDiario % 60).padStart(2, '0')} no total` : ''}</div>
+              <div style={{ fontSize: 10.5, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 6 }}>páginas registradas por mês</div>
             </div>
           )}
 
