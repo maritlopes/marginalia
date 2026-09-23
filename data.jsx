@@ -619,6 +619,10 @@ function seriesDaLeitora() {
     id: 'ch:' + c.id, chId: c.id, origem: 'minha',
     nome: c.title || 'Sem nome', sub: c.theme || '', tema: c.theme || '',
     livros: Array.isArray(c.livros) ? c.livros : [],
+    // disponibilizado = virou círculo: aí ele também aparece nos Círculos
+    compartilhado: !!c.sharedGroupId,
+    sharedGroupId: c.sharedGroupId || null, sharedGroupName: c.sharedGroupName || null,
+    sharedGroupCode: c.sharedGroupCode || null, sharedChallengeId: c.sharedChallengeId || null,
   }));
 }
 // o calendário do clube com os ajustes dela por cima (MG.getClubeAjustes): o seed
@@ -675,7 +679,7 @@ function clubeAgora(hojeISO) {
       ? { data: livro.abre, meta: c.origem === 'minha' ? 'Começo da leitura' : 'Lendo ao vivo — as primeiras páginas', abertura: true }
       : ((livro.metas || []).find(m => m.data >= hoje) || null);
     const proximo = c.livros[idx + 1] || null;
-    out.push({ clube: c, minha: c.origem === 'minha', livro, semCalendario: !c.livros.some(l => l.abre && l.fim),
+    out.push({ clube: c, minha: c.origem === 'minha', compartilhado: !!c.compartilhado, livro, semCalendario: !c.livros.some(l => l.abre && l.fim),
       aindaNaoAbriu: !!(livro.abre && hoje < livro.abre), meta,
       diasMeta: meta ? dias(meta.data) : null, diasFim: dias(livro.fim), proximo,
       book: livrosComBook[idx].b, lidos: livrosComBook.filter(lido).length, total: c.livros.length });

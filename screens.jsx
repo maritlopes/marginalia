@@ -2107,6 +2107,82 @@ function SerieEditor({ serie, onFechar }) {
   );
 }
 
+// DISPONIBILIZAR um desafio seu para o círculo — é o gesto que o faz virar clube:
+// cria um círculo com o nome do desafio, publica a LISTA CURADA com os seus livros
+// (cada membro marca o que leu) e deixa o círculo aberto para quem quiser entrar.
+function DisponibilizarDesafio({ c }) {
+  const [busy, setBusy] = React.useState(false);
+  const [msg, setMsg] = React.useState(null);
+  const shared = c.clube.compartilhado
+    ? { id: c.clube.sharedGroupId, name: c.clube.sharedGroupName, invite_code: c.clube.sharedGroupCode }
+    : null;
+
+  const disponibilizar = async () => {
+    const cloud = (typeof window !== 'undefined') ? window.MGCloud : null;
+    setMsg(null);
+    if (!cloud || !cloud.available) { setMsg('A nuvem não está disponível agora.'); return; }
+    const user = await cloud.currentUser();
+    if (!user) { setMsg('Entre na sua conta (Biblioteca → Sincronização) para disponibilizar.'); return; }
+    setBusy(true);
+    const nome = c.clube.nome || 'Círculo de leitura';
+    const cg = await cloud.groups.create(nome);
+    if (!cg || cg.error || !cg.data || !cg.data.id) { setBusy(false); setMsg('Não consegui criar o círculo agora. Tente de novo.'); return; }
+    const grupo = cg.data;
+    const r = await cloud.groups.createChallenge(grupo.id, {
+      title: nome, kind: 'list', type: 'count',
+      description: c.clube.tema || null, target: (c.clube.livros || []).length,
+    });
+    const chId = (r && r.data && r.data.id) || null;
+    if (chId) {
+      const ls = c.clube.livros || [];
+      for (let i = 0; i < ls.length; i++) {
+        try { await cloud.groups.addChallengeBook(chId, { title: ls[i].title, author: ls[i].author || '', position: i }); } catch (e) { /* segue */ }
+      }
+    } else if (r && r.error) {
+      setMsg('Círculo criado, mas a lista não entrou: ' + (r.error.message || 'erro'));
+    }
+    try { await cloud.groups.setOpen(grupo.id, true); } catch (e) { /* ok */ }
+    let full = grupo;
+    try { const all = await cloud.groups.list(); const f = (all || []).find((g) => g.id === grupo.id); if (f) full = f; } catch (e) { /* ok */ }
+    if (typeof MG !== 'undefined') MG.updateChallenge(c.clube.chId, {
+      sharedGroupId: full.id, sharedGroupName: full.name,
+      sharedGroupCode: full.invite_code || null, sharedChallengeId: chId,
+    });
+    setBusy(false);
+  };
+
+  const abrir = async () => {
+    if (!shared || typeof window.__openGrupo !== 'function') return;
+    let g = shared;
+    const cloud = window.MGCloud;
+    try { const all = await cloud.groups.list(); const f = (all || []).find((x) => x.id === shared.id); if (f) g = f; } catch (e) { /* ok */ }
+    window.__openGrupo(g);
+  };
+
+  return (
+    <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${T.hairline}` }}>
+      {shared ? (
+        <>
+          <div style={{ fontSize: 11.5, color: T.brown, fontFamily: T.serif, lineHeight: 1.45, marginBottom: 8 }}>
+            ✦ Disponibilizado: virou o círculo <strong>{shared.name}</strong>. Quem entrar marca o que já leu.
+          </div>
+          <button onClick={abrir} style={{ padding: '8px 14px', borderRadius: 8, border: `1px solid ${T.hairline}`, background: 'transparent', color: T.ink, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Abrir o círculo →</button>
+        </>
+      ) : (
+        <>
+          <div style={{ fontSize: 11.5, color: T.brown, fontFamily: T.serif, lineHeight: 1.45, marginBottom: 8 }}>
+            Cria um círculo com este nome e leva a lista inteira para lá — cada um marca o que leu. O desafio continua seu.
+          </div>
+          <button onClick={disponibilizar} disabled={busy} style={{ padding: '9px 16px', borderRadius: 8, border: 0, background: T.olive, color: T.cream, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: busy ? 'wait' : 'pointer', opacity: busy ? 0.6 : 1 }}>
+            {busy ? 'Criando o círculo…' : 'Disponibilizar para o círculo'}
+          </button>
+        </>
+      )}
+      {msg && <div style={{ marginTop: 8, padding: '8px 10px', background: '#F6EFE0', border: `1px solid ${T.hairline}`, borderRadius: 8, fontSize: 11.5, color: T.brown, fontFamily: T.serif }}>{msg}</div>}
+    </div>
+  );
+}
+
 // um livro do percurso: em curso (completo) ou a seguir (enxuto)
 function ClubeLivroBloco({ livro, meta, book, emCurso, editando, onEditar, onSalvarDatas, onRestaurarDatas }) {
   const bk = book;
@@ -2196,7 +2272,7 @@ function ListasDeLeitura({ apenas = 'todas' }) {
   const [verTudo, setVerTudo] = React.useState(null);
   const [editSerie, setEditSerie] = React.useState(null); // null | 'nova' | id da série
   const todasAsListas = (!window.__demoShelf && typeof window.clubeAgora === 'function') ? window.clubeAgora() : [];
-  const lista = apenas === 'clubes' ? todasAsListas.filter((c) => !c.minha)
+  const lista = apenas === 'clubes' ? todasAsListas.filter((c) => !c.minha || c.compartilhado)
               : apenas === 'minhas' ? todasAsListas.filter((c) => c.minha)
               : todasAsListas;
   const souCirculos = apenas === 'clubes';
@@ -2308,6 +2384,13 @@ function ListasDeLeitura({ apenas = 'todas' }) {
                     )}
                   </div>
                 )}
+              </div>
+            )}
+
+            {c.minha && !souCirculos && <DisponibilizarDesafio c={c}/>}
+            {c.minha && souCirculos && (
+              <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${T.hairline}`, fontSize: 11.5, color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>
+                Seu desafio, disponibilizado — a lista está no círculo {c.clube.sharedGroupName || ''}.
               </div>
             )}
           </div>
