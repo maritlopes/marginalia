@@ -1066,7 +1066,7 @@ function computeMemorias({ books, notes, today = new Date() } = {}) {
 
 // ─── Laureados do Nobel de Literatura ────────────────────────────────────
 // Fonte: a lista da página /nobel/ (defaultData), categorias dos VENCEDORES
-// (1901–2025). Serve para acender a medalha 🏅 quando a leitora adiciona à
+// (1901–2026). Serve para acender a medalha 🏅 quando a leitora adiciona à
 // Biblioteca um livro de autor laureado. Triplas [autor, ano, país].
 // ⚠️ Espelho manual: ao incluir um novo laureado, atualizar aqui E em /nobel/.
 const NOBEL_LAUREATES = [
@@ -1136,6 +1136,7 @@ const NOBEL_LAUREATES = [
   ['Louise Glück',2020,'EUA'],['Abdulrazak Gurnah',2021,'Tanzânia/Reino Unido'],
   ['Annie Ernaux',2022,'França'],['Jon Fosse',2023,'Noruega'],
   ['Han Kang',2024,'Coreia do Sul'],['László Krasznahorkai',2025,'Hungria'],
+  ['Anne Carson',2026,'Canadá'],
 ];
 
 function _normNobelName(s) {
