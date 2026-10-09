@@ -5093,12 +5093,149 @@ function ScreenRetrospectiva({ onNav = () => {} }) {
             livros={lidos.filter(b => retroYearOf(b) === y)} log={log}/>
         ))}
 
+        {lidos.length > 0 && !window.__demoShelf && <RetroExport lidos={lidos} anos={anos} anoAtual={anoAtual}/>}
+
         {semAno > 0 && (
           <div style={{ marginTop: 22, fontSize: 11.5, color: T.muted, fontFamily: T.sans, lineHeight: 1.5 }}>
             {semAno} {semAno === 1 ? 'outro livro lido vive' : 'outros livros lidos vivem'} no acervo sem ano marcado —{' '}
             <button onClick={() => onNav('acervo')} style={{ background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11.5, fontFamily: T.sans, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>ver no acervo</button>.
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ── Guardar as leituras: os lidos por ano e mês, para salvar ou imprimir ──
+// escopo = um ano (número) ou 'todos'. Mesma cronologia da tela (retroYearOf /
+// retroMonthOf); livro sem data segue sem data — nada é inventado na exportação.
+function retroGrupos(lidos, anos, escopo) {
+  const porTitulo = (a, b) => (a.title || '').localeCompare(b.title || '', 'pt-BR');
+  const lista = (escopo === 'todos' ? anos : [escopo]).map(ano => {
+    const doAno = lidos.filter(b => retroYearOf(b) === ano);
+    const meses = [];
+    for (let m = 0; m < 12; m++) {
+      const doMes = doAno.filter(b => retroMonthOf(b) === m)
+        .sort((a, b) => retroDateOf(a).localeCompare(retroDateOf(b)) || porTitulo(a, b));
+      if (doMes.length) meses.push({ nome: MESES_LONGOS[m], livros: doMes });
+    }
+    const semMes = doAno.filter(b => retroMonthOf(b) === null).sort(porTitulo);
+    if (semMes.length) meses.push({ nome: 'Sem mês marcado', livros: semMes });
+    return { ano, total: doAno.length, paginas: doAno.reduce((t, b) => t + (Number(b.pages) || 0), 0), meses };
+  }).filter(g => g.total > 0);
+  const semAno = escopo === 'todos' ? lidos.filter(b => retroYearOf(b) === null).sort(porTitulo) : [];
+  return { lista, semAno };
+}
+function retroDatas(b) {
+  const ini = String(b.startedAt || b.readingSince || '').slice(0, 10);
+  const fim = String(b.finishedAt || '').slice(0, 10);
+  const ok = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : '';
+  const i = ok(ini), f = ok(fim);
+  const dias = (i && f && f >= i) ? Math.round((new Date(f + 'T00:00:00') - new Date(i + 'T00:00:00')) / 86400000) + 1 : '';
+  return { ini: i, fim: f, dias };
+}
+function buildLeiturasHtml(lidos, anos, escopo) {
+  const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const { lista, semAno } = retroGrupos(lidos, anos, escopo);
+  const li = (b) => {
+    const d = retroDatas(b);
+    const datas = (d.ini && d.fim) ? `${fmtDataLeitura(d.ini)} — ${fmtDataLeitura(d.fim)}${d.dias ? ` (${d.dias} ${d.dias === 1 ? 'dia' : 'dias'})` : ''}`
+      : d.fim ? `terminado em ${fmtDataLeitura(d.fim)}` : d.ini ? `iniciado em ${fmtDataLeitura(d.ini)}` : '';
+    const extras = [datas, Number(b.pages) > 0 ? `${b.pages} pág.` : '', b.nobel ? 'Nobel' + (b.nobel.ano ? ' ' + esc(b.nobel.ano) : '') : '',
+      Number(b.rating) > 0 ? '★'.repeat(Number(b.rating)) : ''].filter(Boolean).join(' · ');
+    return `<li><b>${esc(b.title || 'Sem título')}</b> — ${esc(b.author || 'autor desconhecido')}${extras ? `<br><span style="font-size:90%;color:#6b6258">${extras}</span>` : ''}</li>`;
+  };
+  const hoje = fmtDataLeitura(hojeLocalISO());
+  const titulo = escopo === 'todos' ? 'Minhas leituras' : `Minhas leituras de ${escopo}`;
+  let body = `<h1>${titulo} — Marginália</h1><p><i>Exportado em ${hoje}</i></p>`;
+  lista.forEach(g => {
+    body += `<h2>${g.ano} — ${g.total} ${g.total === 1 ? 'livro' : 'livros'}${g.paginas ? ` · ${g.paginas.toLocaleString('pt-BR')} páginas` : ''}</h2>`;
+    g.meses.forEach(m => { body += `<h3>${esc(m.nome)}</h3><ul>${m.livros.map(li).join('')}</ul>`; });
+  });
+  if (semAno.length) body += `<h2>Sem ano marcado — ${semAno.length}</h2><ul>${semAno.map(li).join('')}</ul>`;
+  return { titulo, body };
+}
+function buildLeiturasCsv(lidos, anos, escopo) {
+  const esc = (v) => { const s = String(v == null ? '' : v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const { lista, semAno } = retroGrupos(lidos, anos, escopo);
+  const lines = ['ano,mês,título,autor,início,fim,dias,páginas,estrelas,nobel'];
+  const row = (ano, mes, b) => {
+    const d = retroDatas(b);
+    const nobel = b.nobel ? ('Nobel' + (b.nobel.ano ? ' ' + b.nobel.ano : '')) : '';
+    lines.push([ano, esc(mes), esc(b.title), esc(b.author), d.ini, d.fim, d.dias, Number(b.pages) > 0 ? b.pages : '', b.rating || '', esc(nobel)].join(','));
+  };
+  lista.forEach(g => g.meses.forEach(m => m.livros.forEach(b => row(g.ano, m.nome === 'Sem mês marcado' ? '' : m.nome, b))));
+  semAno.forEach(b => row('', '', b));
+  return lines.join('\r\n');
+}
+// Impressão: a folha vai num bloco fora do app, visível só no papel — assim o
+// "Imprimir" funciona igual no navegador e no app instalado (dali sai o PDF).
+function imprimirLeituras(titulo, body) {
+  const velho = document.getElementById('mg-print'); if (velho) velho.remove();
+  const box = document.createElement('div');
+  box.id = 'mg-print';
+  box.innerHTML = `<style>
+    @media screen { #mg-print { display: none !important; } }
+    @media print {
+      html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
+      body > *:not(#mg-print) { display: none !important; }
+      #mg-print { display: block !important; font-family: Georgia, 'Times New Roman', serif; color: #2A2620; line-height: 1.5; font-size: 11.5pt; }
+      #mg-print h1 { font-size: 20pt; font-weight: normal; margin: 0 0 4pt; }
+      #mg-print h2 { font-size: 14pt; font-weight: normal; color: #B0533A; border-bottom: 1px solid #B0533A; padding-bottom: 3pt; margin: 18pt 0 6pt; break-after: avoid; }
+      #mg-print h3 { font-size: 11.5pt; font-style: italic; font-weight: normal; margin: 10pt 0 4pt; break-after: avoid; }
+      #mg-print ul { margin: 0; padding-left: 16pt; }
+      #mg-print li { margin-bottom: 5pt; break-inside: avoid; }
+    }
+  </style>${body}`;
+  document.body.appendChild(box);
+  const antes = document.title;
+  document.title = titulo + ' — Marginália';
+  const limpar = () => { document.title = antes; box.remove(); window.removeEventListener('afterprint', limpar); };
+  window.addEventListener('afterprint', limpar);
+  setTimeout(() => window.print(), 50);
+}
+
+function RetroExport({ lidos, anos, anoAtual }) {
+  const comLivro = anos.filter(y => lidos.some(b => retroYearOf(b) === y));
+  const [escopo, setEscopo] = React.useState(() => comLivro.includes(anoAtual) ? anoAtual : 'todos');
+  const nome = `marginalia-leituras-${escopo === 'todos' ? 'todas' : escopo}`;
+  const baixar = (content, mime, filename) => {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  const imprimir = () => { const { titulo, body } = buildLeiturasHtml(lidos, anos, escopo); imprimirLeituras(titulo, body); };
+  const doc = () => {
+    const { titulo, body } = buildLeiturasHtml(lidos, anos, escopo);
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>${titulo}</title></head><body style="font-family:Georgia,'Times New Roman',serif;line-height:1.5">${body}</body></html>`;
+    baixar('﻿' + html, 'application/msword', nome + '.doc');
+  };
+  const csv = () => baixar('﻿' + buildLeiturasCsv(lidos, anos, escopo), 'text/csv;charset=utf-8', nome + '.csv');
+  const chip = (v, label) => (
+    <button key={v} onClick={() => setEscopo(v)} style={{
+      padding: '6px 12px', borderRadius: 999, cursor: 'pointer', fontFamily: T.sans, fontSize: 12, fontWeight: 600,
+      border: `1px solid ${escopo === v ? T.terra : T.hairline}`,
+      background: escopo === v ? T.terra : 'transparent', color: escopo === v ? T.cream : T.brown,
+    }}>{label}</button>
+  );
+  const btn = { flex: 1, padding: '10px 8px', borderRadius: 10, border: `1px solid ${T.hairline}`, background: T.cream, color: T.ink, fontFamily: T.sans, fontSize: 12, fontWeight: 600, cursor: 'pointer' };
+  return (
+    <div style={{ marginTop: 26, borderTop: `1px solid ${T.hairline}`, paddingTop: 18 }}>
+      <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, fontWeight: 600, marginBottom: 6 }}>Guardar as suas leituras</div>
+      <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.45, marginBottom: 12 }}>
+        Os livros lidos, mês a mês, com datas, páginas e estrelas — para salvar ou imprimir.
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+        {comLivro.map(y => chip(y, String(y)))}
+        {chip('todos', 'Todos os anos')}
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={imprimir} style={btn}>Imprimir / PDF</button>
+        <button onClick={doc} style={btn}>↓ Word .doc</button>
+        <button onClick={csv} style={btn}>↓ Planilha .csv</button>
       </div>
     </div>
   );
