@@ -4221,6 +4221,12 @@ function EstanteView({ all, V, onNav = () => {} }) {
   // Lidos é curado/curto: ~20 à vista, "ver mais" expande no lugar.
   const readBooks = [...pool.filter(b => b.status === 'read')].sort(sortFn);
   const readShown = showAllRead ? readBooks : readBooks.slice(0, READ_CAP);
+  // total do ANO corrente (mesma conta da Retrospectiva: estante + lidos do acervo),
+  // mesmo que só as últimas capas fiquem à vista
+  const anoCorrente = parseInt(hojeLocalISO().slice(0, 4), 10);
+  const lidosNoAno = window.__demoShelf ? 0 : (window.BOOKS || []).filter(b => b && !b.deleted
+    && (b.status === 'read' || (((typeof window.bookMark === 'function') ? window.bookMark(b) : b.mark) === 'read'))
+    && retroYearOf(b) === anoCorrente).length;
 
   const sections = [
     { id: 'reading', label: 'Lendo agora', accent: T.terra,
@@ -4230,7 +4236,8 @@ function EstanteView({ all, V, onNav = () => {} }) {
     { id: 'paused', label: 'Pausados', accent: T.muted,
       books: [...pool.filter(b => b.status === 'paused')].sort(sortFn) },
     { id: 'read', label: 'Lidos recentes', accent: T.olive,
-      books: readShown, more: readBooks.length - readShown.length },
+      books: readShown, more: readBooks.length - readShown.length,
+      total: readBooks.length, countLabel: lidosNoAno > 0 ? `${lidosNoAno} em ${anoCorrente}` : null },
   ].filter(s => s.books.length > 0);
 
   const filters = [
@@ -4298,7 +4305,7 @@ function EstanteView({ all, V, onNav = () => {} }) {
           const active = filter === f.id;
           const count = f.id === 'all' ? all.length
             : f.id === 'nobel' ? all.filter(b => b.nobel).length
-            : (sections.find(s => s.id === f.id)?.books.length || 0);
+            : (((x) => x ? (x.total != null ? x.total : x.books.length) : 0)(sections.find(s => s.id === f.id)));
           return (
             <button key={f.id} onClick={() => setFilter(f.id)} style={{
               padding: '8px 12px', borderRadius: 999, flexShrink: 0,
@@ -6013,7 +6020,7 @@ function LibrarySection({ section, view }) {
         </div>
         <div style={{ flex: 1 }}/>
         <div style={{ fontSize: 10, color: T.muted, fontFamily: T.mono, fontVariantNumeric: 'tabular-nums' }}>
-          {section.books.length}
+          {section.countLabel || section.books.length}
         </div>
       </div>
 
