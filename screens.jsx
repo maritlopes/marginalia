@@ -4216,12 +4216,22 @@ function EstanteView({ all, V, onNav = () => {} }) {
   // mas só com os livros de autores laureados — campo b.nobel)
   const pool = filter === 'nobel' ? matches.filter(b => b.nobel) : matches;
 
-  // Lidos é curado/curto: ~20 à vista, "ver mais" expande no lugar.
-  const readBooks = [...pool.filter(b => b.status === 'read')].sort(sortFn);
+  // Lidos é curado/curto: só os do ANO corrente (os anteriores moram na
+  // Retrospectiva — a virada do ano recolhe as capas); ~20 à vista, "ver mais"
+  // expande no lugar. Lido sem ano conta como do ano em que foi marcado.
+  // Buscando, valem todos os anos (pra achar um lido antigo pela estante).
+  const anoCorrente = parseInt(hojeLocalISO().slice(0, 4), 10);
+  const doAnoCorrente = (b) => {
+    const y = retroYearOf(b);
+    if (y) return y === anoCorrente;
+    return parseInt(String(b.updatedAt || '').slice(0, 4), 10) === anoCorrente;
+  };
+  const allRead = pool.filter(b => b.status === 'read');
+  const readBooks = [...(q ? allRead : allRead.filter(doAnoCorrente))].sort(sortFn);
+  const lidosAnteriores = q ? 0 : allRead.length - readBooks.length;
   const readShown = showAllRead ? readBooks : readBooks.slice(0, READ_CAP);
   // total do ANO corrente (mesma conta da Retrospectiva: estante + lidos do acervo),
   // mesmo que só as últimas capas fiquem à vista
-  const anoCorrente = parseInt(hojeLocalISO().slice(0, 4), 10);
   const lidosNoAno = window.__demoShelf ? 0 : (window.BOOKS || []).filter(b => b && !b.deleted
     && (b.status === 'read' || (((typeof window.bookMark === 'function') ? window.bookMark(b) : b.mark) === 'read'))
     && retroYearOf(b) === anoCorrente).length;
@@ -4376,6 +4386,16 @@ function EstanteView({ all, V, onNav = () => {} }) {
             )}
           </React.Fragment>
         ))}
+        {lidosAnteriores > 0 && (filter === 'all' || filter === 'nobel' || filter === 'read') && (
+          <div style={{ padding: '0 24px 22px', marginTop: visibleSections.some(x => x.id === 'read') ? -12 : 8 }}>
+            <button onClick={() => onNav('retrospectiva')} style={{
+              background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+              color: T.muted, fontFamily: T.serif, fontStyle: 'italic', fontSize: 12.5,
+            }}>
+              {lidosAnteriores} {lidosAnteriores === 1 ? 'lido de anos anteriores está' : 'lidos de anos anteriores estão'} na Retrospectiva →
+            </button>
+          </div>
+        )}
       </div>
     </>
   );
@@ -4867,7 +4887,10 @@ function TirarPoeiraSheet({ book, onClose }) {
       try {
         const slim = (typeof MG !== 'undefined' && MG.compressCover)
           ? await MG.compressCover(reader.result) : reader.result;
-        setCover(slim);
+        // logada: a capa vai para a nuvem e o livro guarda só o link
+        let final = slim;
+        try { if (window.MGCloud && window.MGCloud.uploadCover) final = await window.MGCloud.uploadCover(slim); } catch (e) { /* fica embutida */ }
+        setCover(final);
       } catch {
         if (reader.result.length < 60000) setCover(reader.result);
         else setUploadError('Não consegui processar a imagem. Tente outra foto.');
@@ -6173,7 +6196,10 @@ function BookEditorSheet({ book = null, onClose = () => {} }) {
       try {
         const slim = (typeof MG !== 'undefined' && MG.compressCover)
           ? await MG.compressCover(reader.result) : reader.result;
-        setCover(slim);
+        // logada: a capa vai para a nuvem e o livro guarda só o link
+        let final = slim;
+        try { if (window.MGCloud && window.MGCloud.uploadCover) final = await window.MGCloud.uploadCover(slim); } catch (e) { /* fica embutida */ }
+        setCover(final);
       } catch {
         if (reader.result.length < 60000) setCover(reader.result);
         else setUploadError('Não consegui processar a imagem. Tente outra foto.');

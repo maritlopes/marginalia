@@ -150,6 +150,8 @@
     if (typeof window.__rerender === 'function') window.__rerender();
     await push();                              // sobe o resultado mesclado
     setStatus('Sincronizado');
+    // depois de sincronizar, as capas embutidas vão para o armazenamento (em segundo plano)
+    setTimeout(() => { offloadCovers().catch(() => {}); }, 4000);
   }
 
   window.MGCloud = {
@@ -202,6 +204,51 @@
     schedulePush,
     syncOnLogin,
   };
+
+  // ─── capas na nuvem (bucket público "covers") ─────────────────
+  // Capa embutida (base64) viaja inteira em cada sincronização e pesa no
+  // localStorage; na nuvem, o estado guarda só o link. O caminho é o hash
+  // do conteúdo — o mesmo arquivo vindo de dois aparelhos cai no mesmo lugar.
+  async function uploadCover(dataUrl) {
+    if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) return dataUrl;
+    const u = await currentUser();
+    if (!u) return dataUrl;                      // sem sessão: fica embutida (vai depois)
+    const blob = await (await fetch(dataUrl)).blob();
+    const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', await blob.arrayBuffer())))
+      .slice(0, 16).map(x => x.toString(16).padStart(2, '0')).join('');
+    const ext = blob.type === 'image/png' ? 'png' : blob.type === 'image/webp' ? 'webp' : 'jpg';
+    const path = `${u.id}/${hash}.${ext}`;
+    const { error } = await sb.storage.from('covers').upload(path, blob, { contentType: blob.type, upsert: true, cacheControl: '31536000' });
+    if (error) { console.warn('[nuvem] capa:', error.message); return dataUrl; }
+    return sb.storage.from('covers').getPublicUrl(path).data.publicUrl;
+  }
+
+  // Migração: tira da estante as capas embutidas, uma a uma, e troca pelo link.
+  // Idempotente (só toca capas data:) e cuidadosa: se a capa mudou no meio do
+  // envio, não sobrescreve.
+  let offloading = false;
+  async function offloadCovers() {
+    if (offloading) return 0;
+    offloading = true;
+    let done = 0;
+    try {
+      const books = MG.getBooks([]).filter(b => b && typeof b.cover === 'string' && b.cover.startsWith('data:image/'));
+      for (const b of books) {
+        try {
+          let src = b.cover;
+          if (src.length > 60000 && MG.compressCover) { try { src = await MG.compressCover(src); } catch (e) { /* vai como está */ } }
+          const url = await uploadCover(src);
+          if (!url || url.startsWith('data:')) continue;
+          const atual = MG.getBooks([]).find(x => x && x.id === b.id);
+          if (atual && atual.cover === b.cover) { MG.updateBook(b.id, { cover: url }); done++; }
+        } catch (e) { console.warn('[nuvem] capa não enviada:', b.title, e); }
+      }
+    } finally { offloading = false; }
+    if (done) console.info('[Marginália] capas levadas para a nuvem:', done);
+    return done;
+  }
+  window.MGCloud.uploadCover = uploadCover;
+  window.MGCloud.offloadCovers = offloadCovers;
 
   // ─── Fase 2: círculos de leitura (grupos) ───────────────────
   window.MGCloud.groups = {
