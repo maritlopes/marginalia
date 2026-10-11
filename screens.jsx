@@ -4183,12 +4183,10 @@ function EstanteView({ all, V, onNav = () => {} }) {
   // estatísticas — na vitrine (estante vazia, exemplos) os números de leitura ficam zerados
   const stats = React.useMemo(() => {
     const counted = (typeof window !== 'undefined' && window.__demoShelf) ? [] : all;
-    const thisYear = new Date().getFullYear();
-    const lidosNoAno = counted.filter(b => {
-      if (b.status !== 'read') return false;
-      if (b.finishedAt) return new Date(b.finishedAt).getFullYear() === thisYear;
-      return true; // sem data = conta no ano corrente
-    }).length;
+    const thisYear = parseInt(hojeLocalISO().slice(0, 4), 10);
+    // mesma regra da Estante e da Retrospectiva (retroYearOf): fim, início ou
+    // ano marcado — lido sem ano nenhum não conta (nunca se inventa data)
+    const lidosNoAno = counted.filter(b => b.status === 'read' && retroYearOf(b) === thisYear).length;
     const totalLidos = counted.filter(b => b.status === 'read').length;
     const paginasAtravessadas = counted.reduce((sum, b) => {
       if (b.status === 'read') return sum + (b.pages || 0);
