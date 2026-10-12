@@ -4141,7 +4141,7 @@ function ScreenLibrary({ onNav = () => {} }) {
           <span style={{ flex: 1, minWidth: 0 }}>
             <span style={{ display: 'block', fontFamily: T.serif, fontSize: 15, fontWeight: 500, color: T.ink }}>Meu acervo</span>
             <span style={{ display: 'block', fontSize: 11.5, color: T.muted }}>
-              {V.catalogo.length} {V.catalogo.length === 1 ? 'livro' : 'livros'}{V.dormem.length > 0 ? ` · ${V.dormem.length} ${V.dormem.length === 1 ? 'adormecido' : 'adormecidos'}` : ''}
+              {V.catalogo.length} {V.catalogo.length === 1 ? 'livro' : 'livros'}{(V.catalogo.length - V.dormem.length) > 0 ? ` · ${V.catalogo.length - V.dormem.length} na estante` : ''}{V.dormem.length > 0 ? ` · ${V.dormem.length} ${V.dormem.length === 1 ? 'adormecido' : 'adormecidos'}` : ''}
             </span>
           </span>
           <Icon name="arrowRight" size={16} color={T.terra}/>
@@ -4411,6 +4411,7 @@ function CatalogRow({ b, showStatus = false, right = null }) {
   if (showStatus) {
     mark = b.status === 'read' ? { ic: 'check', c: T.olive }
       : (b.status === 'reading' || b.status === 'paused') ? { ic: 'reading', c: T.terra }
+      : b.status === 'tbr' ? { ic: 'bookmark', c: T.terra }
       : { ic: 'moon', c: T.muted };
   }
   const rmark = (typeof window.bookMark === 'function') ? window.bookMark(b) : null;
@@ -4665,6 +4666,8 @@ function CatalogoView({ all, V, onNav = () => {} }) {
   const [filter, setFilter] = React.useState('all'); // all | dormem | quero | lendo | lido
   const catalogo = V.catalogo;
   const dormemCount = V.dormem.length;
+  // o acervo é TUDO o que ela tem: os que estão na estante + os adormecidos
+  const naEstante = React.useMemo(() => catalogo.filter(b => !window.bookDormant(b)), [catalogo]);
 
   // situação efetiva no acervo: o status real (estante) ou a marca de leitura
   // (etiqueta dos adormecidos, ex.: marcada na /nobel/)
@@ -4685,12 +4688,13 @@ function CatalogoView({ all, V, onNav = () => {} }) {
   const list = React.useMemo(() => {
     let l = catalogo;
     if (filter === 'dormem') l = V.dormem;
+    else if (filter === 'estante') l = naEstante;
     else if (filter === 'quero') l = marcas.quero;
     else if (filter === 'lendo') l = marcas.lendo;
     else if (filter === 'lido') l = marcas.lido;
     if (q) l = l.filter(b => buscaNorm(b.title).includes(q) || buscaNorm(b.author).includes(q));
     return [...l].sort((a, b) => (a.title || '').localeCompare(b.title || '', 'pt-BR'));
-  }, [catalogo, V.dormem, marcas, filter, q]);
+  }, [catalogo, V.dormem, naEstante, marcas, filter, q]);
 
   // "Qual livro desperto hoje?" — sorteia um adormecido para tirar a poeira
   const [sorteado, setSorteado] = React.useState(null);
@@ -4723,7 +4727,7 @@ function CatalogoView({ all, V, onNav = () => {} }) {
           <span style={{ display: 'block', fontStyle: 'normal', fontSize: 10.5, color: T.muted, marginTop: 2 }}>— Jorge Luis Borges</span>
         </div>
         <div style={{ fontSize: 11, color: T.muted, marginTop: 8, fontFamily: T.sans }}>
-          {catalogo.length} {catalogo.length === 1 ? 'livro' : 'livros'}{dormemCount > 0 && <> · {dormemCount} {dormemCount === 1 ? 'adormecido' : 'adormecidos'}</>}
+          {catalogo.length} {catalogo.length === 1 ? 'livro' : 'livros'} no acervo{naEstante.length > 0 && <> · {naEstante.length} na estante</>}{dormemCount > 0 && <> · {dormemCount} {dormemCount === 1 ? 'adormecido' : 'adormecidos'}</>}
         </div>
       </div>
 
@@ -4739,6 +4743,7 @@ function CatalogoView({ all, V, onNav = () => {} }) {
       <div style={{ padding: '10px 24px 0', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         {[
           { id: 'all', l: 'Todos', n: catalogo.length },
+          { id: 'estante', l: 'Na estante', n: naEstante.length },
           { id: 'dormem', l: 'Os adormecidos', n: dormemCount },
           { id: 'quero', l: 'Quero ler', n: marcas.quero.length },
           { id: 'lendo', l: 'Lendo', n: marcas.lendo.length },
@@ -4796,7 +4801,9 @@ function CatalogoView({ all, V, onNav = () => {} }) {
                 style={{ background: 'transparent', border: `1px solid ${T.terra}`, color: T.terra, borderRadius: 999, padding: '5px 11px', fontFamily: T.sans, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
                 <Icon name="wind" size={13} color={T.terra}/> tirar a poeira
               </button>
-            ) : null}/>
+            ) : (
+              <span style={{ flexShrink: 0, fontFamily: T.sans, fontSize: 9.5, fontWeight: 600, letterSpacing: 0.3, textTransform: 'uppercase', color: T.brown, background: 'rgba(176,83,58,0.10)', borderRadius: 999, padding: '3px 8px' }}>na estante</span>
+            )}/>
           );
         })}
         {restantes > 0 && (
