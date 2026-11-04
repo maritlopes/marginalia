@@ -484,7 +484,7 @@ const MG = {
   },
   // ── O QUE FICOU: o sentimento que uma leitura deixou num dia (um por livro por dia) ──
   // id determinístico ('f_<dia>_<livro>') — o sync une por id; apagar é lápide.
-  FICOU_MAX_PALAVRAS: 40,
+  FICOU_MAX_PALAVRAS: 60,
   contarPalavras(t) { return String(t || '').trim().split(/\s+/).filter(Boolean).length; },
   getFicou(filtro) {
     const s = load();

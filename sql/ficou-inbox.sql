@@ -7,7 +7,7 @@ create table if not exists public.ficou_inbox (
   user_id uuid not null references auth.users(id) on delete cascade,
   day date not null,
   book_title text not null check (char_length(book_title) between 1 and 300),
-  sentimento text not null default '' check (char_length(sentimento) <= 600),
+  sentimento text not null default '' check (char_length(sentimento) <= 900),
   frase text not null default '' check (char_length(frase) <= 400),
   origem text not null default 'claude',
   created_at timestamptz not null default now(),
@@ -38,7 +38,7 @@ begin
   if btrim(coalesce(p_book_title, '')) = '' then raise exception 'Falta o título do livro'; end if;
   if v_sent = '' and v_frase = '' then raise exception 'Falta o sentimento (ou a frase)'; end if;
   v_palavras := coalesce(array_length(regexp_split_to_array(nullif(v_sent, ''), '\s+'), 1), 0);
-  if v_palavras > 40 then raise exception 'O sentimento tem % palavras — o limite é 40. Encurte e envie de novo.', v_palavras; end if;
+  if v_palavras > 60 then raise exception 'O sentimento tem % palavras — o limite é 60. Encurte e envie de novo.', v_palavras; end if;
   insert into public.ficou_inbox (user_id, day, book_title, sentimento, frase)
   values (v_user, p_day, btrim(p_book_title), v_sent, v_frase)
   returning id into v_id;
