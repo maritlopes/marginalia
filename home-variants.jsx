@@ -225,6 +225,7 @@ function HomeVariantA({ onNav = () => {} }) {
   const detalheDia = (typeof MG !== 'undefined' && MG.dayDetail) ? MG.dayDetail(diaAtivo) : null;
   // dias passados abrem só para ver; "corrigir" libera a edição (hoje fica sempre editável)
   const [corrigindo, setCorrigindo] = React.useState(false);
+  const [colarAberto, setColarAberto] = React.useState(false);
   React.useEffect(() => { setCorrigindo(false); }, [diaAtivo]);
   const editavel = diaAtivo === hojeK || corrigindo;
   // UM registro por dia: a linha do dia é editável (acrescentar ou corrigir os totais)
@@ -594,7 +595,7 @@ function HomeVariantA({ onNav = () => {} }) {
                     <button onClick={() => { setDiaSel(null); setMesOff(0); }} style={{ background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>voltar a hoje</button>
                   )}
                 </div>
-                {detalheDia && (diaAtivo !== hojeK || detalheDia.livros.length > 1 || detalheDia.marcos.length > 0 || detalheDia.notas.length > 0) && (
+                {detalheDia && (diaAtivo !== hojeK || detalheDia.livros.length > 0 || detalheDia.marcos.length > 0 || detalheDia.notas.length > 0) && (
                   <DiaCartao detalhe={detalheDia} onNav={onNav} vazioTexto={diaAtivo === hojeK ? null : 'Nenhuma leitura registrada neste dia.'}/>
                 )}
                 {!editavel && (
@@ -635,8 +636,12 @@ function HomeVariantA({ onNav = () => {} }) {
                   {(diaTot.pages || diaTot.minutes) ? <> · <button onClick={apagarDia} style={{ background: 'transparent', border: 0, padding: 0, color: T.muted, fontSize: 11, cursor: 'pointer', textDecoration: 'underline', fontFamily: T.serif, fontStyle: 'italic' }}>apagar o dia</button></> : null}
                 </div>
                 </>)}
+                <div style={{ marginTop: 10, paddingTop: 8, borderTop: `1px dashed ${T.hairline}` }}>
+                  <button onClick={() => setColarAberto(true)} style={{ background: 'transparent', border: 0, padding: 0, color: T.brown, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: T.sans }}>✎ colar o que ficou (do Claude)</button>
+                </div>
               </div>
               )}
+              {colarAberto && <ColarFicouSheet onClose={() => setColarAberto(false)}/>}
             </div>
           )}
         </div>
@@ -1069,10 +1074,126 @@ function LeituraCard({ book: x, onNav = () => {}, label = 'Retomar leitura' }) {
 }
 
 // AnelDoDia — o dia se preenche conforme a meta diária (páginas OU minutos)
+// ── O QUE FICOU ── o sentimento que a leitura de um livro deixou num dia.
+// Curto de propósito (até 40 palavras) + uma frase marcante opcional.
+const fmtDiaCurto = (k) => { const m = String(k || '').match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return k; return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }).replace('.', ''); };
+
+function FicouTexto({ f, compacto = false }) {
+  if (!f) return null;
+  return (
+    <div style={{ marginTop: compacto ? 4 : 6 }}>
+      {f.sentimento && <div style={{ fontFamily: T.serif, fontSize: 13.5, color: T.ink, lineHeight: 1.45 }}>{f.sentimento}</div>}
+      {f.frase && <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 12.5, color: T.brown, lineHeight: 1.4, marginTop: 4, paddingLeft: 9, borderLeft: `2px solid ${T.terra}` }}>“{f.frase}”</div>}
+    </div>
+  );
+}
+
+function FicouEditor({ day, bookId, inicial, comData = false, onFechar = () => {} }) {
+  const max = (MG && MG.FICOU_MAX_PALAVRAS) || 40;
+  const [dia, setDia] = React.useState(day);
+  const [sent, setSent] = React.useState((inicial && inicial.sentimento) || '');
+  const [frase, setFrase] = React.useState((inicial && inicial.frase) || '');
+  const n = MG.contarPalavras(sent);
+  const passou = n > max;
+  const pode = !passou && (sent.trim() || frase.trim()) && dia;
+  const salvar = () => { if (!pode) return; MG.setFicou(dia, bookId, { sentimento: sent, frase, origem: (inicial && inicial.origem) || 'app' }); onFechar(); };
+  const apagar = () => { MG.setFicou(day, bookId, null); onFechar(); };
+  const campo = { width: '100%', boxSizing: 'border-box', padding: '8px 10px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.serif, fontSize: 14, outline: 'none', resize: 'vertical' };
+  return (
+    <div onClick={(e) => e.stopPropagation()} style={{ marginTop: 6, background: T.paper, border: `1px solid ${T.hairline}`, borderRadius: 10, padding: '10px 12px' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
+        <span style={{ fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', color: T.brown, fontWeight: 700 }}>O que ficou</span>
+        {comData && <input type="date" value={dia} onChange={(e) => setDia(e.target.value)} style={{ marginLeft: 'auto', padding: '4px 6px', border: `1px solid ${T.hairline}`, borderRadius: 6, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 12 }}/>}
+      </div>
+      <textarea value={sent} onChange={(e) => setSent(e.target.value)} rows={3} autoFocus placeholder="O que essa leitura deixou em você hoje?" style={campo}/>
+      <div style={{ fontSize: 10.5, color: passou ? T.terra : T.muted, textAlign: 'right', marginTop: 2, fontWeight: passou ? 700 : 400 }}>{n}/{max} palavras{passou ? ' — encurte um pouco' : ''}</div>
+      <input value={frase} onChange={(e) => setFrase(e.target.value)} placeholder="Uma frase que marcou (opcional)" style={{ ...campo, fontStyle: 'italic', fontSize: 13, marginTop: 4 }}/>
+      <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+        <button onClick={salvar} disabled={!pode} style={{ background: pode ? T.terra : T.parchment, color: pode ? T.cream : T.brown, border: 0, borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: pode ? 'pointer' : 'default' }}>Guardar</button>
+        <button onClick={onFechar} style={{ background: 'transparent', color: T.brown, border: `1px solid ${T.hairline}`, borderRadius: 8, padding: '7px 12px', fontSize: 12, cursor: 'pointer' }}>Cancelar</button>
+        {inicial && <button onClick={apagar} style={{ marginLeft: 'auto', background: 'transparent', border: 0, color: T.muted, fontSize: 11.5, textDecoration: 'underline', cursor: 'pointer' }}>apagar</button>}
+      </div>
+    </div>
+  );
+}
+
+// "Colar do Claude": cola o bloco O QUE FICOU, o app reconhece dia, livro(s), sentimento e frase,
+// mostra para conferir (dá para trocar o livro ou ajustar o texto) e guarda.
+function ColarFicouSheet({ onClose = () => {}, bookIdPadrao = null }) {
+  const max = (MG && MG.FICOU_MAX_PALAVRAS) || 40;
+  const [texto, setTexto] = React.useState('');
+  const [lido, setLido] = React.useState(null);
+  const [feito, setFeito] = React.useState(false);
+  const livros = (window.BOOKS || []).filter(b => b && !b.deleted && b.title)
+    .sort((a, b) => ((a.status === 'reading' ? 0 : 1) - (b.status === 'reading' ? 0 : 1)) || a.title.localeCompare(b.title, 'pt-BR'));
+  const ler = () => {
+    const r = MG.parseFicou(texto);
+    if (bookIdPadrao) r.itens = r.itens.map(x => ({ ...x, bookId: x.bookId || bookIdPadrao }));
+    setLido(r);
+  };
+  const mudarItem = (i, patch) => setLido({ ...lido, itens: lido.itens.map((x, j) => j === i ? { ...x, ...patch } : x) });
+  const ok = lido && lido.itens.length > 0 && lido.itens.every(x => x.bookId && MG.contarPalavras(x.sentimento) <= max && (x.sentimento || x.frase));
+  const guardar = () => { if (!ok) return; lido.itens.forEach(x => MG.setFicou(lido.day, x.bookId, { sentimento: x.sentimento, frase: x.frase, origem: 'colado' })); setFeito(true); setTimeout(onClose, 900); };
+  const existente = (x) => x.bookId && MG.getFicou({ day: lido.day, bookId: x.bookId }).length > 0;
+  const campo = { width: '100%', boxSizing: 'border-box', padding: '8px 10px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.serif, fontSize: 13.5, outline: 'none', resize: 'vertical' };
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(30,20,15,0.45)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 520, maxHeight: '88vh', overflowY: 'auto', background: T.cream, borderRadius: '16px 16px 0 0', padding: '18px 18px calc(22px + env(safe-area-inset-bottom))', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', marginBottom: 4 }}>
+          <span style={{ fontFamily: T.serif, fontSize: 20, color: T.ink }}>Colar o que ficou</span>
+          <button onClick={onClose} style={{ marginLeft: 'auto', background: 'transparent', border: 0, color: T.muted, fontSize: 13, cursor: 'pointer' }}>fechar</button>
+        </div>
+        {!lido ? (
+          <>
+            <div style={{ fontSize: 12, color: T.brown, lineHeight: 1.5, marginBottom: 10, fontFamily: T.serif }}>
+              Na conversa de leitura, peça ao Claude <em>“o que ficou de hoje”</em>, ajuste até ficar do seu jeito, copie e cole aqui. O app reconhece o dia, o livro, o sentimento e a frase.
+            </div>
+            <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={8} autoFocus placeholder={'O QUE FICOU · 04/11/2026\nLivro: Middlemarch\nSentimento: …\nFrase: “…”'} style={{ ...campo, fontFamily: T.mono, fontSize: 12.5 }}/>
+            <button onClick={ler} disabled={!texto.trim()} style={{ marginTop: 10, width: '100%', background: texto.trim() ? T.ink : T.parchment, color: texto.trim() ? T.cream : T.brown, border: 0, borderRadius: 10, padding: '11px', fontSize: 13, fontWeight: 600, cursor: texto.trim() ? 'pointer' : 'default' }}>Ler</button>
+          </>
+        ) : lido.itens.length === 0 ? (
+          <>
+            <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 14, color: T.brown, margin: '10px 0' }}>Não encontrei “Sentimento:” nem “Frase:” no texto. Confira se colou o bloco inteiro.</div>
+            <button onClick={() => setLido(null)} style={{ background: 'transparent', border: `1px solid ${T.hairline}`, borderRadius: 8, padding: '8px 14px', color: T.brown, fontSize: 12, cursor: 'pointer' }}>Voltar</button>
+          </>
+        ) : (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0 10px', fontSize: 12, color: T.brown }}>
+              <span>Dia da leitura</span>
+              <input type="date" value={lido.day} onChange={(e) => setLido({ ...lido, day: e.target.value })} style={{ padding: '5px 8px', border: `1px solid ${T.hairline}`, borderRadius: 6, background: T.bone, color: T.ink, fontFamily: T.sans, fontSize: 12.5 }}/>
+            </div>
+            {lido.itens.map((x, i) => {
+              const n = MG.contarPalavras(x.sentimento);
+              return (
+                <div key={i} style={{ background: T.paper, border: `1px solid ${T.hairline}`, borderRadius: 10, padding: '10px 12px', marginBottom: 10 }}>
+                  <select value={x.bookId || ''} onChange={(e) => mudarItem(i, { bookId: e.target.value || null })} style={{ width: '100%', padding: '7px 8px', border: `1px solid ${x.bookId ? T.hairline : T.terra}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.serif, fontSize: 14, marginBottom: 6 }}>
+                    <option value="">{x.titulo ? `“${x.titulo}” — escolha o livro` : 'Escolha o livro'}</option>
+                    {livros.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
+                  </select>
+                  <textarea value={x.sentimento} onChange={(e) => mudarItem(i, { sentimento: e.target.value })} rows={3} style={campo}/>
+                  <div style={{ fontSize: 10.5, color: n > max ? T.terra : T.muted, textAlign: 'right', fontWeight: n > max ? 700 : 400 }}>{n}/{max} palavras{n > max ? ' — encurte um pouco' : ''}</div>
+                  <input value={x.frase} onChange={(e) => mudarItem(i, { frase: e.target.value })} placeholder="Frase (opcional)" style={{ ...campo, fontStyle: 'italic', marginTop: 4 }}/>
+                  {existente(x) && <div style={{ fontSize: 11, color: T.ochre, marginTop: 6 }}>Já há um “o que ficou” deste livro neste dia — ele será substituído.</div>}
+                </div>
+              );
+            })}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={guardar} disabled={!ok || feito} style={{ flex: 1, background: ok ? T.terra : T.parchment, color: ok ? T.cream : T.brown, border: 0, borderRadius: 10, padding: '11px', fontSize: 13, fontWeight: 600, cursor: ok ? 'pointer' : 'default' }}>{feito ? '✓ Guardado' : 'Guardar'}</button>
+              <button onClick={() => setLido(null)} style={{ background: 'transparent', border: `1px solid ${T.hairline}`, borderRadius: 10, padding: '11px 14px', color: T.brown, fontSize: 12, cursor: 'pointer' }}>Voltar</button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // O CARTÃO DO DIA — o que se leu num dia: capa e páginas de cada livro, livros
 // começados/terminados naquele dia e notas escritas nele. Só leitura; tocar na capa
 // abre o livro. Reaproveitável (Home hoje; Retrospectiva depois).
-function DiaCartao({ detalhe, onNav = () => {}, vazioTexto = 'Nenhuma leitura registrada neste dia.' }) {
+function DiaCartao({ detalhe, onNav = () => {}, vazioTexto = 'Nenhuma leitura registrada neste dia.', podeEscrever = true }) {
+  const [editando, setEditando] = React.useState(null);
+  React.useEffect(() => { setEditando(null); }, [detalhe && detalhe.date]);
   if (!detalhe) return null;
   const { livros, semLivro, marcos, notas } = detalhe;
   const abrir = (b) => { if (!b) return; if (typeof window.__openBook === 'function') window.__openBook(b); else onNav('book'); };
@@ -1085,7 +1206,8 @@ function DiaCartao({ detalhe, onNav = () => {}, vazioTexto = 'Nenhuma leitura re
       {livros.map((x) => {
         const b = x.book;
         return (
-          <div key={x.id} onClick={() => abrir(b)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', cursor: b ? 'pointer' : 'default' }}>
+          <div key={x.id} style={{ padding: '6px 0' }}>
+          <div onClick={() => abrir(b)} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: b ? 'pointer' : 'default' }}>
             {b ? <BookCover title={b.title} author={b.author} tone={b.tone} cover={b.cover} isbn={b.isbn} w={32}/> : <div style={{ width: 32, height: 46, borderRadius: 3, background: T.parchment }}/>}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b ? b.title : 'Livro removido'}</div>
@@ -1097,6 +1219,14 @@ function DiaCartao({ detalhe, onNav = () => {}, vazioTexto = 'Nenhuma leitura re
               )}
             </div>
             <div style={{ fontFamily: T.sans, fontSize: 12, fontWeight: 600, color: T.terra, whiteSpace: 'nowrap' }}>{fmt(x.pages, x.minutes)}</div>
+          </div>
+          {editando === x.id ? (
+            <FicouEditor day={detalhe.date} bookId={x.id} inicial={x.ficou} onFechar={() => setEditando(null)}/>
+          ) : x.ficou ? (
+            <div onClick={() => podeEscrever && setEditando(x.id)} style={{ marginLeft: 42, cursor: podeEscrever ? 'pointer' : 'default' }}><FicouTexto f={x.ficou}/></div>
+          ) : (podeEscrever && b) ? (
+            <button onClick={() => setEditando(x.id)} style={{ marginLeft: 42, marginTop: 4, background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: T.sans }}>＋ o que ficou</button>
+          ) : null}
           </div>
         );
       })}
@@ -1419,4 +1549,4 @@ function ThemeTile({ t }) {
   );
 }
 
-Object.assign(window, { HomeVariantA, HomeVariantB, HomeVariantC, StatusBar, TabBar, SectionRule, MicroStat, DiaCartao });
+Object.assign(window, { HomeVariantA, HomeVariantB, HomeVariantC, StatusBar, TabBar, SectionRule, MicroStat, DiaCartao, FicouTexto, FicouEditor, ColarFicouSheet, fmtDiaCurto });

@@ -109,6 +109,7 @@
       notes: bothNull('notes') ? null : unionById('notes'),
       challenges: unionById('challenges'),
       readingLog: unionById('readingLog'),
+      ficou: unionById('ficou'),
       progress: { ...(older.progress || {}), ...(newer.progress || {}) },
       ecos: { ...(older.ecos || {}), ...(newer.ecos || {}) },
       prefs: { ...(older.prefs || {}), ...(newer.prefs || {}) },
