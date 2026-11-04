@@ -3,6 +3,24 @@
 
 const KEY = 'marginalia.v1';
 
+// ── Datas no fuso de quem lê ──────────────────────────────────────────────
+// 'YYYY-MM-DD' puro, lido com new Date(), vira meia-noite em UTC = 21h da VÉSPERA no
+// Brasil. E um carimbo ISO (toISOString) cortado em 10 caracteres dá o dia em UTC.
+// Estas três funções dão sempre o dia/instante LOCAL.
+// diaLocal(v): 'YYYY-MM-DD' (de uma data pura ou de um carimbo ISO), ou '' se inválido
+function diaLocal(v) {
+  const s = String(v || '');
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  if (!s) return '';
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return s.slice(0, 10);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+// início (00:00:00) e fim (23:59:59.999) de um dia 'YYYY-MM-DD' no horário local, em ms
+function inicioDoDia(ymd) { const m = String(ymd || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? new Date(+m[1], +m[2] - 1, +m[3]).getTime() : NaN; }
+function fimDoDia(ymd) { const m = String(ymd || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? new Date(+m[1], +m[2] - 1, +m[3], 23, 59, 59, 999).getTime() : NaN; }
+window.diaLocal = diaLocal; window.inicioDoDia = inicioDoDia; window.fimDoDia = fimDoDia;
+
 const DEFAULT_STATE = {
   // preferências do app
   prefs: {
@@ -271,11 +289,11 @@ const MG = {
     let next;
     if (entry) {
       const books = { ...(entry.books || {}) };
-      if (bookId) { const x = books[bookId] || { pages: 0, minutes: 0 }; books[bookId] = { pages: x.pages + n, minutes: x.minutes + min }; }
+      if (bookId) { const x = books[bookId] || { pages: 0, minutes: 0 }; books[bookId] = { pages: x.pages + n, minutes: x.minutes + min, updatedAt: agora }; }
       const upd = { ...entry, pages: entry.pages + n, minutes: entry.minutes + min, bookId: bookId || entry.bookId || null, books, src: o.src || entry.src || 'hoje', updatedAt: agora };
       next = log.map(e => e.id === entry.id ? upd : e);
     } else {
-      const books = bookId ? { [bookId]: { pages: n, minutes: min } } : {};
+      const books = bookId ? { [bookId]: { pages: n, minutes: min, updatedAt: agora } } : {};
       next = [{ id: 'd_' + date, date, pages: n, minutes: min, bookId: bookId || null, books, src: o.src || 'hoje', updatedAt: agora }, ...log];
     }
     s.readingLog = next;
@@ -298,10 +316,27 @@ const MG = {
       // a DIFERENÇA vai para o livro escolhido (chips "em qual livro?"); nunca abaixo de zero
       const books = { ...(entry.books || {}) };
       const bid = t.bookId || entry.bookId || null;
-      if (bid) { const x = books[bid] || { pages: 0, minutes: 0 }; books[bid] = { pages: Math.max(0, x.pages + (pages - entry.pages)), minutes: Math.max(0, x.minutes + (minutes - entry.minutes)) }; }
+      if (bid) { const x = books[bid] || { pages: 0, minutes: 0 }; books[bid] = { pages: Math.max(0, x.pages + (pages - entry.pages)), minutes: Math.max(0, x.minutes + (minutes - entry.minutes)), updatedAt: agora }; }
+      // a repartição nunca pode somar mais que o total do dia: se passou (corrigiu para baixo
+      // mais do que o livro escolhido tinha), os outros livros encolhem na mesma proporção
+      for (const campo of ['pages', 'minutes']) {
+        const total = campo === 'pages' ? pages : minutes;
+        const soma = Object.keys(books).reduce((a, id) => a + (books[id][campo] || 0), 0);
+        if (soma > total) {
+          const outros = Object.keys(books).filter(id => id !== bid);
+          const somaOutros = outros.reduce((a, id) => a + (books[id][campo] || 0), 0);
+          const sobra = Math.max(0, total - (bid && books[bid] ? books[bid][campo] || 0 : 0));
+          let usado = 0;
+          outros.forEach((id, i) => {
+            const v = i === outros.length - 1 ? Math.max(0, sobra - usado) : (somaOutros ? Math.floor((books[id][campo] || 0) * sobra / somaOutros) : 0);
+            usado += v;
+            books[id] = { ...books[id], [campo]: v, updatedAt: agora };
+          });
+        }
+      }
       next = log.map(e => e.id === entry.id ? { ...e, pages, minutes, bookId: bid, books, updatedAt: agora } : e);
     } else {
-      const books = t.bookId ? { [t.bookId]: { pages, minutes } } : {};
+      const books = t.bookId ? { [t.bookId]: { pages, minutes, updatedAt: agora } } : {};
       next = [{ id: 'd_' + date, date, pages, minutes, bookId: t.bookId || null, books, src: 'hoje', updatedAt: agora }, ...log];
     }
     s.readingLog = next;
@@ -495,7 +530,7 @@ const MG = {
       .filter(id => porLivro[id].pages + porLivro[id].minutes > 0 || ficouDia.some(f => f.bookId === id))
       .map(id => ({ id, book: achar(id), pages: porLivro[id].pages, minutes: porLivro[id].minutes, ficou: ficouDia.find(f => f.bookId === id) || null }))
       .sort((a, b) => b.pages - a.pages || b.minutes - a.minutes);
-    const dia10 = (v) => String(v || '').slice(0, 10);
+    const dia10 = (v) => diaLocal(v);
     const marcos = [];
     for (const b of books) {
       if (!b || b.deleted) continue;
@@ -561,10 +596,16 @@ const MG = {
     const pad = (n) => String(n).padStart(2, '0');
     const hoje = new Date();
     let day = hoje.getFullYear() + '-' + pad(hoje.getMonth() + 1) + '-' + pad(hoje.getDate());
-    const iso = t.match(/(\d{4})-(\d{2})-(\d{2})/);
-    const br = t.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
-    if (iso) day = `${iso[1]}-${iso[2]}-${iso[3]}`;
-    else if (br) { let y = br[3] ? parseInt(br[3], 10) : hoje.getFullYear(); if (y < 100) y += 2000; day = `${y}-${pad(br[2])}-${pad(br[1])}`; }
+    // a data vem do cabeçalho ("O QUE FICOU · 04/11/2026") ou da primeira linha — nunca do
+    // meio do texto ("li 1/3 do livro" não é uma data) — e só vale se for um dia que existe
+    const primeira = t.split('\n').find(l => l.trim()) || '';
+    const rotulo = /^\s*(?:[-*•]\s*)?(?:📖|\*{0,2}(?:livro|sentimento|frase)\b)/i;
+    const cabecalho = t.split('\n').find(l => /o que ficou/i.test(l)) || (rotulo.test(primeira) ? '' : primeira);
+    const valida = (y, m, d) => { const dt = new Date(y, m - 1, d); return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d; };
+    const iso = cabecalho.match(/(\d{4})-(\d{2})-(\d{2})/);
+    const br = cabecalho.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
+    if (iso && valida(+iso[1], +iso[2], +iso[3])) day = `${iso[1]}-${iso[2]}-${iso[3]}`;
+    else if (br) { let y = br[3] ? parseInt(br[3], 10) : hoje.getFullYear(); if (y < 100) y += 2000; if (valida(y, +br[2], +br[1])) day = `${y}-${pad(br[2])}-${pad(br[1])}`; }
     const acharLivro = (titulo) => this.acharLivroPorTitulo(titulo);
     const itens = [];
     let cur = null, campo = null;
@@ -691,10 +732,11 @@ const MG = {
     let pool = books.filter(b => b.status === 'read');
     // filtro por data, se a meta tem janela
     if (challenge.startsAt && challenge.endsAt && challenge.period !== 'open') {
-      const s = new Date(challenge.startsAt).getTime();
-      const e = new Date(challenge.endsAt).getTime();
+      const s = inicioDoDia(challenge.startsAt);
+      const e = fimDoDia(challenge.endsAt);
       pool = pool.filter(b => {
-        const t = b.finishedAt ? new Date(b.finishedAt).getTime() : null;
+        // meio-dia local do dia do fim: um livro terminado em 1º/jan conta na meta de janeiro
+        const t = b.finishedAt ? new Date(diaLocal(b.finishedAt) + 'T12:00:00').getTime() : null;
         // sem data: conta sempre (MVP — usuária pode editar livro depois)
         return t === null || (t >= s && t <= e);
       });

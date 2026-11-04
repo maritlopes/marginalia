@@ -686,7 +686,7 @@ function HomeVariantA({ onNav = () => {} }) {
           const ativas = challenges.filter(c => {
             if (c.period === 'open') return true;
             if (!c.endsAt) return true;
-            return new Date(c.endsAt).getTime() >= Date.now();
+            return window.fimDoDia(c.endsAt) >= Date.now();
           });
           if (ativas.length === 0) {
             return (
@@ -714,7 +714,7 @@ function HomeVariantA({ onNav = () => {} }) {
           const periodLabel = (window.CHALLENGE_PERIODS || []).find(p => p.id === c.period)?.label_pt || c.period;
           let daysLabel = '';
           if (c.endsAt) {
-            const days = Math.ceil((new Date(c.endsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+            const days = Math.ceil((window.fimDoDia(c.endsAt) - Date.now()) / (1000 * 60 * 60 * 24));
             if (days > 0) daysLabel = `${days} ${days === 1 ? 'dia' : 'dias'} restantes`;
           }
           return (
