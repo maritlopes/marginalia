@@ -530,7 +530,7 @@ function PlanoLeitura({ book, isDemo = false }) {
   // término — livro LIDO: a data em que terminou (editável, "Terminado em");
   // livro em leitura: o gesto "terminei" (data sugerida = hoje, sempre visível e ajustável).
   const fimISO = String(b.finishedAt || '').slice(0, 10);
-  const iniISO = String(b.startedAt || b.readingSince || '').slice(0, 10);
+  const iniISO = window.diaLocal(b.startedAt || b.readingSince);
   const [fimInput, setFimInput] = React.useState(fimISO);
   const [fimErro, setFimErro] = React.useState('');
   const [terminando, setTerminando] = React.useState(false);
@@ -609,7 +609,7 @@ function PlanoLeitura({ book, isDemo = false }) {
     setFimErro('');
     const patch = { status: 'read', finishedAt: fimNovo || null, pct: 100, weekGoal: null };
     if (pages) patch.currentPage = pages;
-    if (pages > cur && !isDemo && typeof MG !== 'undefined' && MG.logReading) MG.logReading(pages - cur, b.id, { src: 'plano' });
+    if (pages > cur && !isDemo && typeof MG !== 'undefined' && MG.logReading) MG.logReading(pages - cur, b.id, { src: 'plano', ...(fimNovo && fimNovo < hojeLocalISO() ? { date: fimNovo } : {}) });
     if (typeof MG !== 'undefined' && MG.updateBook) MG.updateBook(b.id, patch);
     setTerminando(false);
   };
@@ -3033,11 +3033,11 @@ function ScreenMetas({ onNav = () => {} }) {
   const ativas = metasNum.filter(c => {
     if (c.period === 'open') return true;
     if (!c.endsAt) return true;
-    return new Date(c.endsAt).getTime() >= Date.now();
+    return window.fimDoDia(c.endsAt) >= Date.now();
   });
   const finalizadas = metasNum.filter(c => {
     if (c.period === 'open') return false;
-    return c.endsAt && new Date(c.endsAt).getTime() < Date.now();
+    return c.endsAt && window.fimDoDia(c.endsAt) < Date.now();
   });
 
   const handleNew = () => {
@@ -3188,7 +3188,7 @@ function ChallengeCard({ challenge: c, finished }) {
   // dias restantes
   let daysLabel = '';
   if (c.endsAt) {
-    const end = new Date(c.endsAt).getTime();
+    const end = window.fimDoDia(c.endsAt);
     const days = Math.ceil((end - Date.now()) / (1000 * 60 * 60 * 24));
     daysLabel = days > 0 ? `${days} ${days === 1 ? 'dia' : 'dias'} restantes` : 'expirou';
   }
@@ -3385,7 +3385,11 @@ function ChallengeEditorSheet({ challenge = null, onClose = () => {} }) {
   const handleSave = () => {
     if (!title.trim()) { setError('Dê um nome à sua meta.'); return; }
     if (typeof MG === 'undefined') { onClose(); return; }
-    const win = window.periodWindow(period, new Date(), customStart, customEnd);
+    // editar uma meta sem trocar o período mantém a janela original (a meta de outubro,
+    // editada em novembro, continua sendo de outubro)
+    const win = (isEdit && period === challenge.period && period !== 'custom' && challenge.startsAt && challenge.endsAt)
+      ? { startsAt: challenge.startsAt, endsAt: challenge.endsAt }
+      : window.periodWindow(period, new Date(), customStart, customEnd);
     const filter = (type === 'theme' && filterTheme) ? { theme: filterTheme.trim() }
                  : (type === 'author' && filterAuthor) ? { author: filterAuthor.trim() }
                  : null;
@@ -4932,7 +4936,9 @@ function TirarPoeiraSheet({ book, onClose }) {
       ...(status === 'reading'
         ? ((b.mark === 'reading' && (b.startedAt || b.readingSince) && !b.finishedAt)
           ? {}
-          : { readingSince: new Date().toISOString(), startedAt: hojeLocalISO() })
+          : { readingSince: new Date().toISOString(), startedAt: hojeLocalISO(),
+              // releitura de um livro já terminado: começa do zero (o fim antigo não vale mais)
+              ...((b.finishedAt || b.mark === 'read') ? { finishedAt: null, pct: 0, currentPage: 0 } : {}) })
         : {}),
       // "Já li" NÃO carimba data — despertar não é terminar (lido sem data >
       // data falsa); a data real, se lembrada, entra depois em Editar livro
@@ -5085,7 +5091,7 @@ const MESES_LONGOS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho'
 function retroDateOf(b) {
   const fim = String(b.finishedAt || '').slice(0, 10);
   if (/^\d{4}-\d{2}-\d{2}$/.test(fim)) return fim;
-  const ini = String(b.startedAt || b.readingSince || '').slice(0, 10);
+  const ini = window.diaLocal(b.startedAt || b.readingSince);
   if (/^\d{4}-\d{2}-\d{2}$/.test(ini)) return ini;
   return null;
 }
@@ -5180,7 +5186,7 @@ function retroGrupos(lidos, anos, escopo) {
   return { lista, semAno };
 }
 function retroDatas(b) {
-  const ini = String(b.startedAt || b.readingSince || '').slice(0, 10);
+  const ini = window.diaLocal(b.startedAt || b.readingSince);
   const fim = String(b.finishedAt || '').slice(0, 10);
   const ok = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : '';
   const i = ok(ini), f = ok(fim);
@@ -5591,7 +5597,7 @@ function montarDiario(b) {
     if (parte && ((parte.pages || 0) + (parte.minutes || 0) > 0)) { const d = dia(e.date); d.pages += parte.pages || 0; d.minutes += parte.minutes || 0; }
   }
   for (const f of ((typeof MG !== 'undefined' && MG.getFicou) ? MG.getFicou({ bookId: b.id }) : [])) dia(f.day).ficou = f;
-  const ini = String(b.startedAt || b.readingSince || '').slice(0, 10);
+  const ini = window.diaLocal(b.startedAt || b.readingSince);
   const fim = String(b.finishedAt || '').slice(0, 10);
   if (/^\d{4}-\d{2}-\d{2}$/.test(ini)) dia(ini).marcos.push('começou');
   if (/^\d{4}-\d{2}-\d{2}$/.test(fim)) dia(fim).marcos.push('terminou');
@@ -5695,7 +5701,7 @@ function DiarioDoLivro({ book, onNav = () => {}, iniciarNovo = false }) {
 // sem data (nunca inventamos). Salva só no "salvar" — digitar a data aos
 // poucos não faz o livro pular de mês no meio. Fim antes do início não salva.
 function RetroLivro({ b }) {
-  const iniISO = String(b.startedAt || b.readingSince || '').slice(0, 10);
+  const iniISO = window.diaLocal(b.startedAt || b.readingSince);
   const fimISO = String(b.finishedAt || '').slice(0, 10);
   const [editando, setEditando] = React.useState(false);
   const [ini, setIni] = React.useState(iniISO);
@@ -6424,7 +6430,7 @@ function BookEditorSheet({ book = null, onClose = () => {} }) {
   const [currentPage, setCurrentPage] = React.useState(book?.currentPage || '');
   const [cover, setCover] = React.useState(book?.cover || '');
   // datas de leitura (YYYY-MM-DD) — em branco = sem data; nunca inventamos
-  const [startedAt, setStartedAt] = React.useState(String(book?.startedAt || book?.readingSince || '').slice(0, 10));
+  const [startedAt, setStartedAt] = React.useState(window.diaLocal(book?.startedAt || book?.readingSince));
   const [finishedAt, setFinishedAt] = React.useState(String(book?.finishedAt || '').slice(0, 10));
   const [urlInput, setUrlInput] = React.useState('');
   const [uploadError, setUploadError] = React.useState(null);

@@ -159,13 +159,43 @@
       books: bothNull('books') ? null : unionById('books'),
       notes: bothNull('notes') ? null : unionById('notes'),
       challenges: unionById('challenges'),
-      readingLog: unionById('readingLog'),
+      readingLog: mergeDiario(newer.readingLog, older.readingLog),
       ficou: unionById('ficou'),
       progress: { ...(older.progress || {}), ...(newer.progress || {}) },
       ecos: { ...(older.ecos || {}), ...(newer.ecos || {}) },
       prefs: { ...(older.prefs || {}), ...(newer.prefs || {}) },
       updatedAt: new Date().toISOString(),
     };
+  }
+
+  // DIÁRIO: a linha do dia ('d_<data>') é uma só por dia, mas pode ter sido mexida em dois
+  // aparelhos. Em vez de escolher a linha inteira, junta LIVRO a LIVRO pelo carimbo de cada
+  // um — leitura de um livro num aparelho e de outro livro no outro, no mesmo dia, somam.
+  // (O mesmo livro mexido nos dois sem sincronizar fica com o registro mais recente.)
+  function mergeDiario(a, b) {
+    const m = new Map();
+    const juntar = (x, y) => {
+      if (!x) return y; if (!y) return x;
+      const nx = x.updatedAt || '', ny = y.updatedAt || '';
+      const novo = nx >= ny ? x : y, velho = novo === x ? y : x;
+      if (novo.deleted || velho.deleted || !String(novo.id || '').startsWith('d_')) return novo;
+      const bn = novo.books || {}, bv = velho.books || {};
+      if (!Object.keys(bn).length || !Object.keys(bv).length) return novo;
+      const books = { ...bn };
+      for (const id of Object.keys(bv)) {
+        const pn = bn[id], pv = bv[id];
+        if (!pn) books[id] = pv;
+        else if ((pv.updatedAt || '') > (pn.updatedAt || '')) books[id] = pv;
+      }
+      const soma = (campo, bk) => Object.keys(bk).reduce((s, id) => s + ((bk[id] && bk[id][campo]) || 0), 0);
+      // o que o total da linha mais nova tinha fora da repartição continua contando
+      const forap = Math.max(0, (novo.pages || 0) - soma('pages', bn));
+      const foram = Math.max(0, (novo.minutes || 0) - soma('minutes', bn));
+      return { ...novo, books, pages: soma('pages', books) + forap, minutes: soma('minutes', books) + foram };
+    };
+    for (const x of (a || [])) if (x && x.id != null) m.set(x.id, juntar(m.get(x.id), x));
+    for (const x of (b || [])) if (x && x.id != null) m.set(x.id, juntar(m.get(x.id), x));
+    return [...m.values()];
   }
 
   // registra/checa a aprovação no nível do app e guarda o status (porta única)
