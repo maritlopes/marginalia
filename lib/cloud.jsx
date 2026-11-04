@@ -135,6 +135,38 @@
     if (typeof window.__rerender === 'function') window.__rerender();
   }
 
+  // O QUE FICOU vindo do Claude: a skill grava em ficou_inbox; aqui o app busca o que
+  // chegou, acha o livro pelo título, guarda como "O que ficou" e marca como recebido.
+  // Livro não encontrado fica pendente (window.__ficouPendentes) para ela escolher.
+  async function pullFicouInbox() {
+    try {
+      const { data, error } = await sb.from('ficou_inbox')
+        .select('id, day, book_title, sentimento, frase, created_at')
+        .is('consumed_at', null).order('created_at', { ascending: true });
+      if (error || !data) return;
+      const recebidos = [], pendentes = [];
+      for (const r of data) {
+        const b = MG.acharLivroPorTitulo ? MG.acharLivroPorTitulo(r.book_title) : null;
+        if (b) { MG.setFicou(r.day, b.id, { sentimento: r.sentimento, frase: r.frase, origem: 'claude' }); recebidos.push(r.id); }
+        else pendentes.push(r);
+      }
+      if (recebidos.length) await marcarFicouRecebido(recebidos);
+      window.__ficouPendentes = pendentes;
+      if (typeof window.__rerender === 'function') window.__rerender();
+    } catch (e) { console.warn('[nuvem] ficou_inbox:', e && e.message); }
+  }
+  async function marcarFicouRecebido(ids) {
+    if (!ids || !ids.length) return;
+    const { error } = await sb.from('ficou_inbox').update({ consumed_at: new Date().toISOString() }).in('id', ids);
+    if (error) console.warn('[nuvem] ficou_inbox recebido:', error.message);
+    window.__ficouPendentes = (window.__ficouPendentes || []).filter(r => !ids.includes(r.id));
+    if (typeof window.__rerender === 'function') window.__rerender();
+  }
+  // ao voltar para o app, confere se chegou algo novo do Claude
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && window.__appStatus === 'approved') pullFicouInbox();
+  });
+
   async function syncOnLogin() {
     const user = await currentUser();
     if (!user) return;
@@ -149,6 +181,7 @@
     MG.setState(merged);
     if (typeof window._refreshLive === 'function') window._refreshLive();
     if (typeof window.__rerender === 'function') window.__rerender();
+    await pullFicouInbox();                    // o que ficou, vindo do Claude
     await push();                              // sobe o resultado mesclado
     setStatus('Sincronizado');
     // depois de sincronizar, as capas embutidas vão para o armazenamento (em segundo plano)
@@ -204,6 +237,8 @@
     },
     schedulePush,
     syncOnLogin,
+    pullFicouInbox,
+    marcarFicouRecebido,
   };
 
   // ─── capas na nuvem (bucket público "covers") ─────────────────

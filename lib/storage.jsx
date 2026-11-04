@@ -512,6 +512,17 @@ const MG = {
     if (typeof window.__rerender === 'function') window.__rerender();
     return novo;
   },
+  // acha o livro da estante pelo título (sem acento/caixa; aceita título parcial; prefere o que está em leitura)
+  acharLivroPorTitulo(titulo) {
+    const norm = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+    const livros = ((typeof window !== 'undefined' && window.BOOKS) || []).filter(b => b && !b.deleted && b.title);
+      const n = norm(titulo); if (!n) return null;
+      const peso = (b) => (b.status === 'reading' ? 0 : b.status === 'paused' ? 1 : 2);
+      const cands = livros.filter(b => norm(b.title) === n)
+        .concat(livros.filter(b => { const bt = norm(b.title); return bt !== n && bt.length > 2 && (n.includes(bt) || bt.includes(n)); }));
+      cands.sort((a, b) => (norm(a.title) === n ? 0 : 1) - (norm(b.title) === n ? 0 : 1) || peso(a) - peso(b));
+      return cands[0] || null;
+  },
   // lê o bloco "O QUE FICOU" colado do Claude (ou escrito à mão):
   //   O QUE FICOU · 04/11/2026
   //   Livro: Middlemarch
@@ -527,16 +538,7 @@ const MG = {
     const br = t.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
     if (iso) day = `${iso[1]}-${iso[2]}-${iso[3]}`;
     else if (br) { let y = br[3] ? parseInt(br[3], 10) : hoje.getFullYear(); if (y < 100) y += 2000; day = `${y}-${pad(br[2])}-${pad(br[1])}`; }
-    const norm = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
-    const livros = ((typeof window !== 'undefined' && window.BOOKS) || []).filter(b => b && !b.deleted && b.title);
-    const acharLivro = (titulo) => {
-      const n = norm(titulo); if (!n) return null;
-      const peso = (b) => (b.status === 'reading' ? 0 : b.status === 'paused' ? 1 : 2);
-      const cands = livros.filter(b => norm(b.title) === n)
-        .concat(livros.filter(b => { const bt = norm(b.title); return bt !== n && bt.length > 2 && (n.includes(bt) || bt.includes(n)); }));
-      cands.sort((a, b) => (norm(a.title) === n ? 0 : 1) - (norm(b.title) === n ? 0 : 1) || peso(a) - peso(b));
-      return cands[0] || null;
-    };
+    const acharLivro = (titulo) => this.acharLivroPorTitulo(titulo);
     const itens = [];
     let cur = null, campo = null;
     for (const raw of t.split('\n')) {

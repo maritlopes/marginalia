@@ -226,6 +226,7 @@ function HomeVariantA({ onNav = () => {} }) {
   // dias passados abrem só para ver; "corrigir" libera a edição (hoje fica sempre editável)
   const [corrigindo, setCorrigindo] = React.useState(false);
   const [colarAberto, setColarAberto] = React.useState(false);
+  const [pendenteAberto, setPendenteAberto] = React.useState(null);
   React.useEffect(() => { setCorrigindo(false); }, [diaAtivo]);
   const editavel = diaAtivo === hojeK || corrigindo;
   // UM registro por dia: a linha do dia é editável (acrescentar ou corrigir os totais)
@@ -471,6 +472,26 @@ function HomeVariantA({ onNav = () => {} }) {
             </div>
           );
         })()}
+
+        {/* chegou do Claude, mas o título não bateu com nenhum livro da estante */}
+        {(window.__ficouPendentes || []).length > 0 && (() => {
+          const r = window.__ficouPendentes[0];
+          const n = window.__ficouPendentes.length;
+          return (
+            <div style={{ background: T.cream, border: `1px solid ${T.ochre}`, borderRadius: 12, padding: '12px 14px', marginBottom: 18 }}>
+              <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.4 }}>
+                Chegou do Claude {n === 1 ? 'um “o que ficou”' : `${n} “o que ficou”`} — não achei o livro <em>“{r.book_title}”</em> na sua estante.
+              </div>
+              <button onClick={() => setPendenteAberto(r)} style={{ marginTop: 8, background: T.ochre, color: T.cream, border: 0, borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Escolher o livro</button>
+            </div>
+          );
+        })()}
+        {pendenteAberto && (
+          <ColarFicouSheet titulo="Chegou do Claude"
+            inicial={{ day: pendenteAberto.day, itens: [{ titulo: pendenteAberto.book_title, bookId: null, sentimento: pendenteAberto.sentimento || '', frase: pendenteAberto.frase || '' }] }}
+            onGuardado={() => { const id = pendenteAberto.id; if (window.MGCloud && window.MGCloud.marcarFicouRecebido) window.MGCloud.marcarFicouRecebido([id]); }}
+            onClose={() => setPendenteAberto(null)}/>
+        )}
 
         {/* SUA LEITURA, DIA A DIA — hoje + sequência + semana + calendário do mês + Li hoje */}
         <SectionRule label="Sua leitura, dia a dia"/>
@@ -1119,10 +1140,10 @@ function FicouEditor({ day, bookId, inicial, comData = false, onFechar = () => {
 
 // "Colar do Claude": cola o bloco O QUE FICOU, o app reconhece dia, livro(s), sentimento e frase,
 // mostra para conferir (dá para trocar o livro ou ajustar o texto) e guarda.
-function ColarFicouSheet({ onClose = () => {}, bookIdPadrao = null }) {
+function ColarFicouSheet({ onClose = () => {}, bookIdPadrao = null, inicial = null, onGuardado = null, titulo = 'Colar o que ficou' }) {
   const max = (MG && MG.FICOU_MAX_PALAVRAS) || 40;
   const [texto, setTexto] = React.useState('');
-  const [lido, setLido] = React.useState(null);
+  const [lido, setLido] = React.useState(inicial);
   const [feito, setFeito] = React.useState(false);
   const livros = (window.BOOKS || []).filter(b => b && !b.deleted && b.title)
     .sort((a, b) => ((a.status === 'reading' ? 0 : 1) - (b.status === 'reading' ? 0 : 1)) || a.title.localeCompare(b.title, 'pt-BR'));
@@ -1133,14 +1154,14 @@ function ColarFicouSheet({ onClose = () => {}, bookIdPadrao = null }) {
   };
   const mudarItem = (i, patch) => setLido({ ...lido, itens: lido.itens.map((x, j) => j === i ? { ...x, ...patch } : x) });
   const ok = lido && lido.itens.length > 0 && lido.itens.every(x => x.bookId && MG.contarPalavras(x.sentimento) <= max && (x.sentimento || x.frase));
-  const guardar = () => { if (!ok) return; lido.itens.forEach(x => MG.setFicou(lido.day, x.bookId, { sentimento: x.sentimento, frase: x.frase, origem: 'colado' })); setFeito(true); setTimeout(onClose, 900); };
+  const guardar = () => { if (!ok) return; lido.itens.forEach(x => MG.setFicou(lido.day, x.bookId, { sentimento: x.sentimento, frase: x.frase, origem: inicial ? 'claude' : 'colado' })); if (onGuardado) onGuardado(lido); setFeito(true); setTimeout(onClose, 900); };
   const existente = (x) => x.bookId && MG.getFicou({ day: lido.day, bookId: x.bookId }).length > 0;
   const campo = { width: '100%', boxSizing: 'border-box', padding: '8px 10px', border: `1px solid ${T.hairline}`, borderRadius: 8, background: T.bone, color: T.ink, fontFamily: T.serif, fontSize: 13.5, outline: 'none', resize: 'vertical' };
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(30,20,15,0.45)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 520, maxHeight: '88vh', overflowY: 'auto', background: T.cream, borderRadius: '16px 16px 0 0', padding: '18px 18px calc(22px + env(safe-area-inset-bottom))', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', marginBottom: 4 }}>
-          <span style={{ fontFamily: T.serif, fontSize: 20, color: T.ink }}>Colar o que ficou</span>
+          <span style={{ fontFamily: T.serif, fontSize: 20, color: T.ink }}>{titulo}</span>
           <button onClick={onClose} style={{ marginLeft: 'auto', background: 'transparent', border: 0, color: T.muted, fontSize: 13, cursor: 'pointer' }}>fechar</button>
         </div>
         {!lido ? (
@@ -1179,7 +1200,7 @@ function ColarFicouSheet({ onClose = () => {}, bookIdPadrao = null }) {
             })}
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={guardar} disabled={!ok || feito} style={{ flex: 1, background: ok ? T.terra : T.parchment, color: ok ? T.cream : T.brown, border: 0, borderRadius: 10, padding: '11px', fontSize: 13, fontWeight: 600, cursor: ok ? 'pointer' : 'default' }}>{feito ? '✓ Guardado' : 'Guardar'}</button>
-              <button onClick={() => setLido(null)} style={{ background: 'transparent', border: `1px solid ${T.hairline}`, borderRadius: 10, padding: '11px 14px', color: T.brown, fontSize: 12, cursor: 'pointer' }}>Voltar</button>
+              {!inicial && <button onClick={() => setLido(null)} style={{ background: 'transparent', border: `1px solid ${T.hairline}`, borderRadius: 10, padding: '11px 14px', color: T.brown, fontSize: 12, cursor: 'pointer' }}>Voltar</button>}
             </div>
           </>
         )}
