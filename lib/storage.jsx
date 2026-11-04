@@ -406,7 +406,29 @@ const MG = {
     const pAmbos = ambos.reduce((a, e) => a + e.pages, 0);
     const pagesPerHour = mAmbos >= 20 ? Math.round(pAmbos / (mAmbos / 60)) : null;
     // calendário do mês corrente
-    const y = hoje.getFullYear(), m = hoje.getMonth();
+    const { mes, primeiroDow, diasLidosMes } = this.monthCalendar(hoje.getFullYear(), hoje.getMonth());
+    return {
+      goal, hoje: hojeT, hojeCumpriu: cumpriu(hojeT), streak, hojeFalta,
+      last7: { pages: g7.pages, minutes: g7.minutes, days: g7.days.size },
+      book7: { pages: b7.pages, minutes: b7.minutes, days: b7.days.size },
+      pagesPerHour, mes, primeiroDow, diasLidosMes,
+    };
+  },
+  // calendário de UM mês qualquer (m = 0..11) — para navegar pelos meses anteriores
+  monthCalendar(y, m) {
+    const keyOf = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+    const hojeK = keyOf(hoje);
+    const pref = y + '-' + String(m + 1).padStart(2, '0') + '-';
+    const byDay = {};
+    for (const e of this.getReadingLog()) {
+      if (!e || !e.date || !String(e.date).startsWith(pref)) continue;
+      const d = byDay[e.date] || (byDay[e.date] = { pages: 0, minutes: 0 });
+      d.pages += e.pages || 0; d.minutes += e.minutes || 0;
+    }
+    const goal = this.getDailyGoal();
+    const cumpriu = (d) => !!goal && !!d && ((goal.pages > 0 && d.pages >= goal.pages) || (goal.minutes > 0 && d.minutes >= goal.minutes));
+    const leu = (d) => !!d && (d.pages > 0 || d.minutes > 0);
     const nDias = new Date(y, m + 1, 0).getDate();
     const mes = [];
     for (let dd = 1; dd <= nDias; dd++) {
@@ -416,12 +438,45 @@ const MG = {
     }
     const primeiroDow = (new Date(y, m, 1).getDay() + 6) % 7; // 0 = segunda
     const diasLidosMes = mes.filter(x => x.leu).length;
-    return {
-      goal, hoje: hojeT, hojeCumpriu: cumpriu(hojeT), streak, hojeFalta,
-      last7: { pages: g7.pages, minutes: g7.minutes, days: g7.days.size },
-      book7: { pages: b7.pages, minutes: b7.minutes, days: b7.days.size },
-      pagesPerHour, mes, primeiroDow, diasLidosMes,
-    };
+    const paginasMes = mes.reduce((a, x) => a + x.pages, 0);
+    const minutosMes = mes.reduce((a, x) => a + x.minutes, 0);
+    return { y, m, mes, primeiroDow, diasLidosMes, paginasMes, minutosMes };
+  },
+  // tudo o que aconteceu num dia: páginas por livro (do diário), livros começados e
+  // terminados naquele dia (datas do livro) e notas escritas nele (o id da nota é o carimbo)
+  dayDetail(date) {
+    const books = (typeof window !== 'undefined' && window.BOOKS) || [];
+    const achar = (id) => books.find(b => b && b.id === id) || null;
+    const doDia = this.getReadingLog().filter(e => e && e.date === date);
+    let pages = 0, minutes = 0;
+    const porLivro = {};
+    let semLivro = { pages: 0, minutes: 0 };
+    for (const e of doDia) {
+      pages += e.pages || 0; minutes += e.minutes || 0;
+      const bk = e.books && Object.keys(e.books).length ? e.books : (e.bookId ? { [e.bookId]: { pages: e.pages || 0, minutes: e.minutes || 0 } } : null);
+      if (!bk) { semLivro.pages += e.pages || 0; semLivro.minutes += e.minutes || 0; continue; }
+      let pb = 0, mb = 0;
+      Object.keys(bk).forEach(id => { const x = porLivro[id] || (porLivro[id] = { pages: 0, minutes: 0 }); x.pages += bk[id].pages || 0; x.minutes += bk[id].minutes || 0; pb += bk[id].pages || 0; mb += bk[id].minutes || 0; });
+      // o que o total do dia tem a mais do que a repartição fica "sem livro"
+      semLivro.pages += Math.max(0, (e.pages || 0) - pb); semLivro.minutes += Math.max(0, (e.minutes || 0) - mb);
+    }
+    const livros = Object.keys(porLivro)
+      .filter(id => porLivro[id].pages + porLivro[id].minutes > 0)
+      .map(id => ({ id, book: achar(id), pages: porLivro[id].pages, minutes: porLivro[id].minutes }))
+      .sort((a, b) => b.pages - a.pages || b.minutes - a.minutes);
+    const dia10 = (v) => String(v || '').slice(0, 10);
+    const marcos = [];
+    for (const b of books) {
+      if (!b || b.deleted) continue;
+      if (dia10(b.startedAt || b.readingSince) === date) marcos.push({ tipo: 'comecou', book: b });
+      if (dia10(b.finishedAt) === date) marcos.push({ tipo: 'terminou', book: b });
+    }
+    const keyOf = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const notas = (this.getNotes() || []).filter(n => {
+      const t = n && n.id && String(n.id).match(/^n_(\d{12,14})$/);
+      return t && keyOf(new Date(parseInt(t[1], 10))) === date;
+    });
+    return { date, pages, minutes, livros, semLivro, marcos, notas };
   },
   // progresso de leitura
   getProgress(bookId) {

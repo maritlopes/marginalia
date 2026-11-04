@@ -214,6 +214,19 @@ function HomeVariantA({ onNav = () => {} }) {
   const hojeK = (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
   const [diaSel, setDiaSel] = React.useState(null);
   const diaAtivo = diaSel || hojeK;
+  // o calendário anda pelos meses: 0 = mês corrente, -1 = o anterior… (nunca vai ao futuro)
+  const [mesOff, setMesOff] = React.useState(0);
+  const mesRef = (() => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + mesOff); return d; })();
+  const cal = (typeof MG !== 'undefined' && MG.monthCalendar) ? MG.monthCalendar(mesRef.getFullYear(), mesRef.getMonth()) : (st ? { mes: st.mes, primeiroDow: st.primeiroDow, diasLidosMes: st.diasLidosMes, paginasMes: 0 } : null);
+  const nomeMesCal = (() => { const n = mesRef.toLocaleDateString('pt-BR', { month: 'long' }); return n.charAt(0).toUpperCase() + n.slice(1) + (mesRef.getFullYear() !== new Date().getFullYear() ? ' ' + mesRef.getFullYear() : ''); })();
+  const irMes = (delta) => { const n = Math.min(0, mesOff + delta); if (n === mesOff) return; setMesOff(n); setDiaSel(null); };
+  const toqueX = React.useRef(null);
+  const diaNoMes = !!(cal && cal.mes.some((d) => d.key === diaAtivo));
+  const detalheDia = (typeof MG !== 'undefined' && MG.dayDetail) ? MG.dayDetail(diaAtivo) : null;
+  // dias passados abrem só para ver; "corrigir" libera a edição (hoje fica sempre editável)
+  const [corrigindo, setCorrigindo] = React.useState(false);
+  React.useEffect(() => { setCorrigindo(false); }, [diaAtivo]);
+  const editavel = diaAtivo === hojeK || corrigindo;
   // UM registro por dia: a linha do dia é editável (acrescentar ou corrigir os totais)
   const registrosDia = ((typeof MG !== 'undefined' && MG.getReadingLog) ? MG.getReadingLog() : []).filter((e) => e && e.date === diaAtivo);
   const diaTot = registrosDia.reduce((acc, e) => ({ pages: acc.pages + (e.pages || 0), minutes: acc.minutes + (e.minutes || 0), bookId: acc.bookId || e.bookId }), { pages: 0, minutes: 0, bookId: null });
@@ -235,6 +248,8 @@ function HomeVariantA({ onNav = () => {} }) {
   };
   const apagarDia = () => { if (typeof MG !== 'undefined' && MG.setDayTotals) MG.setDayTotals(diaAtivo, { pages: 0, minutes: 0 }); setDiaSalvo(false); };
   const tituloLivro = (id) => { const bk = (window.BOOKS || []).find((x) => x.id === id); return bk ? bk.title : null; };
+  const fmtDiaLongo = (k) => { const m = String(k).match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return k; const d = new Date(+m[1], +m[2] - 1, +m[3]); const s = d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }); return s; };
+  const navMesBtn = (ativo) => ({ width: 26, height: 26, borderRadius: 13, border: `1px solid ${T.hairline}`, background: 'transparent', color: ativo ? T.ink : T.hairline, fontSize: 16, lineHeight: '22px', padding: 0, cursor: ativo ? 'pointer' : 'default', fontFamily: T.serif, WebkitTapHighlightColor: 'transparent' });
   const fmtDia = (k) => { const m = String(k).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${parseInt(m[3], 10)}/${m[2]}` : k; };
 
 
@@ -517,23 +532,38 @@ function HomeVariantA({ onNav = () => {} }) {
           </div>
 
           {/* calendário do mês — numerado e clicável: tocar num dia mostra (e corrige) os registros */}
-          {st && (
+          {st && cal && (
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-                <span style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, fontWeight: 500 }}>{nomeMes}</span>
-                <span style={{ fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase', color: T.brown, fontWeight: 600 }}>{st.diasLidosMes} {st.diasLidosMes === 1 ? 'dia' : 'dias'} com leitura</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                <button type="button" onClick={() => irMes(-1)} aria-label="mês anterior" style={navMesBtn(true)}>‹</button>
+                <span style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, fontWeight: 500 }}>{nomeMesCal}</span>
+                <button type="button" onClick={() => irMes(1)} aria-label="mês seguinte" disabled={mesOff === 0} style={navMesBtn(mesOff < 0)}>›</button>
+                {mesOff < 0 && <button type="button" onClick={() => { setMesOff(0); setDiaSel(null); }} style={{ background: 'transparent', border: 0, padding: '0 2px', color: T.terra, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>hoje</button>}
+                <span style={{ flex: 1 }}/>
+                <span style={{ fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase', color: T.brown, fontWeight: 600, textAlign: 'right' }}>
+                  {cal.diasLidosMes} {cal.diasLidosMes === 1 ? 'dia' : 'dias'}{cal.paginasMes > 0 ? ` · ${cal.paginasMes.toLocaleString('pt-BR')} pág` : ' com leitura'}
+                </span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+              <div
+                onTouchStart={(e) => { toqueX.current = e.touches && e.touches[0] ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null; }}
+                onTouchEnd={(e) => {
+                  const t0 = toqueX.current; toqueX.current = null;
+                  const t1 = e.changedTouches && e.changedTouches[0];
+                  if (!t0 || !t1) return;
+                  const dx = t1.clientX - t0.x, dy = t1.clientY - t0.y;
+                  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) irMes(dx > 0 ? -1 : 1);
+                }}
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, touchAction: 'pan-y' }}>
                 {['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom'].map((l, i) => (
                   <div key={'h' + i} style={{ textAlign: 'center', fontSize: 9, color: T.brown, fontFamily: T.sans, fontWeight: 600, letterSpacing: 0.4, paddingBottom: 2 }}>{l}</div>
                 ))}
-                {Array.from({ length: st.primeiroDow }).map((_, i) => <div key={'v' + i}/>)}
-                {st.mes.map((d) => {
+                {Array.from({ length: cal.primeiroDow }).map((_, i) => <div key={'v' + i}/>)}
+                {cal.mes.map((d) => {
                   const sel = d.key === diaAtivo;
                   const bg = d.meta ? T.terra : (d.leu ? 'rgba(176,83,58,0.55)' : (d.futuro ? 'transparent' : T.parchment));
                   const fg = d.meta ? T.cream : (d.leu ? T.ink : (d.futuro ? T.muted : T.brown));
                   return (
-                    <button key={d.key} type="button" onClick={() => setDiaSel(d.key)} title={`${d.dia}: ${d.pages} pág · ${d.minutes} min`} style={{
+                    <button key={d.key} type="button" onClick={() => !d.futuro && setDiaSel(d.key)} title={`${d.dia}: ${d.pages} pág · ${d.minutes} min`} style={{
                       aspectRatio: '1', minHeight: 30, borderRadius: 6, padding: 0, cursor: 'pointer',
                       background: bg, color: fg,
                       border: sel ? `2px solid ${T.ink}` : (d.hoje ? `2px solid ${T.terra}` : (d.futuro ? `1px dashed ${T.hairline}` : `1px solid ${T.hairline}`)),
@@ -544,19 +574,36 @@ function HomeVariantA({ onNav = () => {} }) {
                 })}
               </div>
               <div style={{ fontSize: 10.5, color: T.brown, marginTop: 6, fontFamily: T.serif, fontStyle: 'italic' }}>
-                {goalD ? 'cheio = meta cumprida · claro = leu, abaixo da meta · ' : 'claro = leu · '}toque num dia para ver ou corrigir
+                {goalD ? 'cheio = meta cumprida · claro = leu, abaixo da meta · ' : 'claro = leu · '}toque num dia para ver o que leu · deslize para trocar de mês
               </div>
 
+              {!diaNoMes && (
+                <div style={{ marginTop: 12, padding: '12px', border: `1px dashed ${T.hairline}`, borderRadius: 10, textAlign: 'center', fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, color: T.brown }}>
+                  Toque num dia de {nomeMesCal.split(' ')[0].toLowerCase()} para ver o que você leu.
+                </div>
+              )}
+
               {/* a linha do dia — um registro só, editável: acrescentar ou corrigir */}
+              {diaNoMes && (
               <div style={{ marginTop: 12, background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 10, padding: '10px 12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8, gap: 8 }}>
                   <span style={{ fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', color: T.brown, fontWeight: 600 }}>
-                    {diaAtivo === hojeK ? 'Li hoje' : `Li em ${fmtDia(diaAtivo)}`}
+                    {diaAtivo === hojeK ? 'Li hoje' : fmtDiaLongo(diaAtivo)}
                   </span>
                   {diaAtivo !== hojeK && (
-                    <button onClick={() => setDiaSel(null)} style={{ background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>voltar a hoje</button>
+                    <button onClick={() => { setDiaSel(null); setMesOff(0); }} style={{ background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>voltar a hoje</button>
                   )}
                 </div>
+                {detalheDia && (diaAtivo !== hojeK || detalheDia.livros.length > 1 || detalheDia.marcos.length > 0 || detalheDia.notas.length > 0) && (
+                  <DiaCartao detalhe={detalheDia} onNav={onNav} vazioTexto={diaAtivo === hojeK ? null : 'Nenhuma leitura registrada neste dia.'}/>
+                )}
+                {!editavel && (
+                  <button onClick={() => setCorrigindo(true)} style={{ marginTop: 8, background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
+                    {(diaTot.pages || diaTot.minutes) ? 'corrigir este dia' : 'registrar leitura neste dia'}
+                  </button>
+                )}
+                {editavel && (<>
+                {diaAtivo !== hojeK && <div style={{ height: 1, background: T.hairline, margin: '10px 0' }}/>}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                   <input value={diaP} onChange={(e) => { setDiaP(e.target.value); setDiaSalvo(false); }} inputMode="numeric" placeholder="0"
                     onKeyDown={(e) => e.key === 'Enter' && salvarDia()}
@@ -584,10 +631,12 @@ function HomeVariantA({ onNav = () => {} }) {
                 )}
                 <div style={{ fontSize: 11, color: T.brown, marginTop: 8, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.4 }}>
                   Um registro por dia: altere os totais para acrescentar ou corrigir.
-                  {reparticao.length > 1 ? ' · ' + reparticao.map((id) => `${tituloLivro(id) || 'outro'} ${diaBooks[id].pages ? diaBooks[id].pages + ' pág' : ''}${diaBooks[id].pages && diaBooks[id].minutes ? ' · ' : ''}${diaBooks[id].minutes ? diaBooks[id].minutes + ' min' : ''}`).join(' · ') : (diaTot.bookId && tituloLivro(diaTot.bookId) ? ` · ${tituloLivro(diaTot.bookId)}` : '')}
+                  {diaAtivo === hojeK && reparticao.length <= 1 && diaTot.bookId && tituloLivro(diaTot.bookId) ? ` · ${tituloLivro(diaTot.bookId)}` : ''}
                   {(diaTot.pages || diaTot.minutes) ? <> · <button onClick={apagarDia} style={{ background: 'transparent', border: 0, padding: 0, color: T.muted, fontSize: 11, cursor: 'pointer', textDecoration: 'underline', fontFamily: T.serif, fontStyle: 'italic' }}>apagar o dia</button></> : null}
                 </div>
+                </>)}
               </div>
+              )}
             </div>
           )}
         </div>
@@ -1020,6 +1069,58 @@ function LeituraCard({ book: x, onNav = () => {}, label = 'Retomar leitura' }) {
 }
 
 // AnelDoDia — o dia se preenche conforme a meta diária (páginas OU minutos)
+// O CARTÃO DO DIA — o que se leu num dia: capa e páginas de cada livro, livros
+// começados/terminados naquele dia e notas escritas nele. Só leitura; tocar na capa
+// abre o livro. Reaproveitável (Home hoje; Retrospectiva depois).
+function DiaCartao({ detalhe, onNav = () => {}, vazioTexto = 'Nenhuma leitura registrada neste dia.' }) {
+  if (!detalhe) return null;
+  const { livros, semLivro, marcos, notas } = detalhe;
+  const abrir = (b) => { if (!b) return; if (typeof window.__openBook === 'function') window.__openBook(b); else onNav('book'); };
+  const fmt = (p, m) => [p ? `${p} pág` : null, m ? `${m} min` : null].filter(Boolean).join(' · ');
+  const totalP = livros.reduce((a, x) => a + x.pages, 0);
+  const nada = !livros.length && !(semLivro.pages || semLivro.minutes) && !marcos.length && !notas.length;
+  if (nada) return vazioTexto ? <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, color: T.brown, padding: '2px 0 4px' }}>{vazioTexto}</div> : null;
+  return (
+    <div>
+      {livros.map((x) => {
+        const b = x.book;
+        return (
+          <div key={x.id} onClick={() => abrir(b)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', cursor: b ? 'pointer' : 'default' }}>
+            {b ? <BookCover title={b.title} author={b.author} tone={b.tone} cover={b.cover} isbn={b.isbn} w={32}/> : <div style={{ width: 32, height: 46, borderRadius: 3, background: T.parchment }}/>}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b ? b.title : 'Livro removido'}</div>
+              {b && b.author && <div style={{ fontSize: 11, color: T.muted, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.author}</div>}
+              {livros.length > 1 && totalP > 0 && (
+                <div style={{ height: 3, background: T.parchment, borderRadius: 2, marginTop: 4, overflow: 'hidden' }}>
+                  <div style={{ width: `${Math.round((x.pages / totalP) * 100)}%`, height: '100%', background: T.terra }}/>
+                </div>
+              )}
+            </div>
+            <div style={{ fontFamily: T.sans, fontSize: 12, fontWeight: 600, color: T.terra, whiteSpace: 'nowrap' }}>{fmt(x.pages, x.minutes)}</div>
+          </div>
+        );
+      })}
+      {(semLivro.pages > 0 || semLivro.minutes > 0) && (
+        <div style={{ fontSize: 12, color: T.brown, padding: '4px 0' }}>
+          {livros.length ? '+ ' : ''}<strong style={{ color: T.terra }}>{fmt(semLivro.pages, semLivro.minutes)}</strong> sem livro marcado
+        </div>
+      )}
+      {marcos.map((mk, i) => (
+        <div key={'mk' + i} onClick={() => abrir(mk.book)} style={{ fontSize: 12.5, color: T.ink, fontFamily: T.serif, padding: '4px 0', cursor: 'pointer' }}>
+          <span style={{ color: mk.tipo === 'terminou' ? T.olive : T.ochre, fontWeight: 700, marginRight: 6 }}>{mk.tipo === 'terminou' ? '✓' : '◆'}</span>
+          {mk.tipo === 'terminou' ? 'Terminou' : 'Começou'} <em>{mk.book.title}</em>
+        </div>
+      ))}
+      {notas.slice(0, 2).map((n) => (
+        <div key={n.id} style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 12.5, color: T.brown, lineHeight: 1.4, padding: '4px 0 4px 10px', borderLeft: `2px solid ${T.hairline}`, marginTop: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          {(n.text || '').trim()}
+        </div>
+      ))}
+      {notas.length > 2 && <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>+ {notas.length - 2} {notas.length - 2 === 1 ? 'nota' : 'notas'} neste dia</div>}
+    </div>
+  );
+}
+
 function AnelDoDia({ pct = 0, temMeta = false, cumpriu = false, leu = false }) {
   const r = 22, c = 2 * Math.PI * r, p = Math.max(0, Math.min(100, pct));
   const cor = cumpriu ? T.olive : T.terra;
@@ -1318,4 +1419,4 @@ function ThemeTile({ t }) {
   );
 }
 
-Object.assign(window, { HomeVariantA, HomeVariantB, HomeVariantC, StatusBar, TabBar, SectionRule, MicroStat });
+Object.assign(window, { HomeVariantA, HomeVariantB, HomeVariantC, StatusBar, TabBar, SectionRule, MicroStat, DiaCartao });
