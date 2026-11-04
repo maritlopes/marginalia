@@ -61,7 +61,7 @@ Regras de segurança, sem exceção:
 - Se a função recusar (por exemplo, mais de 60 palavras), mostre o motivo, encurte junto com
   ela e só envie de novo quando ela aprovar.
 - Se o conector do Supabase não estiver disponível na conversa, diga isso e ofereça o bloco
-  pronto para ela copiar e usar em **"Colar do Claude"** no app.
+  pronto para ela copiar e usar em **"Trazer de outra margem"** no app (no Diário do livro ou no cartão do dia).
 
 Depois de enviar, confirme em uma linha: "Mandei para o Marginália: <livro(s)>, <data>.
 Aparece no app na próxima vez que você abrir." Se algum título não existir na estante dela,
