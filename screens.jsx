@@ -5297,6 +5297,34 @@ function RetroAno({ ano, atual, aberto, onToggle, livros, log }) {
   for (const e of logAno) { const m = parseInt(String(e.date).slice(5, 7), 10) - 1; if (m >= 0 && m < 12) porMes[m].pages += e.pages || 0; }
   const maxMes = Math.max(1, ...porMes.map(x => x.pages));
   const MESES1 = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+  // o gráfico responde ao toque: mês → calendário do mês (mais escuro = mais páginas) → cartão do dia
+  const [mesSel, setMesSel] = React.useState(null);
+  const [diaSelR, setDiaSelR] = React.useState(null);
+  const escolherMes = (m) => { setMesSel(mesSel === m ? null : m); setDiaSelR(null); };
+  const porDia = {};
+  for (const e of logAno) { const d = porDia[e.date] || (porDia[e.date] = { pages: 0, minutes: 0 }); d.pages += e.pages || 0; d.minutes += e.minutes || 0; }
+  const diasMes = (m) => {
+    const n = new Date(ano, m + 1, 0).getDate(); const out = [];
+    for (let d = 1; d <= n; d++) { const k = `${ano}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`; out.push({ d, k, ...(porDia[k] || { pages: 0, minutes: 0 }) }); }
+    return out;
+  };
+  // destaques do ano: melhor mês, maior sequência, dia da semana que mais rende
+  const destaques = (() => {
+    if (!diasDiario) return null;
+    const melhor = porMes.reduce((a, x) => x.pages > a.pages ? x : a, porMes[0]);
+    const ks = Object.keys(porDia).filter(k => porDia[k].pages > 0 || porDia[k].minutes > 0).sort();
+    let maior = 0, corr = 0, prev = null;
+    for (const k of ks) {
+      const t = new Date(k + 'T12:00:00').getTime();
+      corr = (prev !== null && Math.round((t - prev) / 86400000) === 1) ? corr + 1 : 1;
+      if (corr > maior) maior = corr; prev = t;
+    }
+    const dow = [0, 0, 0, 0, 0, 0, 0];
+    for (const k of ks) dow[new Date(k + 'T12:00:00').getDay()] += porDia[k].pages;
+    const iDow = dow.indexOf(Math.max(...dow));
+    const NOMES_DOW = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+    return { melhor: melhor.pages > 0 ? melhor : null, maior, dow: dow[iDow] > 0 ? NOMES_DOW[iDow] : null };
+  })();
 
   // cronologia: meses em ordem (jan → dez), e dentro do mês pela data de término;
   // lido só com o ano (readIn, sem dia) vai pra um grupo à parte no fim.
@@ -5360,15 +5388,84 @@ function RetroAno({ ano, atual, aberto, onToggle, livros, log }) {
                 {statBox(paginasDiario.toLocaleString('pt-BR'), 'páginas registradas')}
                 {diasDiario > 0 && statBox(Math.round(paginasDiario / diasDiario), 'pág/dia')}
               </div>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 64, marginTop: 12 }}>
-                {porMes.map((x) => (
-                  <div key={x.m} title={`${x.pages} pág`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
-                    <div style={{ width: '100%', height: `${Math.max(x.pages > 0 ? 6 : 2, Math.round((x.pages / maxMes) * 52))}px`, background: x.pages > 0 ? T.terra : T.parchment, borderRadius: 3 }}/>
-                    <div style={{ fontSize: 9, color: T.muted, fontFamily: T.mono, marginTop: 4 }}>{MESES1[x.m]}</div>
-                  </div>
-                ))}
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 84, marginTop: 12 }}>
+                {porMes.map((x) => {
+                  const on = mesSel === x.m;
+                  const apagado = mesSel !== null && !on;
+                  return (
+                    <button key={x.m} type="button" onClick={() => escolherMes(x.m)} aria-label={`${MESES_LONGOS[x.m]}: ${x.pages} páginas`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', background: 'transparent', border: 0, padding: 0, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+                      <div style={{ fontSize: 8.5, color: on ? T.terra : 'transparent', fontFamily: T.mono, fontWeight: 700, marginBottom: 2, whiteSpace: 'nowrap' }}>{x.pages}</div>
+                      <div style={{ width: '100%', height: `${Math.max(x.pages > 0 ? 6 : 2, Math.round((x.pages / maxMes) * 56))}px`, background: x.pages > 0 ? T.terra : T.parchment, opacity: apagado ? 0.35 : 1, borderRadius: 3, outline: on ? `2px solid ${T.ink}` : 'none', outlineOffset: 1, transition: 'opacity .15s' }}/>
+                      <div style={{ fontSize: 9, color: on ? T.ink : T.muted, fontWeight: on ? 700 : 400, fontFamily: T.mono, marginTop: 4 }}>{MESES1[x.m]}</div>
+                    </button>
+                  );
+                })}
               </div>
-              <div style={{ fontSize: 10.5, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 6 }}>páginas registradas por mês</div>
+              <div style={{ fontSize: 10.5, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 6 }}>páginas registradas por mês · toque num mês para abrir os dias</div>
+
+              {mesSel !== null && (() => {
+                const dm = diasMes(mesSel);
+                const lidos = dm.filter(x => x.pages > 0 || x.minutes > 0);
+                const pagM = lidos.reduce((a, x) => a + x.pages, 0);
+                const maxD = Math.max(1, ...dm.map(x => x.pages));
+                const terminados = doAno.filter(b => retroMonthOf(b) === mesSel);
+                const dow0 = (new Date(ano, mesSel, 1).getDay() + 6) % 7;
+                const hojeK = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+                const detalhe = diaSelR && typeof MG !== 'undefined' && MG.dayDetail ? MG.dayDetail(diaSelR) : null;
+                const fmtLongo = (k) => new Date(k + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+                return (
+                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${T.hairline}` }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontFamily: T.serif, fontSize: 16, color: T.terra }}>{MESES_LONGOS[mesSel]}</span>
+                      <span style={{ flex: 1 }}/>
+                      <button onClick={() => escolherMes(mesSel)} style={{ background: 'transparent', border: 0, padding: 0, color: T.muted, fontSize: 11, cursor: 'pointer' }}>fechar</button>
+                    </div>
+                    <div style={{ fontSize: 12, color: T.brown, marginBottom: 10 }}>
+                      {lidos.length
+                        ? <><strong style={{ color: T.terra }}>{pagM.toLocaleString('pt-BR')} pág</strong> em {lidos.length} {lidos.length === 1 ? 'dia' : 'dias'} · ~{Math.round(pagM / lidos.length)} pág/dia</>
+                        : <span style={{ fontStyle: 'italic', fontFamily: T.serif }}>nenhum dia registrado no diário</span>}
+                      {terminados.length > 0 && <> · terminou <em style={{ fontFamily: T.serif }}>{terminados.map(b => b.title).join(', ')}</em></>}
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
+                      {['s', 't', 'q', 'q', 's', 's', 'd'].map((l, i) => <div key={'h' + i} style={{ textAlign: 'center', fontSize: 9, color: T.muted, fontWeight: 600 }}>{l}</div>)}
+                      {Array.from({ length: dow0 }).map((_, i) => <div key={'v' + i}/>)}
+                      {dm.map((x) => {
+                        const leu = x.pages > 0 || x.minutes > 0;
+                        const futuro = x.k > hojeK;
+                        const int = x.pages > 0 ? 0.25 + 0.75 * (x.pages / maxD) : (x.minutes > 0 ? 0.25 : 0);
+                        const sel = diaSelR === x.k;
+                        return (
+                          <button key={x.k} type="button" disabled={futuro} onClick={() => setDiaSelR(sel ? null : x.k)} style={{
+                            aspectRatio: '1', minHeight: 28, borderRadius: 5, padding: 0, boxSizing: 'border-box',
+                            background: leu ? `rgba(176,83,58,${int.toFixed(2)})` : (futuro ? 'transparent' : T.parchment),
+                            color: int > 0.6 ? T.cream : (futuro ? T.muted : T.ink),
+                            border: sel ? `2px solid ${T.ink}` : `1px solid ${futuro ? 'transparent' : T.hairline}`,
+                            fontFamily: T.sans, fontSize: 10.5, fontWeight: sel ? 700 : 500, cursor: futuro ? 'default' : 'pointer', opacity: futuro ? 0.4 : 1,
+                            WebkitTapHighlightColor: 'transparent',
+                          }}>{x.d}</button>
+                        );
+                      })}
+                    </div>
+                    <div style={{ fontSize: 10.5, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 6 }}>mais escuro = mais páginas · toque num dia para ver o que leu</div>
+                    {detalhe && window.DiaCartao && (
+                      <div style={{ marginTop: 10, background: T.bone || T.paper, border: `1px solid ${T.hairline}`, borderRadius: 10, padding: '10px 12px' }}>
+                        <div style={{ fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', color: T.brown, fontWeight: 600, marginBottom: 6 }}>{fmtLongo(diaSelR)}</div>
+                        <window.DiaCartao detalhe={detalhe}/>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {destaques && (destaques.melhor || destaques.maior > 1 || destaques.dow) && (
+                <div style={{ marginTop: 12, fontSize: 11.5, color: T.brown, fontFamily: T.serif, lineHeight: 1.6 }}>
+                  {[
+                    destaques.melhor ? <>melhor mês: <strong style={{ color: T.terra }}>{MESES_LONGOS[destaques.melhor.m].toLowerCase()}</strong> ({destaques.melhor.pages.toLocaleString('pt-BR')} pág)</> : null,
+                    destaques.maior > 1 ? <>maior sequência: <strong style={{ color: T.terra }}>{destaques.maior} dias</strong></> : null,
+                    destaques.dow ? <>o dia que mais rende: <strong style={{ color: T.terra }}>{destaques.dow}</strong></> : null,
+                  ].filter(Boolean).map((el, i) => <span key={i}>{i > 0 ? ' · ' : ''}{el}</span>)}
+                </div>
+              )}
             </div>
           )}
 
