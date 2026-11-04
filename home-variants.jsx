@@ -1214,10 +1214,14 @@ function ColarFicouSheet({ onClose = () => {}, bookIdPadrao = null, inicial = nu
 // abre o livro. Reaproveitável (Home hoje; Retrospectiva depois).
 function DiaCartao({ detalhe, onNav = () => {}, vazioTexto = 'Nenhuma leitura registrada neste dia.', podeEscrever = true }) {
   const [editando, setEditando] = React.useState(null);
-  React.useEffect(() => { setEditando(null); }, [detalhe && detalhe.date]);
+  // o que ficou fica recolhido: tocar no livro abre (e fecha) o daquele dia — o cartão não polui
+  const [aberto, setAberto] = React.useState(null);
+  React.useEffect(() => { setEditando(null); setAberto(null); }, [detalhe && detalhe.date]);
   if (!detalhe) return null;
   const { livros, semLivro, marcos, notas } = detalhe;
   const abrir = (b) => { if (!b) return; if (typeof window.__openBook === 'function') window.__openBook(b); else onNav('book'); };
+  const abrirDiario = (b) => { if (!b) return; try { window.__openBookTab = 'diário'; } catch (e) {} abrir(b); };
+  const temFicou = livros.some((x) => x.ficou);
   const fmt = (p, m) => [p ? `${p} pág` : null, m ? `${m} min` : null].filter(Boolean).join(' · ');
   const totalP = livros.reduce((a, x) => a + x.pages, 0);
   const nada = !livros.length && !(semLivro.pages || semLivro.minutes) && !marcos.length && !notas.length;
@@ -1228,7 +1232,7 @@ function DiaCartao({ detalhe, onNav = () => {}, vazioTexto = 'Nenhuma leitura re
         const b = x.book;
         return (
           <div key={x.id} style={{ padding: '6px 0' }}>
-          <div onClick={() => abrir(b)} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: b ? 'pointer' : 'default' }}>
+          <div onClick={() => { if (!b) return; setAberto(aberto === x.id ? null : x.id); setEditando(null); }} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: b ? 'pointer' : 'default', WebkitTapHighlightColor: 'transparent' }}>
             {b ? <BookCover title={b.title} author={b.author} tone={b.tone} cover={b.cover} isbn={b.isbn} w={32}/> : <div style={{ width: 32, height: 46, borderRadius: 3, background: T.parchment }}/>}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b ? b.title : 'Livro removido'}</div>
@@ -1239,15 +1243,25 @@ function DiaCartao({ detalhe, onNav = () => {}, vazioTexto = 'Nenhuma leitura re
                 </div>
               )}
             </div>
-            <div style={{ fontFamily: T.sans, fontSize: 12, fontWeight: 600, color: T.terra, whiteSpace: 'nowrap' }}>{fmt(x.pages, x.minutes)}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+              <div style={{ fontFamily: T.sans, fontSize: 12, fontWeight: 600, color: T.terra, whiteSpace: 'nowrap' }}>{fmt(x.pages, x.minutes)}</div>
+              {x.ficou && <div title="tem o que ficou" style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 10.5, color: T.brown, whiteSpace: 'nowrap' }}>o que ficou {aberto === x.id ? '▴' : '▾'}</div>}
+            </div>
           </div>
-          {editando === x.id ? (
-            <FicouEditor day={detalhe.date} bookId={x.id} inicial={x.ficou} onFechar={() => setEditando(null)}/>
-          ) : x.ficou ? (
-            <div onClick={() => podeEscrever && setEditando(x.id)} style={{ marginLeft: 42, cursor: podeEscrever ? 'pointer' : 'default' }}><FicouTexto f={x.ficou}/></div>
-          ) : (podeEscrever && b) ? (
-            <button onClick={() => setEditando(x.id)} style={{ marginLeft: 42, marginTop: 4, background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: T.sans }}>＋ o que ficou</button>
-          ) : null}
+          {aberto === x.id && (
+            <div style={{ marginLeft: 42 }}>
+              {editando === x.id ? (
+                <FicouEditor day={detalhe.date} bookId={x.id} inicial={x.ficou} onFechar={() => setEditando(null)}/>
+              ) : x.ficou ? (
+                <div onClick={() => podeEscrever && setEditando(x.id)} style={{ cursor: podeEscrever ? 'pointer' : 'default' }}><FicouTexto f={x.ficou}/></div>
+              ) : (podeEscrever && b) ? (
+                <button onClick={() => setEditando(x.id)} style={{ marginTop: 4, background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: T.sans }}>＋ o que ficou</button>
+              ) : null}
+              {editando !== x.id && b && (
+                <button onClick={() => abrirDiario(b)} style={{ display: 'block', marginTop: 6, background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: T.sans }}>abrir o diário do livro →</button>
+              )}
+            </div>
+          )}
           </div>
         );
       })}
