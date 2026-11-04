@@ -407,10 +407,24 @@ const MG = {
     const mAmbos = ambos.reduce((a, e) => a + e.minutes, 0);
     const pAmbos = ambos.reduce((a, e) => a + e.pages, 0);
     const pagesPerHour = mAmbos >= 20 ? Math.round(pAmbos / (mAmbos / 60)) : null;
+    // constância: em quantos dos últimos 30 dias houve leitura. A janela termina hoje — ou
+    // ontem, se hoje ainda não leu (como a sequência) — e, para quem começou há menos de 30
+    // dias, conta só desde o primeiro registro (nunca cobra dias de antes de começar).
+    const constancia = (() => {
+      const datas = Object.keys(byDay).filter(k => leu(byDay[k])).sort();
+      if (!datas.length) return null;
+      const fimJ = new Date(hoje); if (!leu(byDay[hojeK])) fimJ.setDate(fimJ.getDate() - 1);
+      const primeiro = new Date(datas[0] + 'T00:00:00');
+      const desde = Math.round((fimJ - primeiro) / 86400000) + 1;
+      const n = Math.max(1, Math.min(30, desde));
+      let lidos = 0;
+      for (let i = 0; i < n; i++) { const c = new Date(fimJ); c.setDate(fimJ.getDate() - i); if (leu(byDay[keyOf(c)])) lidos++; }
+      return { lidos, janela: n };
+    })();
     // calendário do mês corrente
     const { mes, primeiroDow, diasLidosMes } = this.monthCalendar(hoje.getFullYear(), hoje.getMonth());
     return {
-      goal, hoje: hojeT, hojeCumpriu: cumpriu(hojeT), streak, hojeFalta,
+      goal, hoje: hojeT, hojeCumpriu: cumpriu(hojeT), streak, hojeFalta, constancia,
       last7: { pages: g7.pages, minutes: g7.minutes, days: g7.days.size },
       book7: { pages: b7.pages, minutes: b7.minutes, days: b7.days.size },
       pagesPerHour, mes, primeiroDow, diasLidosMes,

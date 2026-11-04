@@ -517,9 +517,17 @@ function HomeVariantA({ onNav = () => {} }) {
                   <button onClick={abrirMeta} style={{ background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>Definir uma meta diária →</button>
                 )}
               </div>
+              {/* a sequência é honesta (um dia fora quebra); a constância mostra o hábito de verdade */}
               {st && st.streak > 0 && (
                 <div style={{ fontSize: 12, color: T.olive, marginTop: 5, fontFamily: T.serif }}>
                   <strong>{st.streak} {st.streak === 1 ? 'dia' : 'dias'}</strong> {st.streak === 1 ? 'seguido' : 'seguidos'} com um livro nas mãos{st.hojeFalta ? ' — hoje ainda não' : ''}.
+                </div>
+              )}
+              {st && st.constancia && st.constancia.janela > 1 && st.constancia.lidos > 0 && (
+                <div style={{ fontSize: 12, color: T.brown, marginTop: 3, fontFamily: T.serif }}>
+                  {st.streak > 0
+                    ? <>Constância: <strong style={{ color: T.ink }}>{st.constancia.lidos} dos últimos {st.constancia.janela} dias</strong> com leitura.</>
+                    : <>A sequência recomeça hoje — você leu <strong style={{ color: T.ink }}>{st.constancia.lidos} dos últimos {st.constancia.janela} dias</strong>.</>}
                 </div>
               )}
             </div>
