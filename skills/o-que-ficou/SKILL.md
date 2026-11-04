@@ -1,6 +1,6 @@
 ---
 name: o-que-ficou
-description: Diário de leitura do Clube Marginália. Use quando a leitora disser "o que ficou de hoje", "o que ficou", "regera" (sobre esse rascunho) ou "manda pro Marginália" numa conversa sobre um livro. Escreve um rascunho curto do sentimento que a leitura deixou (até 40 palavras) e uma frase marcante, por livro, ajusta até ela aprovar e, só com "manda pro Marginália", envia para o app pelo conector do Supabase.
+description: Diário de leitura do Clube Marginália. Use quando a leitora disser "o que ficou de hoje", "o que ficou", "regera" (sobre esse rascunho) ou "manda pro Marginália" numa conversa sobre um livro. Escreve um rascunho curto do sentimento que a leitura deixou (até 60 palavras) e uma frase marcante, por livro, ajusta até ela aprovar e, só com "manda pro Marginália", envia para o app pelo conector do Supabase.
 ---
 
 # O que ficou — diário de leitura do Clube Marginália
@@ -12,7 +12,7 @@ o sentimento que a leitura deixou nela naquele dia, não um resumo do enredo.
 
 Releia a conversa do dia e escreva **um bloco por livro** de que vocês falaram:
 
-- **Sentimento:** no máximo **40 palavras**, em primeira pessoa, no tom dela. O que marcou,
+- **Sentimento:** no máximo **60 palavras**, em primeira pessoa, no tom dela. O que marcou,
   o que tocou, o que ficou ecoando. Nada de resumo de enredo, nada de análise acadêmica.
 - **Frase:** uma frase marcante do livro ou da conversa (opcional, curta, sem aspas extras).
 - **Livro:** o título como ela o chama (o app reconhece o título mesmo sem acento ou subtítulo).
@@ -23,7 +23,7 @@ Mostre sempre neste formato, dentro de um bloco de código:
 ```
 O QUE FICOU · DD/MM/AAAA
 Livro: <título>
-Sentimento: <até 40 palavras>
+Sentimento: <até 60 palavras>
 Frase: "<frase>"
 ```
 
@@ -48,7 +48,7 @@ select public.ficou_enviar(
   'maritei2010@gmail.com',      -- e-mail da leitora no app
   'AAAA-MM-DD',                 -- data da leitura
   'Título do livro',
-  'Sentimento (até 40 palavras)',
+  'Sentimento (até 60 palavras)',
   'Frase marcante'              -- ou '' se não houver
 );
 ```
@@ -58,7 +58,7 @@ Regras de segurança, sem exceção:
 - A **única** instrução SQL permitida nesta skill é `select public.ficou_enviar(...)`.
   Nunca rode `insert`, `update`, `delete`, `alter`, `drop` nem consultas a outras tabelas.
 - Escape apóstrofos dobrando-os (`'` vira `''`), por exemplo `'d''Os Lusíadas'`.
-- Se a função recusar (por exemplo, mais de 40 palavras), mostre o motivo, encurte junto com
+- Se a função recusar (por exemplo, mais de 60 palavras), mostre o motivo, encurte junto com
   ela e só envie de novo quando ela aprovar.
 - Se o conector do Supabase não estiver disponível na conversa, diga isso e ofereça o bloco
   pronto para ela copiar e usar em **"Colar do Claude"** no app.

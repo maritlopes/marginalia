@@ -1096,7 +1096,7 @@ function LeituraCard({ book: x, onNav = () => {}, label = 'Retomar leitura' }) {
 
 // AnelDoDia — o dia se preenche conforme a meta diária (páginas OU minutos)
 // ── O QUE FICOU ── o sentimento que a leitura de um livro deixou num dia.
-// Curto de propósito (até 40 palavras) + uma frase marcante opcional.
+// Curto de propósito (até 60 palavras) + uma frase marcante opcional.
 const fmtDiaCurto = (k) => { const m = String(k || '').match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return k; return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }).replace('.', ''); };
 
 function FicouTexto({ f, compacto = false }) {
@@ -1110,7 +1110,7 @@ function FicouTexto({ f, compacto = false }) {
 }
 
 function FicouEditor({ day, bookId, inicial, comData = false, onFechar = () => {} }) {
-  const max = (MG && MG.FICOU_MAX_PALAVRAS) || 40;
+  const max = (MG && MG.FICOU_MAX_PALAVRAS) || 60;
   const [dia, setDia] = React.useState(day);
   const [sent, setSent] = React.useState((inicial && inicial.sentimento) || '');
   const [frase, setFrase] = React.useState((inicial && inicial.frase) || '');
@@ -1141,7 +1141,7 @@ function FicouEditor({ day, bookId, inicial, comData = false, onFechar = () => {
 // "Colar do Claude": cola o bloco O QUE FICOU, o app reconhece dia, livro(s), sentimento e frase,
 // mostra para conferir (dá para trocar o livro ou ajustar o texto) e guarda.
 function ColarFicouSheet({ onClose = () => {}, bookIdPadrao = null, inicial = null, onGuardado = null, titulo = 'Colar o que ficou' }) {
-  const max = (MG && MG.FICOU_MAX_PALAVRAS) || 40;
+  const max = (MG && MG.FICOU_MAX_PALAVRAS) || 60;
   const [texto, setTexto] = React.useState('');
   const [lido, setLido] = React.useState(inicial);
   const [feito, setFeito] = React.useState(false);
