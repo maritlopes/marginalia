@@ -556,6 +556,14 @@ const MG = {
       }
       if (cur && campo) cur[campo] = (cur[campo] + ' ' + linha).trim();
     }
+    // texto solto (sem "Sentimento:"/"Frase:"): o texto inteiro vira o sentimento, para conferir
+    if (!itens.length) {
+      const corpo = t.split('\n').map(l => l.trim())
+        .filter(l => l && !/^o que ficou\b/i.test(l) && !/^(?:[-*•]\s*)?(?:📖\s*|\*{0,2}livro\*{0,2}\s*[:：])/i.test(l))
+        .join(' ').replace(/\s+/g, ' ').trim();
+      const mLivro = t.match(/^(?:[-*•]\s*)?(?:📖\s*|\*{0,2}livro\*{0,2}\s*[:：]\s*)(.+)$/im);
+      if (corpo) itens.push({ titulo: mLivro ? mLivro[1].replace(/\*+/g, '').trim() : '', sentimento: corpo, frase: '' });
+    }
     const limpo = itens
       .map(x => ({ ...x, sentimento: x.sentimento.replace(/\*+/g, '').trim(), frase: x.frase.replace(/\*+/g, '').trim().replace(/^["“”«»']+|["“”«»']+$/g, '').trim() }))
       .filter(x => x.sentimento || x.frase)

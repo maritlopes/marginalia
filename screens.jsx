@@ -86,8 +86,10 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
     { n: 'VII', title: 'A cidadania do mundo', pages: '263–304', done: false },
   ];
   const chapters = isDemo ? demoChapters : [];
-  // abas: 'sobre', 'notas' e 'ecos' sempre; 'capítulos' só no livro de exemplo
-  const tabs = ['sobre', ...(isDemo ? [] : ['diário']), ...(chapters.length ? ['capítulos'] : []), 'notas', 'ecos'];
+  // abas: 'sobre', 'diário' (o que ficou + notas) e 'ecos'; 'capítulos' e 'notas' só no livro de exemplo
+  const tabs = isDemo ? ['sobre', ...(chapters.length ? ['capítulos'] : []), 'notas', 'ecos'] : ['sobre', 'diário', 'ecos'];
+  const [diarioNovo, setDiarioNovo] = React.useState(false);
+  const diasNoDiario = (!isDemo && b) ? montarDiario(b).lista.length : 0;
   const outrosLivros = (window.BOOKS || []).filter(x => x.id !== b.id);
 
   return (
@@ -134,7 +136,9 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
             </div>
             <div style={{ display: 'flex', gap: 14, fontSize: 10, color: T.muted, letterSpacing: 0.4, flexWrap: 'wrap' }}>
               <div><span style={{ color: T.ink, fontWeight: 600 }}>{b.pages || '—'}</span> pág</div>
-              <div><span style={{ color: T.ink, fontWeight: 600 }}>{bookNotes.length}</span> notas</div>
+              {isDemo
+                ? <div><span style={{ color: T.ink, fontWeight: 600 }}>{bookNotes.length}</span> notas</div>
+                : <div><span style={{ color: T.ink, fontWeight: 600 }}>{diasNoDiario}</span> {diasNoDiario === 1 ? 'dia' : 'dias'} no diário</div>}
               <div><span style={{ color: T.ink, fontWeight: 600 }}>{fmtDataLeitura(b.startedAt || b.readingSince) || b.started || '—'}</span> início</div>
               {(fmtDataLeitura(b.finishedAt) || b.readIn) ? (
                 <div><span style={{ color: T.ink, fontWeight: 600 }}>{fmtDataLeitura(b.finishedAt) || b.readIn}</span> fim</div>
@@ -200,7 +204,9 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
 
             {/* quick actions */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 22 }}>
-              <QuickCard icon="note" title="Escrever nota" sub={`${bookNotes.length} ${bookNotes.length === 1 ? 'nota' : 'notas'}`} primary onClick={() => { if (typeof window !== 'undefined') window.__editingNote = null; onNav('note'); }}/>
+              {isDemo
+                ? <QuickCard icon="note" title="Escrever nota" sub={`${bookNotes.length} ${bookNotes.length === 1 ? 'nota' : 'notas'}`} primary onClick={() => { if (typeof window !== 'undefined') window.__editingNote = null; onNav('note'); }}/>
+                : <QuickCard icon="note" title="O que ficou hoje" sub={`${diasNoDiario} ${diasNoDiario === 1 ? 'dia' : 'dias'} no diário`} primary onClick={() => { setDiarioNovo(true); setTab('diário'); }}/>}
               <QuickCard icon="clock" title="Foco" sub="Sessão com timer" onClick={() => onNav('foco')}/>
               <QuickCard icon="pen" title="Editar livro" sub="Status, páginas, capa" onClick={openEditor}/>
               {!isDemo && b.status && (
@@ -305,7 +311,7 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
           </div>
         )}
 
-        {tab === 'diário' && !isDemo && <DiarioDoLivro book={b}/>}
+        {tab === 'diário' && !isDemo && <DiarioDoLivro book={b} onNav={onNav} iniciarNovo={diarioNovo}/>}
 
         {tab === 'notas' && (
           bookNotes.length > 0 ? (
@@ -5516,51 +5522,97 @@ function RetroAno({ ano, atual, aberto, onToggle, livros, log }) {
   );
 }
 
-// DIÁRIO DO LIVRO — a travessia dia a dia: páginas lidas (do diário) + o que ficou
-// (sentimento e frase) + começo e fim. Ordem cronológica: dá para percorrer o que o
-// livro foi despertando. Tocar num dia escreve ou corrige o que ficou.
-function DiarioDoLivro({ book }) {
-  const b = book;
-  const [editando, setEditando] = React.useState(null); // dia em edição, ou 'novo'
-  const [colar, setColar] = React.useState(false);
-  const hojeK = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+// DIÁRIO DO LIVRO — o lugar único do que o livro despertou: a travessia dia a dia
+// (páginas do diário, começou/terminou), o que ficou (sentimento + frase) e as notas
+// livres, cada uma no dia em que foi escrita (o id 'n_<carimbo>' dá o dia); notas sem
+// data ficam em "notas soltas". Ordem cronológica.
+const _diaDeNota = (n) => {
+  const t = n && n.id && String(n.id).match(/^n_(\d{12,14})$/);
+  if (!t) return null;
+  const d = new Date(parseInt(t[1], 10));
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+function montarDiario(b) {
   const log = (typeof MG !== 'undefined' && MG.getReadingLog) ? MG.getReadingLog() : [];
   const dias = {};
-  const dia = (k) => dias[k] || (dias[k] = { k, pages: 0, minutes: 0, ficou: null, marcos: [] });
+  const dia = (k) => dias[k] || (dias[k] = { k, pages: 0, minutes: 0, ficou: null, marcos: [], notas: [] });
   for (const e of log) {
     if (!e || !e.date) continue;
     const parte = (e.books && e.books[b.id]) ? e.books[b.id] : ((!e.books || !Object.keys(e.books).length) && e.bookId === b.id ? e : null);
     if (parte && ((parte.pages || 0) + (parte.minutes || 0) > 0)) { const d = dia(e.date); d.pages += parte.pages || 0; d.minutes += parte.minutes || 0; }
   }
-  for (const f of (MG.getFicou ? MG.getFicou({ bookId: b.id }) : [])) dia(f.day).ficou = f;
+  for (const f of ((typeof MG !== 'undefined' && MG.getFicou) ? MG.getFicou({ bookId: b.id }) : [])) dia(f.day).ficou = f;
   const ini = String(b.startedAt || b.readingSince || '').slice(0, 10);
   const fim = String(b.finishedAt || '').slice(0, 10);
   if (/^\d{4}-\d{2}-\d{2}$/.test(ini)) dia(ini).marcos.push('começou');
   if (/^\d{4}-\d{2}-\d{2}$/.test(fim)) dia(fim).marcos.push('terminou');
+  const notas = (window.NOTES || []).filter(n => n && ((n.bookId && n.bookId === b.id) || (!n.bookId && n.book === b.title)));
+  const soltas = [];
+  for (const n of notas) { const k = _diaDeNota(n); if (k) dia(k).notas.push(n); else soltas.push(n); }
   const lista = Object.values(dias).sort((x, y) => x.k.localeCompare(y.k));
+  return { lista, soltas, totalNotas: notas.length };
+}
+function buildDiarioMailto(b, diario) {
+  const title = b.title || 'leitura', author = b.author || '';
+  const fmtD = (k) => new Date(k + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+  const blocos = [];
+  for (const d of diario.lista) {
+    const linhas = [];
+    const cab = [fmtD(d.k), (d.pages ? d.pages + ' pág' : null), ...d.marcos].filter(Boolean).join(' · ');
+    if (d.ficou && d.ficou.sentimento) linhas.push(d.ficou.sentimento);
+    if (d.ficou && d.ficou.frase) linhas.push(`“${d.ficou.frase}”`);
+    for (const n of d.notas) linhas.push(`Nota: ${(n.text || '').trim()}`);
+    if (linhas.length) blocos.push(cab + '\n' + linhas.join('\n'));
+  }
+  for (const n of diario.soltas) blocos.push(`Nota: ${(n.text || '').trim()}`);
+  const body = `Diário de leitura — "${title}"${author ? ', ' + author : ''}\n\n` + blocos.join('\n\n———\n\n') + `\n\n— Anotado no Marginália · Clube de Leitura`;
+  return `mailto:?subject=${encodeURIComponent(`Marginália — meu diário de ${title}`)}&body=${encodeURIComponent(body)}`;
+}
+
+function DiarioDoLivro({ book, onNav = () => {}, iniciarNovo = false }) {
+  const b = book;
+  const hojeK = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+  const [editando, setEditando] = React.useState(iniciarNovo ? 'novo' : null); // dia em edição, ou 'novo'
+  const [colar, setColar] = React.useState(false);
+  const diario = montarDiario(b);
+  const { lista, soltas } = diario;
   const comFicou = lista.filter(d => d.ficou).length;
+  const temAlgoEscrito = comFicou > 0 || diario.totalNotas > 0;
   const fmtLongo = (k) => new Date(k + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short', year: k.slice(0, 4) !== hojeK.slice(0, 4) ? 'numeric' : undefined }).replace(/\./g, '');
   const fmt = (p, m) => [p ? `${p} pág` : null, m ? `${m} min` : null].filter(Boolean).join(' · ');
   const btn = (primario) => ({ background: primario ? T.terra : 'transparent', color: primario ? T.cream : T.brown, border: primario ? 0 : `1px solid ${T.hairline}`, borderRadius: 999, padding: '8px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: T.sans });
+  const linkBtn = { background: 'transparent', border: 0, padding: 0, color: T.muted, fontSize: 11.5, cursor: 'pointer', fontFamily: T.sans };
+  // a nota livre usa o editor de notas de sempre; ao voltar, o livro abre de novo no Diário
+  const abrirNota = (n) => { try { window.__editingNote = n || null; window.__openBookTab = 'diário'; } catch (e) {} onNav('note'); };
+  const NotaLivre = ({ n }) => (
+    <div onClick={() => abrirNota(n)} style={{ cursor: 'pointer', marginTop: 6 }}>
+      <span style={{ fontSize: 9.5, letterSpacing: 0.8, textTransform: 'uppercase', color: T.muted, fontWeight: 700 }}>nota{n.page ? ` · pág ${n.page}` : ''}</span>
+      <div style={{ fontFamily: T.serif, fontSize: 13.5, color: T.ink, lineHeight: 1.45, whiteSpace: 'pre-wrap', display: '-webkit-box', WebkitLineClamp: 6, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{(n.text || '').trim()}</div>
+    </div>
+  );
   return (
     <div>
       <div style={{ fontFamily: T.serif, fontSize: 14, color: T.brown, fontStyle: 'italic', lineHeight: 1.5, marginBottom: 12 }}>
         {lista.length ? `${lista.length} ${lista.length === 1 ? 'dia' : 'dias'} com este livro${comFicou ? ` · ${comFicou} com o que ficou` : ''}.` : 'O diário deste livro ainda está em branco.'}
       </div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
         <button onClick={() => setEditando('novo')} style={btn(true)}>＋ O que ficou hoje</button>
-        <button onClick={() => setColar(true)} style={btn(false)}>Colar do Claude</button>
+        <button onClick={() => setColar(true)} style={btn(false)}>✎ Trazer de outra margem</button>
+      </div>
+      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 14 }}>
+        <button onClick={() => abrirNota(null)} style={linkBtn}>＋ nota livre (sem limite)</button>
+        {temAlgoEscrito && <button onClick={() => { window.location.href = buildDiarioMailto(b, diario); }} style={linkBtn}>enviar o diário por e-mail</button>}
       </div>
       {editando === 'novo' && (
         <div style={{ marginBottom: 14 }}>
-          <window.FicouEditor day={hojeK} bookId={b.id} inicial={(dias[hojeK] && dias[hojeK].ficou) || null} comData onFechar={() => setEditando(null)}/>
+          <window.FicouEditor day={hojeK} bookId={b.id} inicial={MG.getFicou({ day: hojeK, bookId: b.id })[0] || null} comData onFechar={() => setEditando(null)}/>
         </div>
       )}
       <div style={{ position: 'relative', paddingLeft: 18 }}>
         {lista.length > 0 && <div style={{ position: 'absolute', left: 4, top: 6, bottom: 6, width: 1, background: T.hairline }}/>}
         {lista.map((d) => (
           <div key={d.k} style={{ position: 'relative', paddingBottom: 16 }}>
-            <div style={{ position: 'absolute', left: -18, top: 5, width: 9, height: 9, borderRadius: 5, background: d.ficou ? T.terra : (d.marcos.length ? T.olive : T.parchment), border: `1px solid ${d.ficou ? T.terra : T.hairline}` }}/>
+            <div style={{ position: 'absolute', left: -18, top: 5, width: 9, height: 9, borderRadius: 5, background: (d.ficou || d.notas.length) ? T.terra : (d.marcos.length ? T.olive : T.parchment), border: `1px solid ${(d.ficou || d.notas.length) ? T.terra : T.hairline}` }}/>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase', color: T.brown, fontWeight: 700 }}>{fmtLongo(d.k)}</span>
               {(d.pages > 0 || d.minutes > 0) && <span style={{ fontSize: 11.5, color: T.terra, fontWeight: 600 }}>{fmt(d.pages, d.minutes)}</span>}
@@ -5571,11 +5623,19 @@ function DiarioDoLivro({ book }) {
             ) : d.ficou ? (
               <div onClick={() => setEditando(d.k)} style={{ cursor: 'pointer' }}><window.FicouTexto f={d.ficou}/></div>
             ) : (
-              <button onClick={() => setEditando(d.k)} style={{ marginTop: 3, background: 'transparent', border: 0, padding: 0, color: T.muted, fontSize: 11.5, cursor: 'pointer', fontFamily: T.sans }}>＋ o que ficou</button>
+              <button onClick={() => setEditando(d.k)} style={{ ...linkBtn, marginTop: 3 }}>＋ o que ficou</button>
             )}
+            {d.notas.map(n => <NotaLivre key={n.id} n={n}/>)}
           </div>
         ))}
       </div>
+      {soltas.length > 0 && (
+        <div style={{ marginTop: 10, paddingTop: 12, borderTop: `1px solid ${T.hairline}` }}>
+          <div style={{ fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: T.muted, fontWeight: 700 }}>Notas soltas</div>
+          <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 2 }}>escritas antes de o diário guardar o dia</div>
+          {soltas.map(n => <NotaLivre key={n.id} n={n}/>)}
+        </div>
+      )}
       {colar && <window.ColarFicouSheet bookIdPadrao={b.id} onClose={() => setColar(false)}/>}
     </div>
   );

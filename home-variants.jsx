@@ -658,7 +658,7 @@ function HomeVariantA({ onNav = () => {} }) {
                 </div>
                 </>)}
                 <div style={{ marginTop: 10, paddingTop: 8, borderTop: `1px dashed ${T.hairline}` }}>
-                  <button onClick={() => setColarAberto(true)} style={{ background: 'transparent', border: 0, padding: 0, color: T.brown, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: T.sans }}>✎ colar o que ficou (do Claude)</button>
+                  <button onClick={() => setColarAberto(true)} style={{ background: 'transparent', border: 0, padding: 0, color: T.brown, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: T.sans }}>✎ trazer de outra margem</button>
                 </div>
               </div>
               )}
@@ -1138,9 +1138,9 @@ function FicouEditor({ day, bookId, inicial, comData = false, onFechar = () => {
   );
 }
 
-// "Colar do Claude": cola o bloco O QUE FICOU, o app reconhece dia, livro(s), sentimento e frase,
+// "Trazer de outra margem": cola o bloco O QUE FICOU, o app reconhece dia, livro(s), sentimento e frase,
 // mostra para conferir (dá para trocar o livro ou ajustar o texto) e guarda.
-function ColarFicouSheet({ onClose = () => {}, bookIdPadrao = null, inicial = null, onGuardado = null, titulo = 'Colar o que ficou' }) {
+function ColarFicouSheet({ onClose = () => {}, bookIdPadrao = null, inicial = null, onGuardado = null, titulo = 'Trazer de outra margem' }) {
   const max = (MG && MG.FICOU_MAX_PALAVRAS) || 60;
   const [texto, setTexto] = React.useState('');
   const [lido, setLido] = React.useState(inicial);
@@ -1167,14 +1167,14 @@ function ColarFicouSheet({ onClose = () => {}, bookIdPadrao = null, inicial = nu
         {!lido ? (
           <>
             <div style={{ fontSize: 12, color: T.brown, lineHeight: 1.5, marginBottom: 10, fontFamily: T.serif }}>
-              Na conversa de leitura, peça ao Claude <em>“o que ficou de hoje”</em>, ajuste até ficar do seu jeito, copie e cole aqui. O app reconhece o dia, o livro, o sentimento e a frase.
+              Cole um texto sobre a leitura — de uma conversa, de um caderno, de onde for. Se vier no formato <em>Livro / Sentimento / Frase</em>, o app reconhece sozinho o dia, o livro, o sentimento e a frase.
             </div>
             <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={8} autoFocus placeholder={'O QUE FICOU · 04/11/2026\nLivro: Middlemarch\nSentimento: …\nFrase: “…”'} style={{ ...campo, fontFamily: T.mono, fontSize: 12.5 }}/>
             <button onClick={ler} disabled={!texto.trim()} style={{ marginTop: 10, width: '100%', background: texto.trim() ? T.ink : T.parchment, color: texto.trim() ? T.cream : T.brown, border: 0, borderRadius: 10, padding: '11px', fontSize: 13, fontWeight: 600, cursor: texto.trim() ? 'pointer' : 'default' }}>Ler</button>
           </>
         ) : lido.itens.length === 0 ? (
           <>
-            <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 14, color: T.brown, margin: '10px 0' }}>Não encontrei “Sentimento:” nem “Frase:” no texto. Confira se colou o bloco inteiro.</div>
+            <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 14, color: T.brown, margin: '10px 0' }}>Não encontrei texto para guardar. Cole o que ficou da leitura e tente de novo.</div>
             <button onClick={() => setLido(null)} style={{ background: 'transparent', border: `1px solid ${T.hairline}`, borderRadius: 8, padding: '8px 14px', color: T.brown, fontSize: 12, cursor: 'pointer' }}>Voltar</button>
           </>
         ) : (
