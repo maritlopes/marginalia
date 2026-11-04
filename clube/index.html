@@ -97,6 +97,7 @@ section.block{padding:var(--sp-16) 0;border-top:1px solid var(--divider)}
 /* COMPANIONS */
 .companions{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-5)}
 @media(max-width:680px){.companions{grid-template-columns:1fr}}
+.comp[hidden]{display:none}
 .comp{display:block;text-decoration:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:var(--sp-6);box-shadow:var(--shadow);transition:all var(--tr)}
 .comp:hover{border-color:var(--primary);transform:translateY(-2px);box-shadow:var(--shadow-lg)}
 .comp-ic{width:44px;height:44px;margin-bottom:var(--sp-3);display:block;object-fit:contain}
@@ -167,11 +168,11 @@ footer .brand{font-family:var(--font-display);font-size:var(--text-sm);color:var
   </section>
 
   <section class="block">
-    <p class="kicker">II · Sozinho ou em companhia</p>
+    <p class="kicker">II · Só ou em companhia</p>
     <h2>Coletivo ou intimista — <em>você escolhe</em></h2>
     <div class="prose">
-      <p>Mesmo lendo sozinho, o Marginália acompanha. Defina seu ritmo, acesse os livros, registre as ressonâncias que um texto provoca em você.</p>
-      <p class="em">Se desafie com leituras que sempre adiou — ou se acolha nas que trazem calma.</p>
+      <p>Mesmo na leitura solitária, a Marginália acompanha. Defina seu ritmo, organize seus livros, registre as ressonâncias que um texto provoca em você.</p>
+      <p class="em">Desafie-se com leituras sempre adiadas — ou acolha-se nas que trazem calma.</p>
     </div>
   </section>
 
@@ -179,7 +180,7 @@ footer .brand{font-family:var(--font-display);font-size:var(--text-sm);color:var
     <p class="kicker">III · Por que existe</p>
     <div class="testi">
       <span class="mk">"</span>
-      <blockquote>Sempre anotei nas margens. Sempre quis conversar sobre o que li. O Marginália nasceu da vontade de juntar essas duas coisas — e de compartilhá-las com pessoas que também levam a leitura a sério.</blockquote>
+      <blockquote>Sempre anotei nas margens. Sempre quis conversar sobre o que li. A Marginália nasceu da vontade de juntar essas duas coisas — e de compartilhá-las com pessoas que também levam a leitura a sério.</blockquote>
       <div class="author">Mari, criadora do projeto</div>
       <p class="foot">O app ainda é jovem. Vocês são os primeiros leitores de fora a experimentá-lo.</p>
     </div>
@@ -192,7 +193,7 @@ footer .brand{font-family:var(--font-display);font-size:var(--text-sm);color:var
       <div class="card"><span class="orn">❦</span><h3>Caderno de Leitura</h3><p>Registre suas notas, impressões e citações livro a livro. Seu caderno pessoal, sempre à mão.</p></div>
       <div class="card"><span class="orn">❦</span><h3>Pontes entre Obras</h3><p>Conecte temas, personagens e ideias que atravessam diferentes livros. Tudo que você leu conversa.</p></div>
       <div class="card"><span class="orn">❦</span><h3>Círculo de Leitura</h3><p>Leia em companhia. Compartilhe notas, discuta passagens, crie uma leitura coletiva.</p></div>
-      <div class="card"><span class="orn">❦</span><h3>Marginália Clube</h3><p>O clube de leitura digital — com curadoria, discussões guiadas e leituras mensais em grupo.</p></div>
+      <div class="card"><span class="orn">❦</span><h3>Marginália Clube</h3><p>O clube de leitura digital — com curadoria, círculos de leitura e calendários em grupo.</p></div>
     </div>
   </section>
 
@@ -214,11 +215,13 @@ footer .brand{font-family:var(--font-display);font-size:var(--text-sm);color:var
         <p>Da escrita cuneiforme à inteligência artificial — história, filosofia, literatura, arte e música em diálogo contínuo.</p>
         <span class="go">Atravessar o tempo →</span>
       </a>
-      <a class="comp" href="/maratona-nobel/">
+      <!-- Convite da Maratona Nobel: adormecido entre edições; o script no fim da página
+           o mostra só de 1º/jul a 31/out/2027 (revise o texto quando voltar). -->
+      <a class="comp" href="/maratona-nobel/" data-convite-desde="2027-07-01" data-convite-ate="2027-10-31" hidden>
         <img class="comp-ic" src="/nobel-medal.png" alt="" aria-hidden="true">
         <span class="tag">Desafio de leitura</span>
         <h3>Maratona Nobel</h3>
-        <p>O jogo de leitura do Nobel, de junho a outubro — idealização e curadoria de Jamile e João. Acompanhe pelo Marginália.</p>
+        <p>O jogo de leitura do Nobel, de junho a outubro — idealização e curadoria de Jamile e João. Acompanhe pela Marginália.</p>
         <span class="go">Ver a maratona →</span>
       </a>
     </div>
@@ -240,7 +243,7 @@ footer .brand{font-family:var(--font-display);font-size:var(--text-sm);color:var
 <div class="invite">
   <div class="orn">❦</div>
   <h2>Toda leitura ganha mais quando tem testemunhas.</h2>
-  <p>Obrigada por fazer parte desse experimento. Vocês não são só os primeiros usuários —</p>
+  <p>Obrigada por fazer parte deste experimento. Vocês não são só os primeiros usuários —</p>
   <p><em>são os primeiros leitores desta ideia.</em></p>
   <div class="sig">Marginália — um clube pessoal de leitura profunda</div>
 </div>
@@ -254,6 +257,15 @@ footer .brand{font-family:var(--font-display);font-size:var(--text-sm);color:var
   <div class="brand">Marginália · Clube de Leitura · 2026</div>
 </footer>
 
+<script>
+  // convites com janela de datas (ex.: Maratona Nobel) só aparecem dentro dela
+  (function () {
+    var d = new Date(), hoje = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    document.querySelectorAll('[data-convite-desde]').forEach(function (el) {
+      if (hoje >= el.getAttribute('data-convite-desde') && hoje <= (el.getAttribute('data-convite-ate') || '9999-12-31')) el.hidden = false;
+    });
+  })();
+</script>
 <script>
 (function(){
   var KEY='marginalia-clube-theme';

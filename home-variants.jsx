@@ -91,7 +91,7 @@ function UserAvatar({ size = 36 }) {
   // <button> (não <div>): no iOS em modo standalone/tela-inicial, toques em <div onClick>
   // não disparam de forma confiável; um botão nativo sempre recebe o toque.
   return (
-    <button type="button" onClick={abrir} title="Seu perfil · entrar e sincronizar" style={{
+    <button type="button" onClick={abrir} title="Sua conta · entrar e sincronizar" style={{
       width: size, height: size, borderRadius: '50%', background: T.ink, color: T.cream,
       display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
       fontFamily: T.serif, fontWeight: 500, fontSize: Math.round(size * 0.42),
@@ -128,7 +128,7 @@ function LoginPrompt() {
       <div style={{ textAlign: 'center', marginBottom: 14 }}>
         <div style={{ marginBottom: 8, opacity: 0.85 }}>{typeof BrandMark !== 'undefined' ? <BrandMark size={34}/> : null}</div>
         <div style={{ fontFamily: T.serif, fontSize: 19, fontWeight: 500, letterSpacing: -0.3, marginBottom: 6 }}>
-          {invited ? 'Você foi convidada para a Marginália' : 'Entre na Marginália'}
+          {invited ? 'Você recebeu um convite para a Marginália' : 'Entre na Marginália'}
         </div>
         <div style={{ fontFamily: T.serif, fontSize: 13.5, color: T.brown, lineHeight: 1.5, maxWidth: 330, margin: '0 auto' }}>
           {invited
@@ -481,8 +481,8 @@ function HomeVariantA({ onNav = () => {} }) {
             <div style={{ background: T.cream, border: `1px solid ${T.ochre}`, borderRadius: 12, padding: '12px 14px', marginBottom: 18 }}>
               <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.4 }}>
                 {r.conflito
-                  ? <>Chegou do Claude um “o que ficou” de <em>{r.book_title}</em> ({window.fmtDiaCurto ? window.fmtDiaCurto(r.day) : r.day}), mas você já tinha escrito um nesse dia.</>
-                  : <>Chegou do Claude {n === 1 ? 'um “o que ficou”' : `${n} “o que ficou”`} — não achei o livro <em>“{r.book_title}”</em> na sua estante.</>}
+                  ? <>Chegou de outra margem um “o que ficou” de <em>{r.book_title}</em> ({window.fmtDiaCurto ? window.fmtDiaCurto(r.day) : r.day}), mas você já tinha escrito um nesse dia.</>
+                  : <>Chegou de outra margem {n === 1 ? 'um “o que ficou”' : `${n} “o que ficou”`} — não achei o livro <em>“{r.book_title}”</em> na sua estante.</>}
               </div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 8 }}>
                 <button onClick={() => setPendenteAberto(r)} style={{ background: T.ochre, color: T.cream, border: 0, borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{r.conflito ? 'Ver e escolher' : 'Escolher o livro'}</button>
@@ -492,7 +492,7 @@ function HomeVariantA({ onNav = () => {} }) {
           );
         })()}
         {pendenteAberto && (
-          <ColarFicouSheet titulo="Chegou do Claude"
+          <ColarFicouSheet titulo="Chegou de outra margem"
             inicial={{ day: pendenteAberto.day, itens: [{ titulo: pendenteAberto.book_title, bookId: pendenteAberto.bookId || null, sentimento: pendenteAberto.sentimento || '', frase: pendenteAberto.frase || '' }] }}
             onGuardado={() => { const id = pendenteAberto.id; if (window.MGCloud && window.MGCloud.marcarFicouRecebido) window.MGCloud.marcarFicouRecebido([id]); }}
             onClose={() => setPendenteAberto(null)}/>
@@ -691,7 +691,7 @@ function HomeVariantA({ onNav = () => {} }) {
           if (ativas.length === 0) {
             return (
               <>
-                <SectionRule label={tt('suas_metas') !== 'suas_metas' ? tt('suas_metas') : 'Suas metas'}/>
+                <SectionRule label={'Seus desafios'}/>
                 <div onClick={() => onNav('metas')} style={{
                   padding: '14px 16px', background: 'transparent',
                   border: `1px dashed ${T.hairline}`, borderRadius: 12,
@@ -719,7 +719,7 @@ function HomeVariantA({ onNav = () => {} }) {
           }
           return (
             <>
-              <SectionRule label="Sua meta" action={ativas.length > 1 ? `+${ativas.length - 1} →` : 'editar →'}/>
+              <SectionRule label="Seu desafio" action={ativas.length > 1 ? `+${ativas.length - 1} →` : 'editar →'}/>
               <div onClick={() => onNav('metas')} style={{
                 padding: '14px 16px', background: T.cream, borderRadius: 12,
                 border: `1px solid ${T.hairline}`, cursor: 'pointer', marginBottom: 22,
@@ -985,7 +985,7 @@ function HomeVariantA({ onNav = () => {} }) {
               A Tapeçaria do Tempo
             </div>
             <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, lineHeight: 1.5, color: 'rgba(247,241,228,0.82)', marginBottom: 12, maxWidth: '92%' }}>
-              Cada livro seu envolto nas vozes do seu tempo — o que se pensava, a música, as artes, o cinema. O fio de cada obra, tecido uma vez, guardado pra sempre.
+              Cada livro seu envolto nas vozes do seu tempo — o que se pensava, a música, as artes, o cinema. O fio de cada obra, tecido uma vez, guardado para sempre.
             </div>
             <div style={{ fontSize: 11, letterSpacing: 0.6, fontWeight: 700, color: T.ochre, textTransform: 'uppercase' }}>
               Puxar o fio →
@@ -1182,8 +1182,8 @@ function ColarFicouSheet({ onClose = () => {}, bookIdPadrao = null, inicial = nu
             <div style={{ fontSize: 12, color: T.brown, lineHeight: 1.5, marginBottom: 10, fontFamily: T.serif }}>
               Cole um texto sobre a leitura — de uma conversa, de um caderno, de onde for. Se vier no formato <em>Livro / Sentimento / Frase</em>, o app reconhece sozinho o dia, o livro, o sentimento e a frase.
             </div>
-            <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={8} autoFocus placeholder={'O QUE FICOU · 04/11/2026\nLivro: Middlemarch\nSentimento: …\nFrase: “…”'} style={{ ...campo, fontFamily: T.mono, fontSize: 12.5 }}/>
-            <button onClick={ler} disabled={!texto.trim()} style={{ marginTop: 10, width: '100%', background: texto.trim() ? T.ink : T.parchment, color: texto.trim() ? T.cream : T.brown, border: 0, borderRadius: 10, padding: '11px', fontSize: 13, fontWeight: 600, cursor: texto.trim() ? 'pointer' : 'default' }}>Ler</button>
+            <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={8} autoFocus placeholder={`O QUE FICOU · ${new Date().toLocaleDateString('pt-BR')}\nLivro: Middlemarch\nSentimento: …\nFrase: “…”`} style={{ ...campo, fontFamily: T.mono, fontSize: 12.5 }}/>
+            <button onClick={ler} disabled={!texto.trim()} style={{ marginTop: 10, width: '100%', background: texto.trim() ? T.ink : T.parchment, color: texto.trim() ? T.cream : T.brown, border: 0, borderRadius: 10, padding: '11px', fontSize: 13, fontWeight: 600, cursor: texto.trim() ? 'pointer' : 'default' }}>Reconhecer o texto</button>
           </>
         ) : lido.itens.length === 0 ? (
           <>
@@ -1268,7 +1268,7 @@ function DiaCartao({ detalhe, onNav = () => {}, vazioTexto = 'Nenhuma leitura re
               ) : x.ficou ? (
                 <div onClick={() => podeEscrever && setEditando(x.id)} style={{ cursor: podeEscrever ? 'pointer' : 'default' }}><FicouTexto f={x.ficou}/></div>
               ) : (podeEscrever && b) ? (
-                <button onClick={() => setEditando(x.id)} style={{ marginTop: 4, background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: T.sans }}>＋ o que ficou</button>
+                <button onClick={() => setEditando(x.id)} style={{ marginTop: 4, background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: T.sans }}>＋ O que ficou</button>
               ) : null}
               {editando !== x.id && b && (
                 <button onClick={() => abrirDiario(b)} style={{ display: 'block', marginTop: 6, background: 'transparent', border: 0, padding: 0, color: T.terra, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: T.sans }}>abrir o diário do livro →</button>

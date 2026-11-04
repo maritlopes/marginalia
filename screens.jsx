@@ -186,7 +186,7 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
               </div>
             ) : !isDemo && (
               <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 14, lineHeight: 1.5, color: T.muted, marginBottom: 22 }}>
-                Ainda sem resumo. Toque em <strong style={{ color: T.brown }}>Editar</strong> para acrescentar detalhes deste livro.
+                Ainda sem resumo. Toque em <strong style={{ color: T.brown }}>Editar livro</strong> para acrescentar detalhes deste livro.
               </div>
             )}
 
@@ -932,7 +932,7 @@ function PlanoLeitura({ book, isDemo = false }) {
                     </>
                   ) : (
                     <div style={{ fontSize: 12, color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>
-                      Registre o que lê — no "Onde estou", no Foco ou no "Li hoje" da Home — e eu mostro seu ritmo real e a previsão de término.
+                      Registre o que lê — no "Onde estou", no Foco ou no "Li hoje" da página Hoje — e eu mostro seu ritmo real e a previsão de término.
                     </div>
                   )}
                 </div>
@@ -941,7 +941,7 @@ function PlanoLeitura({ book, isDemo = false }) {
                 <div style={hintStyle}>Escolha uma data e eu sugiro um ritmo diário.</div>
               )}
               {!pages && (
-                <div style={hintStyle}>Adicione o total de páginas (no botão Editar) para eu calcular o ritmo.</div>
+                <div style={hintStyle}>Adicione o total de páginas (em Editar livro) para eu calcular o ritmo.</div>
               )}
               {!isDemo && (terminando ? caixaTerminar(false) : (
                 <button onClick={() => setTerminando(true)} style={{ marginTop: 12, background: 'transparent', border: 0, color: T.olive, fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
@@ -1248,7 +1248,7 @@ function buildNotesMailto(notes, book) {
     return `"${(n.text || '').trim()}"` + (meta.length ? `\n  ${meta.join(' · ')}` : '');
   });
   const header = list.length > 1 ? `Minhas notas de "${title}"${author ? ' — ' + author : ''}\n\n` : '';
-  const footer = `\n\n— ${title}${author ? ', ' + author : ''}\nAnotado no Marginália · Clube de Leitura`;
+  const footer = `\n\n— ${title}${author ? ', ' + author : ''}\nAnotado na Marginália · Clube de Leitura`;
   const body = header + blocks.join('\n\n———\n\n') + footer;
   return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
@@ -1507,9 +1507,9 @@ function WelcomeNewMember({ onClose = () => {} }) {
     <div style={{ position: 'absolute', inset: 0, zIndex: 95, background: T.bone, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 30px', textAlign: 'center', fontFamily: T.sans, color: T.ink }}>
       <div style={{ marginBottom: 18 }}>{typeof BrandMark !== 'undefined' ? <BrandMark size={54}/> : null}</div>
       <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 10 }}>Acesso aprovado</div>
-      <div style={{ fontFamily: T.serif, fontSize: 27, fontWeight: 500, letterSpacing: -0.5, marginBottom: 12 }}>Bem-vinda à Marginália</div>
+      <div style={{ fontFamily: T.serif, fontSize: 27, fontWeight: 500, letterSpacing: -0.5, marginBottom: 12 }}>Boas-vindas à Marginália</div>
       <div style={{ fontFamily: T.serif, fontSize: 15, lineHeight: 1.6, color: T.brown, maxWidth: 330, marginBottom: 24 }}>
-        Que bom ter você aqui. Cada livro é uma porta — e você nunca lê sozinha. Monte sua estante, guarde suas notas à margem e siga os ecos entre as obras.
+        Que bom ter você aqui. Cada livro é uma porta — e aqui ninguém lê só. Monte sua estante, guarde suas notas à margem e siga os ecos entre as obras.
       </div>
       <button onClick={onClose} style={{ padding: '13px 26px', borderRadius: 11, border: 0, background: T.ink, color: T.cream, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Começar a ler</button>
     </div>
@@ -1567,7 +1567,7 @@ function ChegadaSequence({ onClose = () => {} }) {
         <div style={{ background: 'rgba(176,83,58,0.07)', border: `1px solid ${T.hairline}`, borderRadius: 14, padding: '14px 16px', marginBottom: 24 }}>
           <div style={{ fontSize: 9.5, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 6 }}>Nota da curadora</div>
           <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 14, lineHeight: 1.6, color: T.ink }}>
-            "Escolhi abrir a porta com o Grande Sertão porque é um livro que ensina a ler: uma frase puxa Heráclito, um causo puxa Goethe, e o sertão vira o mundo inteiro. É isso que a Marginália faz com cada livro — não te deixa lendo sozinha."
+            "Escolhi abrir a porta com o Grande Sertão porque é um livro que ensina a ler: uma frase puxa Heráclito, um causo puxa Goethe, e o sertão vira o mundo inteiro. É isso que a Marginália faz com cada livro — não deixa ninguém lendo só."
           </div>
           <div style={{ fontFamily: T.serif, fontSize: 12, color: T.brown, marginTop: 8, textAlign: 'right' }}>— Mariana</div>
         </div>
@@ -1613,13 +1613,13 @@ function GuiaMarginalia({ onClose = () => {} }) {
   const passos = [
     {
       icon: 'compass', titulo: 'Um passeio pela Marginália',
-      corpo: 'Cada livro é uma porta — e você nunca lê sozinha. Este guia percorre o app inteiro, canto a canto, em treze passos curtos. Pode fechar e voltar quando quiser: ele mora na página Hoje e na sua Conta.',
+      corpo: 'Cada livro é uma porta — e aqui ninguém lê só. Este guia percorre o app inteiro, canto a canto, em treze passos curtos. Pode fechar e voltar quando quiser: ele mora na página Hoje e na sua Conta.',
       chips: ['Hoje', 'Biblioteca', 'Desafios', 'Círculos'],
       nota: 'As quatro áreas do app, na barra de navegação — mais o botão "+" para acrescentar livros.',
     },
     {
       icon: 'home', titulo: 'Hoje — sua página principal',
-      corpo: 'O Radar literário abre o dia (efemérides, prêmios, achados); os cartões de Curadoria trazem conexões e contextos; e o "Para guardar" deixa uma frase para levar. Seu livro em leitura aparece aqui, com o progresso e o diário "Li hoje".',
+      corpo: 'O Radar literário abre o dia (efemérides, prêmios, achados); os cartões de Curadoria trazem conexões e contextos; e o "Para guardar" deixa uma frase para levar. Seu livro em leitura aparece aqui, com o progresso e o registro "Li hoje".',
       nota: 'Toque na bolinha com suas iniciais, no topo, para chegar à sua conta.',
     },
     {
@@ -1658,8 +1658,8 @@ function GuiaMarginalia({ onClose = () => {} }) {
       corpo: 'Todo livro tem três tempos: o de quem escreveu, o da história e o seu. A aba Sobre mostra os três — e a Linha do Tempo da Civilização deixa você viajar entre eles, situando o livro entre a filosofia, a arte e a ciência da época.',
     },
     {
-      icon: 'pen', titulo: 'Margem — suas notas',
-      corpo: 'Na aba Notas, escreva na margem do livro: impressões, trechos, perguntas. As notas são suas — dá para editar, apagar e, se quiser, compartilhar num círculo. O caderno de leitura se forma aos poucos, nota a nota.',
+      icon: 'pen', titulo: 'Diário — o que o livro deixou',
+      corpo: 'Na aba Diário de cada livro, registre o que ficou de cada dia — um sentimento curto e uma frase — e, se quiser, notas livres: trechos, perguntas, pontes. Dá para editar, apagar e compartilhar uma nota num círculo. O diário do livro se forma aos poucos, dia a dia.',
     },
     {
       icon: 'flame', titulo: 'Desafios & Foco',
@@ -1785,7 +1785,7 @@ function ScreenAguardandoApp() {
         Seu acesso à Marginália está <strong>aguardando aprovação</strong> de Mariana, a curadora. Assim que ela liberar, o app abre sozinho.
       </div>
       <div style={{ fontSize: 12, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginBottom: 26 }}>Pode fechar e voltar depois — seu lugar está guardado.</div>
-      <button onClick={verificar} disabled={checking} style={{ padding: '12px 22px', borderRadius: 10, border: 0, background: T.ink, color: T.cream, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 12, opacity: checking ? 0.6 : 1 }}>{checking ? 'verificando…' : 'Já fui aprovada? Verificar'}</button>
+      <button onClick={verificar} disabled={checking} style={{ padding: '12px 22px', borderRadius: 10, border: 0, background: T.ink, color: T.cream, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 12, opacity: checking ? 0.6 : 1 }}>{checking ? 'verificando…' : 'Já tenho acesso? Verificar'}</button>
       <button onClick={sair} style={{ background: 'transparent', border: 0, color: T.muted, fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>sair</button>
     </div>
   );
@@ -1850,7 +1850,7 @@ function AppAdminPanel() {
       <div style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '14px 16px', marginBottom: 18 }}>
         <div style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.terra, fontWeight: 700, marginBottom: 6 }}>Convidar para o clube</div>
         <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, lineHeight: 1.45, marginBottom: 10 }}>
-          Mande este link. Quem abrir entra no app e <strong>aguarda a sua aprovação</strong> (aqui em cima). Depois de aprovada, a pessoa já participa dos círculos e maratonas. Pode reencaminhar à vontade — ninguém entra sem o seu ok.
+          Mande este link. Quem abrir entra no app e <strong>aguarda a sua aprovação</strong> (aqui em cima). Depois da aprovação, a pessoa já participa dos círculos e maratonas. Pode reencaminhar à vontade — ninguém entra sem o seu ok.
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <div style={{ flex: 1, fontFamily: T.mono, fontSize: 11, color: T.ink, background: T.bone, border: `1px solid ${T.hairline}`, borderRadius: 8, padding: '9px 10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inviteLink}</div>
@@ -2253,7 +2253,7 @@ function ClubeLivroBloco({ livro, meta, book, emCurso, editando, onEditar, onSal
               : lido ? '✓ Você já leu este.'
               : !naEstante ? 'Está no seu acervo, adormecido.'
               : tot ? <>Você está na <strong>pág {cur}</strong> de {tot}{ritmo ? <> · ~<strong style={{ color: T.terra }}>{ritmo} pág/dia</strong> até {_fmtDiaMes(livro.fim)}</> : null}</>
-              : 'Na sua estante — sem total de páginas (ponha no Editar para eu calcular o ritmo).'}
+              : 'Na sua estante — sem total de páginas (ponha em Editar livro para eu calcular o ritmo).'}
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
             {bk && !naEstante && <button onClick={() => { if (typeof window.__tirarPoeira === 'function') window.__tirarPoeira(bk); }} style={btn}>Despertar para a estante</button>}
@@ -2315,8 +2315,8 @@ function ListasDeLeitura({ apenas = 'todas' }) {
       </div>
       <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', marginBottom: 12, lineHeight: 1.45 }}>
         {souCirculos
-          ? 'Listas que você lê com gente — os calendários dos clubes de que participa.'
-          : 'Livros que conversam entre si, lidos em série. O desafio é seu; quando alguém lê junto, ele vira clube e aparece nos Círculos.'}
+          ? 'Listas que você lê com gente — os calendários dos círculos de que participa.'
+          : 'Livros que conversam entre si, lidos em série. O desafio é seu; quando alguém lê junto, ele vira círculo e aparece nos Círculos.'}
       </div>
 
       {lista.map((c) => {
@@ -2491,7 +2491,7 @@ function ScreenGruposCloud({ onNav = () => {} }) {
       <div style={{ padding: '56px 24px 16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
           <div style={{ fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase', color: T.muted, fontWeight: 600 }}>
-            Você nunca lê sozinha
+            Aqui ninguém lê só
           </div>
           <BrandMark size={22}/>
         </div>
@@ -2515,7 +2515,7 @@ function ScreenGruposCloud({ onNav = () => {} }) {
             <div style={{ textAlign: 'center', marginBottom: 14 }}>
               <div style={{ marginBottom: 8, opacity: 0.85 }}>{typeof BrandMark !== 'undefined' ? <BrandMark size={32}/> : null}</div>
               <div style={{ fontFamily: T.serif, fontSize: 18, fontWeight: 500, letterSpacing: -0.3, color: T.ink, marginBottom: 6 }}>
-                {pendingInvite ? 'Você foi convidada para a Marginália' : 'Entre para ler em círculo'}
+                {pendingInvite ? 'Você recebeu um convite para a Marginália' : 'Entre para ler em círculo'}
               </div>
               <div style={{ fontFamily: T.serif, fontSize: 14, color: T.brown, lineHeight: 1.5, maxWidth: 320, margin: '0 auto' }}>
                 {pendingInvite
@@ -2563,7 +2563,7 @@ function ScreenGruposCloud({ onNav = () => {} }) {
                 Abertos para entrar · {openList.length}
               </div>
               <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', marginBottom: 12, lineHeight: 1.45 }}>
-                Desafios disponibilizados pelo clube. Entre e leiam juntos.
+                Desafios disponibilizados no círculo. Entre e leiam juntos.
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {openList.map((g) => (
@@ -2683,7 +2683,7 @@ function ChallengeCardCloud({ ch, members, me, labelFor, onChanged }) {
       <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 8 }}>
         {myBooks.length === 0 && (
           <div style={{ fontSize: 12, color: T.muted, fontStyle: 'italic', fontFamily: T.serif, marginBottom: 6 }}>
-            {isList ? (isOwner ? 'Adicione os livros da lista abaixo.' : 'A dona ainda não lançou os livros.') : 'Você ainda não lançou livros. Adicione os que leu.'}
+            {isList ? (isOwner ? 'Adicione os livros da lista abaixo.' : 'Quem criou ainda não lançou os livros.') : 'Você ainda não lançou livros. Adicione os que leu.'}
           </div>
         )}
         {myBooks.map((b) => (
@@ -3005,7 +3005,7 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
           {notePicker && (
             <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
               {minhasNotas.length === 0
-                ? <div style={{ fontSize: 12, color: T.muted, fontStyle: 'italic', fontFamily: T.serif, padding: '4px 2px' }}>Você ainda não tem notas para compartilhar. Escreva uma nota num livro e ela aparece aqui.</div>
+                ? <div style={{ fontSize: 12, color: T.muted, fontStyle: 'italic', fontFamily: T.serif, padding: '4px 2px' }}>Você ainda não tem notas para compartilhar. Escreva uma nota livre no Diário de um livro e ela aparece aqui.</div>
                 : <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginBottom: 2 }}>Toque numa nota sua para publicá-la no mural:</div>}
               {minhasNotas.slice(0, 12).map((n, i) => (
                 <div key={i} onClick={() => compartilharNota(n)} style={{ cursor: 'pointer', background: T.cream, border: `1px dashed ${T.hairline}`, borderRadius: 10, padding: '10px 12px' }}>
@@ -3026,6 +3026,14 @@ function ScreenGrupoDetalheCloud({ grupo, onClose = () => {} }) {
 // ─────────────────────────────────────────────────────────────
 // ScreenMetas — tela de Reading Challenges (metas pessoais)
 // ─────────────────────────────────────────────────────────────
+// Convite da Maratona Nobel: aparece só durante a janela da edição. Entre edições fica
+// adormecido (o código e a página /maratona-nobel/ continuam; só o convite some).
+const MARATONA_CONVITE = { desde: '2027-07-01', ate: '2027-10-31' };
+function maratonaConviteAtivo(hoje = new Date()) {
+  const d = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0') + '-' + String(hoje.getDate()).padStart(2, '0');
+  return d >= MARATONA_CONVITE.desde && d <= MARATONA_CONVITE.ate;
+}
+
 function ScreenMetas({ onNav = () => {} }) {
   const challenges = (typeof MG !== 'undefined' && MG.getChallenges) ? MG.getChallenges() : [];
   // os desafios-lista (type 'series') não são meta numérica — têm seção própria abaixo
@@ -3067,12 +3075,15 @@ function ScreenMetas({ onNav = () => {} }) {
           Desafios <span style={{ fontStyle: 'italic', color: T.terra }}>de leitura</span>
         </div>
         <div style={{ fontSize: 13, color: T.brown, marginTop: 8, lineHeight: 1.45, fontFamily: T.serif }}>
-          Pequenos contratos com você mesma. Sem ostentação.
+          Pequenos contratos consigo. Sem ostentação.
           <em> Mude, abandone, ajuste — sem culpa.</em>
         </div>
       </div>
 
-      {/* PORTAL — convite para a Maratona Nobel (desafio do clube) */}
+      {/* PORTAL — convite para a Maratona Nobel (desafio do clube).
+          ADORMECIDO até a próxima edição: volta sozinho em MARATONA_CONVITE.desde (1º/jul/2027).
+          Quando voltar, revise o texto (meses, curadoria) para a edição de 2027. */}
+      {maratonaConviteAtivo() && (
       <div style={{ padding: '8px 24px 0' }}>
         <a href="/maratona-nobel/" style={{ textDecoration: 'none', display: 'block' }}>
           <div style={{ background: T.ink, color: T.cream, borderRadius: 14, padding: '18px 18px 16px', position: 'relative', overflow: 'hidden' }}>
@@ -3092,6 +3103,7 @@ function ScreenMetas({ onNav = () => {} }) {
           </div>
         </a>
       </div>
+      )}
 
       {/* SEUS DESAFIOS — as listas de livros que você montou (o cartão inteiro vive aqui) */}
       <ListasDeLeitura apenas="minhas"/>
@@ -3108,7 +3120,7 @@ function ScreenMetas({ onNav = () => {} }) {
         <div style={{ padding: '20px 24px 0', fontFamily: T.serif, fontStyle: 'italic',
                       color: T.muted, fontSize: 13, lineHeight: 1.5, textAlign: 'center' }}>
           Você ainda não tem metas em curso.<br/>
-          Toque no <strong>+</strong> para criar a primeira.
+          Toque em <strong>Nova meta</strong>, abaixo, para criar a primeira.
         </div>
       )}
 
@@ -3144,7 +3156,7 @@ function ScreenMetas({ onNav = () => {} }) {
           <Icon name="sparkle" size={16} color={T.ochre}/>
           <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, lineHeight: 1.45 }}>
             Uma meta é um contrato só com você. Uma <em>lista de leitura</em> é um desafio —
-            e vira clube quando há gente lendo junto: monte a sua nos Círculos.
+            e vira círculo quando há gente lendo junto: monte a sua aqui e disponibilize para um círculo.
           </div>
         </div>
       </div>
@@ -3164,7 +3176,7 @@ function ScreenMetas({ onNav = () => {} }) {
         )}
         {sugAbertas && (
           <div style={{ marginTop: ativas.length > 0 ? 14 : 0 }}>
-            <SectionLabel color={T.ochre}>{ativas.length === 0 ? 'Sugestões pra começar' : 'Sugestões pra você'}</SectionLabel>
+            <SectionLabel color={T.ochre}>{ativas.length === 0 ? 'Sugestões para começar' : 'Sugestões para você'}</SectionLabel>
             <div style={{ fontSize: 12, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', margin: '6px 0 10px' }}>
               Toque em uma para adotá-la como sua.
             </div>
@@ -3583,7 +3595,7 @@ function ChallengeEditorSheet({ challenge = null, onClose = () => {} }) {
                               background: '#E5E5D2', border: `1px solid ${T.hairline}`, borderRadius: 10,
                               fontSize: 12.5, color: T.brown, fontFamily: T.serif, lineHeight: 1.45, marginBottom: 10 }}>
                   <Icon name="sparkle" size={15} color={T.olive}/>
-                  <span>Disponibilizado: virou o círculo <strong>{shared.name}</strong>. Ele aparece na aba <strong>Grupos</strong> — convide amigos por lá. Continua sendo seu desafio pessoal.</span>
+                  <span>Disponibilizado: virou o círculo <strong>{shared.name}</strong>. Ele aparece na aba <strong>Círculos</strong> — convide amigos por lá. Continua sendo seu desafio pessoal.</span>
                 </div>
                 <button onClick={abrirCirculo} style={{
                   width: '100%', padding: '11px', borderRadius: 10,
@@ -3595,7 +3607,7 @@ function ChallengeEditorSheet({ challenge = null, onClose = () => {} }) {
             ) : (
               <>
                 <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, lineHeight: 1.45, marginBottom: 10 }}>
-                  Cria um <strong>círculo novo</strong> com o nome desta meta. Ele aparece na aba <strong>Grupos</strong>,
+                  Cria um <strong>círculo novo</strong> com o nome desta meta. Ele aparece na aba <strong>Círculos</strong>,
                   os amigos entram e cada um traz os próprios livros rumo à meta — e ela continua sendo seu desafio pessoal.
                 </div>
                 <button onClick={shareToCircle} disabled={shareBusy} style={{
@@ -4091,7 +4103,7 @@ function ScreenFoco({ onNav = () => {} }) {
             <button onClick={() => salvarSessao(false)} style={{ background: 'transparent', color: T.muted, border: 0, padding: '9px 6px', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>só o tempo</button>
           </div>
           <div style={{ marginTop: 8, fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic' }}>
-            Entra no seu diário de hoje e atualiza o "Onde estou" do livro.
+            Entra no "Li hoje" e atualiza o "Onde estou" do livro.
           </div>
         </div>
       )}
@@ -4534,7 +4546,7 @@ function AlimentarForm({ owned = true, defaultDest, onClose = () => {} }) {
   return (
     <div style={{ background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 14, padding: '14px 14px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 500 }}>Acrescentar um livro</div>
+          <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 500 }}>Adicionar um livro</div>
           <button onClick={() => { setResults(null); setQ(''); setDone([]); onClose(); }} style={{ background: 'transparent', border: 0, cursor: 'pointer', color: T.muted, padding: 4 }} aria-label="fechar">
             <Icon name="x" size={16}/>
           </button>
@@ -4557,7 +4569,7 @@ function AlimentarForm({ owned = true, defaultDest, onClose = () => {} }) {
           </div>
           {dest === 'estante' && (
             <div style={{ fontSize: 10.5, color: T.terraDeep, fontFamily: T.serif, fontStyle: 'italic', marginTop: 6 }}>
-              Ao adicionar, abre o "tirar a poeira" pra você escolher a capa.
+              Ao adicionar, abre o "tirar a poeira" para você escolher a capa.
             </div>
           )}
         </div>
@@ -5458,7 +5470,7 @@ function RetroAno({ ano, atual, aberto, onToggle, livros, log }) {
                     <div style={{ fontSize: 12, color: T.brown, marginBottom: 10 }}>
                       {lidos.length
                         ? <><strong style={{ color: T.terra }}>{pagM.toLocaleString('pt-BR')} pág</strong> em {lidos.length} {lidos.length === 1 ? 'dia' : 'dias'} · ~{Math.round(pagM / lidos.length)} pág/dia</>
-                        : <span style={{ fontStyle: 'italic', fontFamily: T.serif }}>nenhum dia registrado no diário</span>}
+                        : <span style={{ fontStyle: 'italic', fontFamily: T.serif }}>nenhuma leitura registrada</span>}
                       {terminados.length > 0 && <> · terminou <em style={{ fontFamily: T.serif }}>{terminados.map(b => b.title).join(', ')}</em></>}
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
@@ -5620,7 +5632,7 @@ function buildDiarioMailto(b, diario) {
     if (linhas.length) blocos.push(cab + '\n' + linhas.join('\n'));
   }
   for (const n of diario.soltas) blocos.push(`Nota: ${(n.text || '').trim()}`);
-  const body = `Diário de leitura — "${title}"${author ? ', ' + author : ''}\n\n` + blocos.join('\n\n———\n\n') + `\n\n— Anotado no Marginália · Clube de Leitura`;
+  const body = `Diário de leitura — "${title}"${author ? ', ' + author : ''}\n\n` + blocos.join('\n\n———\n\n') + `\n\n— Anotado na Marginália · Clube de Leitura`;
   return `mailto:?subject=${encodeURIComponent(`Marginália — meu diário de ${title}`)}&body=${encodeURIComponent(body)}`;
 }
 
@@ -5678,7 +5690,7 @@ function DiarioDoLivro({ book, onNav = () => {}, iniciarNovo = false }) {
             ) : d.ficou ? (
               <div onClick={() => setEditando(d.k)} style={{ cursor: 'pointer' }}><window.FicouTexto f={d.ficou}/></div>
             ) : (
-              <button onClick={() => setEditando(d.k)} style={{ ...linkBtn, marginTop: 3 }}>＋ o que ficou</button>
+              <button onClick={() => setEditando(d.k)} style={{ ...linkBtn, marginTop: 3 }}>＋ O que ficou</button>
             )}
             {d.notas.map(n => <NotaLivre key={n.id} n={n}/>)}
           </div>
@@ -5686,8 +5698,8 @@ function DiarioDoLivro({ book, onNav = () => {}, iniciarNovo = false }) {
       </div>
       {soltas.length > 0 && (
         <div style={{ marginTop: 10, paddingTop: 12, borderTop: `1px solid ${T.hairline}` }}>
-          <div style={{ fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: T.muted, fontWeight: 700 }}>Notas soltas</div>
-          <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 2 }}>escritas antes de o diário guardar o dia</div>
+          <div style={{ fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: T.muted, fontWeight: 700 }}>Notas livres sem data</div>
+          <div style={{ fontSize: 11, color: T.muted, fontFamily: T.serif, fontStyle: 'italic', marginTop: 2 }}>escritas antes de o diário guardar a data</div>
           {soltas.map(n => <NotaLivre key={n.id} n={n}/>)}
         </div>
       )}
@@ -5832,14 +5844,14 @@ function EmailLoginCard({ onLoggedIn = () => {}, intro = null } = {}) {
     // veio de um link de convite? entra direto (círculos são livres p/ aprovados)
     if (typeof window !== 'undefined' && window.__pendingJoin && cloud.groups) {
       const jc = window.__pendingJoin; window.__pendingJoin = null;
-      setMsg('Conectada! Entrando no círculo…');
+      setMsg('Conexão feita! Entrando no círculo…');
       const r = await cloud.groups.join(jc);
       if (r && !r.error && r.data && window.__openGrupo) { window.__openGrupo(r.data); return; }
-      setMsg('Conectada! (não encontrei o círculo do convite — confira o link.)');
+      setMsg('Conexão feita! (não encontrei o círculo do convite — confira o link.)');
       if (window.__rerender) window.__rerender();
       return;
     }
-    setMsg('Conectada! Seus aparelhos vão sincronizar.');
+    setMsg('Conexão feita! Seus aparelhos vão sincronizar.');
     if (window.__rerender) window.__rerender();
   };
 
@@ -5916,7 +5928,7 @@ function CloudAccount({ showAdmin = true } = {}) {
     if (error) { setMsg('Não foi possível salvar o nome: ' + error.message); return; }
     const u = await cloud.currentUser();
     setUser(u);
-    setMsg('Nome salvo! Seu avatar e seus recados no grupo agora usam "' + nome.trim() + '".');
+    setMsg('Nome salvo! Seu avatar e seus recados nos círculos agora usam "' + nome.trim() + '".');
     if (typeof window !== 'undefined' && window.__rerender) window.__rerender();
   };
 
@@ -5949,13 +5961,13 @@ function CloudAccount({ showAdmin = true } = {}) {
       {user ? (
         <>
           <div style={{ fontSize: 13, color: T.ink, fontFamily: T.serif, lineHeight: 1.5, marginBottom: 4 }}>
-            Conectada como <strong>{user.email}</strong>.
+            Conta conectada: <strong>{user.email}</strong>.
           </div>
           <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', marginBottom: 12 }}>
             Seus livros e notas sincronizam entre seus aparelhos automaticamente.{status ? ` · ${status}` : ''}
           </div>
 
-          <div style={{ fontSize: 11, color: T.muted, fontFamily: T.sans, fontWeight: 600, marginBottom: 6 }}>Seu nome (aparece no avatar e nos recados do grupo)</div>
+          <div style={{ fontSize: 11, color: T.muted, fontFamily: T.sans, fontWeight: 600, marginBottom: 6 }}>Seu nome (aparece no avatar e nos recados dos círculos)</div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
             <input type="text" placeholder="ex.: Mariana Lopes"
               value={nome} onChange={e => setNome(e.target.value)}
@@ -6021,7 +6033,7 @@ function AccountSheet({ onClose = () => {} }) {
           <button onClick={onClose} style={{
             background: 'transparent', border: 0, cursor: 'pointer', fontSize: 13, color: T.brown,
           }}>Fechar</button>
-          <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 500 }}>Seu perfil</div>
+          <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 500 }}>Sua conta</div>
           <div style={{ width: 50 }}/>
         </div>
         <CloudAccount showAdmin={false}/>
@@ -6234,7 +6246,7 @@ function BackupPanel() {
           Backup e dados
         </div>
         <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.45, marginBottom: 12 }}>
-          Suas anotações ficam guardadas só neste aparelho. Exporte um backup de tempos em tempos —
+          Sem conta, seus dados ficam só neste aparelho. Exporte um backup de tempos em tempos —
           é um arquivo que você pode restaurar aqui depois, ou levar para outro aparelho.
         </div>
         <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
@@ -6263,7 +6275,7 @@ function BackupPanel() {
         </div>
         <div style={{ fontSize: 12, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.45, marginBottom: 12 }}>
           Exporte suas notas em Markdown, agrupadas por livro — prontas para colar no seu
-          caderno digital. O Marginália alimenta o seu sistema, sem virar mais um silo.
+          caderno digital. A Marginália alimenta o seu sistema, sem virar mais um silo.
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={baixarMd} style={btn()}>↓ Baixar .md</button>
@@ -6727,7 +6739,7 @@ function BookEditorSheet({ book = null, onClose = () => {} }) {
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {[
               { id: 'reading', l: 'Lendo', c: T.terra },
-              { id: 'tbr',     l: 'TBR',   c: T.ochre },
+              { id: 'tbr',     l: 'Quero ler', c: T.ochre },
               { id: 'paused',  l: 'Pausado', c: T.muted },
               { id: 'read',    l: 'Lido',  c: T.olive },
             ].map(s => (
@@ -6781,7 +6793,7 @@ function BookEditorSheet({ book = null, onClose = () => {} }) {
 
         {isEdit && (
           <button onClick={() => {
-            const ok = window.confirm(`Remover "${book.title}" da sua estante?\n\nIsto apaga o livro e suas notas. Não dá para desfazer.`);
+            const ok = window.confirm(`Apagar "${book.title}" da sua biblioteca?\n\nIsto apaga o livro, o diário e as notas dele. Não dá para desfazer. (Para só tirar da estante, use "Devolver ao acervo".)`);
             if (!ok) return;
             if (typeof MG !== 'undefined' && MG.removeBook) MG.removeBook(book.id);
             if (typeof window.__setRoute === 'function') window.__setRoute('library');
@@ -6791,7 +6803,7 @@ function BookEditorSheet({ book = null, onClose = () => {} }) {
             background: 'transparent', border: `1px solid ${T.hairline}`,
             color: '#8E3E2A', fontFamily: T.sans, fontSize: 13, fontWeight: 600,
             letterSpacing: 0.3, cursor: 'pointer',
-          }}>Remover livro da estante</button>
+          }}>Apagar livro da biblioteca</button>
         )}
       </div>
     </div>

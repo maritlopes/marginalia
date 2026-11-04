@@ -61,7 +61,7 @@ function WebNav({ active = 'home', onClick = () => {}, dark = false }) {
     { id: 'home', label: 'Hoje' },
     { id: 'library', label: 'Biblioteca' },
     { id: 'desafios', label: 'Desafios' },
-    { id: 'grupos', label: 'Grupos' },
+    { id: 'grupos', label: 'Círculos' },
   ];
   const bg = dark ? '#1A1612' : '#F7F1E4';
   const border = dark ? 'rgba(255,255,255,0.08)' : '#E3D9C4';
