@@ -5326,6 +5326,17 @@ function RetroAno({ ano, atual, aberto, onToggle, livros, log }) {
     return out;
   };
   // destaques do ano: melhor mês, maior sequência, dia da semana que mais rende
+  // O ANO EM FRASES — o que ficou de cada leitura no ano, mês a mês (frase em destaque;
+  // tocar abre o sentimento daquele dia)
+  const [frasesAbertas, setFrasesAbertas] = React.useState(false);
+  const [fraseSel, setFraseSel] = React.useState(null);
+  const ficouAno = ((typeof MG !== 'undefined' && MG.getFicou) ? MG.getFicou() : []).filter(f => String(f.day || '').startsWith(String(ano)));
+  const ficouPorMes = [];
+  for (let m = 0; m < 12; m++) {
+    const doMes = ficouAno.filter(f => parseInt(String(f.day).slice(5, 7), 10) - 1 === m);
+    if (doMes.length) ficouPorMes.push({ m, itens: doMes });
+  }
+  const tituloDe = (id) => { const bk = (window.BOOKS || []).find(x => x && x.id === id); return bk ? bk.title : 'livro'; };
   const destaques = (() => {
     if (!diasDiario) return null;
     const melhor = porMes.reduce((a, x) => x.pages > a.pages ? x : a, porMes[0]);
@@ -5483,6 +5494,43 @@ function RetroAno({ ano, atual, aberto, onToggle, livros, log }) {
                   ].filter(Boolean).map((el, i) => <span key={i}>{i > 0 ? ' · ' : ''}{el}</span>)}
                 </div>
               )}
+            </div>
+          )}
+
+          {ficouAno.length > 0 && (
+            <div style={{ marginTop: 16, background: T.cream, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '12px 14px' }}>
+              <button onClick={() => setFrasesAbertas(!frasesAbertas)} style={{ width: '100%', display: 'flex', alignItems: 'baseline', gap: 8, background: 'transparent', border: 0, padding: 0, cursor: 'pointer', textAlign: 'left' }}>
+                <span style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: T.muted, fontWeight: 700 }}>O ano em frases</span>
+                <span style={{ flex: 1, fontSize: 11, color: T.brown, fontFamily: T.serif, fontStyle: 'italic' }}>{ficouAno.length} {ficouAno.length === 1 ? 'dia' : 'dias'} com o que ficou</span>
+                <span style={{ color: T.terra, fontSize: 12 }}>{frasesAbertas ? '▴' : '▾'}</span>
+              </button>
+              {!frasesAbertas && (() => {
+                // prévia: a frase mais recente do ano
+                const ult = [...ficouAno].reverse().find(f => f.frase) || ficouAno[ficouAno.length - 1];
+                return (
+                  <div onClick={() => setFrasesAbertas(true)} style={{ marginTop: 8, cursor: 'pointer' }}>
+                    <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 15, color: T.ink, lineHeight: 1.4 }}>“{ult.frase || ult.sentimento}”</div>
+                    <div style={{ fontSize: 11, color: T.muted, marginTop: 3 }}>{tituloDe(ult.bookId)} · {window.fmtDiaCurto ? window.fmtDiaCurto(ult.day) : ult.day}</div>
+                  </div>
+                );
+              })()}
+              {frasesAbertas && ficouPorMes.map(({ m, itens }) => (
+                <div key={m} style={{ marginTop: 12 }}>
+                  <div style={{ fontFamily: T.serif, fontSize: 14, color: T.terra, borderBottom: `1px solid ${T.hairline}`, paddingBottom: 3, marginBottom: 4 }}>{MESES_LONGOS[m]}</div>
+                  {itens.map(f => {
+                    const aberto = fraseSel === f.id;
+                    return (
+                      <div key={f.id} onClick={() => setFraseSel(aberto ? null : f.id)} style={{ padding: '7px 0', cursor: 'pointer', borderBottom: `1px dashed ${T.hairline}` }}>
+                        <div style={{ fontFamily: T.serif, fontStyle: f.frase ? 'italic' : 'normal', fontSize: 14, color: T.ink, lineHeight: 1.4 }}>
+                          {f.frase ? `“${f.frase}”` : (aberto ? '' : (f.sentimento.length > 90 ? f.sentimento.slice(0, 90).trim() + '…' : f.sentimento))}
+                        </div>
+                        {aberto && f.sentimento && <div style={{ fontFamily: T.serif, fontSize: 13, color: T.brown, lineHeight: 1.45, marginTop: f.frase ? 6 : 0 }}>{f.sentimento}</div>}
+                        <div style={{ fontSize: 10.5, color: T.muted, marginTop: 3 }}>{tituloDe(f.bookId)} · {window.fmtDiaCurto ? window.fmtDiaCurto(f.day) : f.day}{f.frase && !aberto && f.sentimento ? ' · toque para ver o que ficou' : ''}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           )}
 
