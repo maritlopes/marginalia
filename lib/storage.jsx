@@ -180,19 +180,30 @@ const MG = {
     return next;
   },
 
-  // notes
+  // notes — como livros e o diário: cada nota tem `updatedAt` e apagar vira LÁPIDE
+  // (deleted:true), senão a nota apagada voltaria pelo outro aparelho no sync.
+  // getNotes devolve só as vivas; as lápides ficam no estado só para propagar.
+  _rawNotes() { const s = load(); return Array.isArray(s.notes) ? s.notes : []; },
   getNotes(seedNotes = []) {
     const s = load();
-    return s.notes === null ? seedNotes : s.notes;
+    return s.notes === null ? seedNotes : (Array.isArray(s.notes) ? s.notes : []).filter(n => n && !n.deleted);
   },
+  // grava a lista de notas VIVAS; a nota viva que sumiu da lista vira lápide
   setNotes(notes) {
     const s = load();
-    s.notes = notes;
+    const agora = new Date().toISOString();
+    const novos = (notes || []).filter(Boolean);
+    const ids = new Set(novos.map(n => n.id));
+    const antigos = Array.isArray(s.notes) ? s.notes : [];
+    const lapides = antigos
+      .filter(n => n && n.id != null && !ids.has(n.id))
+      .map(n => n.deleted ? n : { id: n.id, bookId: n.bookId || null, deleted: true, updatedAt: agora });
+    s.notes = [...novos, ...lapides];
     save(s);
   },
   addNote(note) {
     const notes = this.getNotes();
-    const withId = { id: 'n_' + Date.now(), date: 'agora', ...note };
+    const withId = { id: 'n_' + Date.now(), date: 'agora', ...note, updatedAt: new Date().toISOString() };
     const next = [withId, ...notes];
     this.setNotes(next);
     if (typeof window._refreshLive === 'function') window._refreshLive();
@@ -207,7 +218,7 @@ const MG = {
     return next;
   },
   updateNote(noteId, patch) {
-    const next = this.getNotes().map(n => n.id === noteId ? { ...n, ...patch } : n);
+    const next = this.getNotes().map(n => n.id === noteId ? { ...n, ...patch, updatedAt: new Date().toISOString() } : n);
     this.setNotes(next);
     if (typeof window._refreshLive === 'function') window._refreshLive();
     if (typeof window.__rerender === 'function') window.__rerender();
@@ -328,6 +339,7 @@ const MG = {
     const pages = goal ? Math.max(0, parseInt(goal.pages, 10) || 0) : 0;
     const minutes = goal ? Math.max(0, parseInt(goal.minutes, 10) || 0) : 0;
     s.dailyGoal = (pages || minutes) ? { pages, minutes } : null;
+    s._carimbos = { ...(s._carimbos || {}), dailyGoal: new Date().toISOString() }; // o sync escolhe a versão mais recente DESTA chave
     save(s);
     if (typeof window.__rerender === 'function') window.__rerender();
     return s.dailyGoal;
@@ -348,6 +360,7 @@ const MG = {
     if (ajuste) doClube[livroTitle] = ajuste; else delete doClube[livroTitle];
     if (Object.keys(doClube).length) all[clubeId] = doClube; else delete all[clubeId];
     s.clubeAjustes = all;
+    s._carimbos = { ...(s._carimbos || {}), clubeAjustes: new Date().toISOString() }; // o sync escolhe a versão mais recente DESTA chave
     save(s);
     if (typeof window.__rerender === 'function') window.__rerender();
     return all;
@@ -610,12 +623,14 @@ const MG = {
     const s = load();
     s.joinedGrupos = s.joinedGrupos || [];
     if (!s.joinedGrupos.includes(id)) s.joinedGrupos.push(id);
+    s._carimbos = { ...(s._carimbos || {}), joinedGrupos: new Date().toISOString() }; // o sync escolhe a versão mais recente DESTA chave
     save(s);
     if (typeof window.__rerender === 'function') window.__rerender();
   },
   leaveGrupo(id) {
     const s = load();
     s.joinedGrupos = (s.joinedGrupos || []).filter(x => x !== id);
+    s._carimbos = { ...(s._carimbos || {}), joinedGrupos: new Date().toISOString() }; // o sync escolhe a versão mais recente DESTA chave
     save(s);
     if (typeof window.__rerender === 'function') window.__rerender();
   },
@@ -626,12 +641,14 @@ const MG = {
     const s = load();
     s.joinedDesafios = s.joinedDesafios || [];
     if (!s.joinedDesafios.includes(id)) s.joinedDesafios.push(id);
+    s._carimbos = { ...(s._carimbos || {}), joinedDesafios: new Date().toISOString() }; // o sync escolhe a versão mais recente DESTA chave
     save(s);
     if (typeof window.__rerender === 'function') window.__rerender();
   },
   leaveDesafio(id) {
     const s = load();
     s.joinedDesafios = (s.joinedDesafios || []).filter(x => x !== id);
+    s._carimbos = { ...(s._carimbos || {}), joinedDesafios: new Date().toISOString() }; // o sync escolhe a versão mais recente DESTA chave
     save(s);
     if (typeof window.__rerender === 'function') window.__rerender();
   },

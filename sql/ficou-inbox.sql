@@ -46,3 +46,9 @@ begin
 end;
 $$;
 revoke all on function public.ficou_enviar(text, date, text, text, text) from public, anon, authenticated;
+
+-- ── Auditoria (etapa A, 2026-11-04, migração "auditoria_etapa_a") ──
+-- protect_marginalia_state passou a proteger também 'ficou' (arr_keys);
+-- take_daily_snapshot() só executa pelo cron (revoke de public/anon/authenticated);
+-- create_group: nome padrão "Círculo de leitura" com acento correto;
+-- removidas as tabelas curadoria_items_backup_proust_dup_20260907 e _booker_shortlist_20260928.

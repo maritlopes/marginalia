@@ -480,15 +480,20 @@ function HomeVariantA({ onNav = () => {} }) {
           return (
             <div style={{ background: T.cream, border: `1px solid ${T.ochre}`, borderRadius: 12, padding: '12px 14px', marginBottom: 18 }}>
               <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.4 }}>
-                Chegou do Claude {n === 1 ? 'um “o que ficou”' : `${n} “o que ficou”`} — não achei o livro <em>“{r.book_title}”</em> na sua estante.
+                {r.conflito
+                  ? <>Chegou do Claude um “o que ficou” de <em>{r.book_title}</em> ({window.fmtDiaCurto ? window.fmtDiaCurto(r.day) : r.day}), mas você já tinha escrito um nesse dia.</>
+                  : <>Chegou do Claude {n === 1 ? 'um “o que ficou”' : `${n} “o que ficou”`} — não achei o livro <em>“{r.book_title}”</em> na sua estante.</>}
               </div>
-              <button onClick={() => setPendenteAberto(r)} style={{ marginTop: 8, background: T.ochre, color: T.cream, border: 0, borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Escolher o livro</button>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 8 }}>
+                <button onClick={() => setPendenteAberto(r)} style={{ background: T.ochre, color: T.cream, border: 0, borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>{r.conflito ? 'Ver e escolher' : 'Escolher o livro'}</button>
+                <button onClick={() => { if (window.MGCloud && window.MGCloud.marcarFicouRecebido) window.MGCloud.marcarFicouRecebido([r.id]); }} style={{ background: 'transparent', border: 0, padding: 0, color: T.muted, fontSize: 11.5, textDecoration: 'underline', cursor: 'pointer' }}>{r.conflito ? 'manter o meu' : 'descartar'}</button>
+              </div>
             </div>
           );
         })()}
         {pendenteAberto && (
           <ColarFicouSheet titulo="Chegou do Claude"
-            inicial={{ day: pendenteAberto.day, itens: [{ titulo: pendenteAberto.book_title, bookId: null, sentimento: pendenteAberto.sentimento || '', frase: pendenteAberto.frase || '' }] }}
+            inicial={{ day: pendenteAberto.day, itens: [{ titulo: pendenteAberto.book_title, bookId: pendenteAberto.bookId || null, sentimento: pendenteAberto.sentimento || '', frase: pendenteAberto.frase || '' }] }}
             onGuardado={() => { const id = pendenteAberto.id; if (window.MGCloud && window.MGCloud.marcarFicouRecebido) window.MGCloud.marcarFicouRecebido([id]); }}
             onClose={() => setPendenteAberto(null)}/>
         )}

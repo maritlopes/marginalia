@@ -7,7 +7,7 @@
 // PWA instalado do iPhone a buscar a versão nova (o app fica residente e só
 // recarrega quando o service worker muda; sw.js idêntico = celular travado na
 // versão velha, enquanto o computador atualiza por recarregar a página).
-const CACHE = 'marginalia-v107';
+const CACHE = 'marginalia-v108';
 // O app agora é um bundle Vite com hash no nome (ex.: /assets/index-abc123.js);
 // o nome muda a cada versão e não dá pra listar aqui — o network-first abaixo
 // guarda o bundle no cache na primeira visita e o offline segue funcionando.
@@ -54,5 +54,9 @@ function networkFirst(request) {
 self.addEventListener('fetch', (event) => {
   // Só tratamos GET; deixamos o resto passar direto.
   if (event.request.method !== 'GET') return;
+  // A API do Supabase (banco, login, funções) NUNCA passa pelo cache — uma resposta velha
+  // do banco, servida offline, reaplicaria dados já mudados. Capas (Storage) e fontes, sim.
+  const u = new URL(event.request.url);
+  if (u.hostname.endsWith('supabase.co') && !u.pathname.startsWith('/storage/')) return;
   event.respondWith(networkFirst(event.request));
 });
