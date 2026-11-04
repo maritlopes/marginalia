@@ -21,6 +21,8 @@ const DEFAULT_STATE = {
   progress: {},
   // ecos aceitos / recusados: { [ponteId]: 'aceito' | 'recusado' }
   ecos: {},
+  // O QUE FICOU — um registro por livro por dia: { id: 'f_<dia>_<livro>', day, bookId, sentimento, frase, origem }
+  ficou: [],
   // criado em
   createdAt: null,
   updatedAt: null,
@@ -460,9 +462,11 @@ const MG = {
       // o que o total do dia tem a mais do que a repartição fica "sem livro"
       semLivro.pages += Math.max(0, (e.pages || 0) - pb); semLivro.minutes += Math.max(0, (e.minutes || 0) - mb);
     }
+    const ficouDia = this.getFicou({ day: date });
+    for (const f of ficouDia) if (!porLivro[f.bookId]) porLivro[f.bookId] = { pages: 0, minutes: 0 };
     const livros = Object.keys(porLivro)
-      .filter(id => porLivro[id].pages + porLivro[id].minutes > 0)
-      .map(id => ({ id, book: achar(id), pages: porLivro[id].pages, minutes: porLivro[id].minutes }))
+      .filter(id => porLivro[id].pages + porLivro[id].minutes > 0 || ficouDia.some(f => f.bookId === id))
+      .map(id => ({ id, book: achar(id), pages: porLivro[id].pages, minutes: porLivro[id].minutes, ficou: ficouDia.find(f => f.bookId === id) || null }))
       .sort((a, b) => b.pages - a.pages || b.minutes - a.minutes);
     const dia10 = (v) => String(v || '').slice(0, 10);
     const marcos = [];
@@ -477,6 +481,84 @@ const MG = {
       return t && keyOf(new Date(parseInt(t[1], 10))) === date;
     });
     return { date, pages, minutes, livros, semLivro, marcos, notas };
+  },
+  // ── O QUE FICOU: o sentimento que uma leitura deixou num dia (um por livro por dia) ──
+  // id determinístico ('f_<dia>_<livro>') — o sync une por id; apagar é lápide.
+  FICOU_MAX_PALAVRAS: 40,
+  contarPalavras(t) { return String(t || '').trim().split(/\s+/).filter(Boolean).length; },
+  getFicou(filtro) {
+    const s = load();
+    let l = (Array.isArray(s.ficou) ? s.ficou : []).filter(x => x && !x.deleted);
+    if (filtro && filtro.day) l = l.filter(x => x.day === filtro.day);
+    if (filtro && filtro.bookId) l = l.filter(x => x.bookId === filtro.bookId);
+    return l.sort((a, b) => String(a.day).localeCompare(String(b.day)));
+  },
+  setFicou(day, bookId, dados) {
+    if (!day || !bookId) return null;
+    const d = dados || {};
+    const sentimento = String(d.sentimento || '').trim();
+    const frase = String(d.frase || '').trim().replace(/^["“”«»']+|["“”«»']+$/g, '').trim();
+    const s = load();
+    const lista = Array.isArray(s.ficou) ? s.ficou : [];
+    const id = 'f_' + day + '_' + bookId;
+    const agora = new Date().toISOString();
+    const antes = lista.find(x => x && x.id === id);
+    const resto = lista.filter(x => !(x && x.id === id));
+    let novo;
+    if (!sentimento && !frase) novo = antes ? { ...antes, deleted: true, updatedAt: agora } : null;
+    else novo = { ...(antes || {}), id, day, bookId, sentimento, frase, origem: d.origem || (antes && antes.origem) || 'app', deleted: false, createdAt: (antes && antes.createdAt) || agora, updatedAt: agora };
+    s.ficou = novo ? [novo, ...resto] : resto;
+    save(s);
+    if (typeof window.__rerender === 'function') window.__rerender();
+    return novo;
+  },
+  // lê o bloco "O QUE FICOU" colado do Claude (ou escrito à mão):
+  //   O QUE FICOU · 04/11/2026
+  //   Livro: Middlemarch
+  //   Sentimento: …
+  //   Frase: "…"
+  // (vários livros = vários "Livro:"). Devolve { day, itens: [{ titulo, bookId, sentimento, frase }] }.
+  parseFicou(texto) {
+    const t = String(texto || '').replace(/\r/g, '');
+    const pad = (n) => String(n).padStart(2, '0');
+    const hoje = new Date();
+    let day = hoje.getFullYear() + '-' + pad(hoje.getMonth() + 1) + '-' + pad(hoje.getDate());
+    const iso = t.match(/(\d{4})-(\d{2})-(\d{2})/);
+    const br = t.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
+    if (iso) day = `${iso[1]}-${iso[2]}-${iso[3]}`;
+    else if (br) { let y = br[3] ? parseInt(br[3], 10) : hoje.getFullYear(); if (y < 100) y += 2000; day = `${y}-${pad(br[2])}-${pad(br[1])}`; }
+    const norm = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+    const livros = ((typeof window !== 'undefined' && window.BOOKS) || []).filter(b => b && !b.deleted && b.title);
+    const acharLivro = (titulo) => {
+      const n = norm(titulo); if (!n) return null;
+      const peso = (b) => (b.status === 'reading' ? 0 : b.status === 'paused' ? 1 : 2);
+      const cands = livros.filter(b => norm(b.title) === n)
+        .concat(livros.filter(b => { const bt = norm(b.title); return bt !== n && bt.length > 2 && (n.includes(bt) || bt.includes(n)); }));
+      cands.sort((a, b) => (norm(a.title) === n ? 0 : 1) - (norm(b.title) === n ? 0 : 1) || peso(a) - peso(b));
+      return cands[0] || null;
+    };
+    const itens = [];
+    let cur = null, campo = null;
+    for (const raw of t.split('\n')) {
+      const linha = raw.trim();
+      if (!linha) { campo = null; continue; }
+      const mL = linha.match(/^(?:[-*•]\s*)?(?:📖\s*|\*{0,2}livro\*{0,2}\s*[:：]\s*)(.+)$/i);
+      if (mL) { cur = { titulo: mL[1].replace(/\*+/g, '').trim(), sentimento: '', frase: '' }; itens.push(cur); campo = null; continue; }
+      const mS = linha.match(/^(?:[-*•]\s*)?\*{0,2}sentimento\*{0,2}\s*[:：]\s*(.*)$/i);
+      const mF = linha.match(/^(?:[-*•]\s*)?\*{0,2}frase(?: marcante)?\*{0,2}\s*[:：]\s*(.*)$/i);
+      if (mS || mF) {
+        if (!cur) { cur = { titulo: '', sentimento: '', frase: '' }; itens.push(cur); }
+        campo = mS ? 'sentimento' : 'frase';
+        cur[campo] = ((mS || mF)[1] || '').trim();
+        continue;
+      }
+      if (cur && campo) cur[campo] = (cur[campo] + ' ' + linha).trim();
+    }
+    const limpo = itens
+      .map(x => ({ ...x, sentimento: x.sentimento.replace(/\*+/g, '').trim(), frase: x.frase.replace(/\*+/g, '').trim().replace(/^["“”«»']+|["“”«»']+$/g, '').trim() }))
+      .filter(x => x.sentimento || x.frase)
+      .map(x => { const b = acharLivro(x.titulo); return { ...x, bookId: b ? b.id : null }; });
+    return { day, itens: limpo };
   },
   // progresso de leitura
   getProgress(bookId) {

@@ -85,7 +85,7 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
   ];
   const chapters = isDemo ? demoChapters : [];
   // abas: 'sobre', 'notas' e 'ecos' sempre; 'capítulos' só no livro de exemplo
-  const tabs = ['sobre', ...(chapters.length ? ['capítulos'] : []), 'notas', 'ecos'];
+  const tabs = ['sobre', ...(isDemo ? [] : ['diário']), ...(chapters.length ? ['capítulos'] : []), 'notas', 'ecos'];
   const outrosLivros = (window.BOOKS || []).filter(x => x.id !== b.id);
 
   return (
@@ -302,6 +302,8 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
             ))}
           </div>
         )}
+
+        {tab === 'diário' && !isDemo && <DiarioDoLivro book={b}/>}
 
         {tab === 'notas' && (
           bookNotes.length > 0 ? (
@@ -5501,6 +5503,71 @@ function RetroAno({ ano, atual, aberto, onToggle, livros, log }) {
           )}
         </div>
       ))}
+    </div>
+  );
+}
+
+// DIÁRIO DO LIVRO — a travessia dia a dia: páginas lidas (do diário) + o que ficou
+// (sentimento e frase) + começo e fim. Ordem cronológica: dá para percorrer o que o
+// livro foi despertando. Tocar num dia escreve ou corrige o que ficou.
+function DiarioDoLivro({ book }) {
+  const b = book;
+  const [editando, setEditando] = React.useState(null); // dia em edição, ou 'novo'
+  const [colar, setColar] = React.useState(false);
+  const hojeK = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+  const log = (typeof MG !== 'undefined' && MG.getReadingLog) ? MG.getReadingLog() : [];
+  const dias = {};
+  const dia = (k) => dias[k] || (dias[k] = { k, pages: 0, minutes: 0, ficou: null, marcos: [] });
+  for (const e of log) {
+    if (!e || !e.date) continue;
+    const parte = (e.books && e.books[b.id]) ? e.books[b.id] : ((!e.books || !Object.keys(e.books).length) && e.bookId === b.id ? e : null);
+    if (parte && ((parte.pages || 0) + (parte.minutes || 0) > 0)) { const d = dia(e.date); d.pages += parte.pages || 0; d.minutes += parte.minutes || 0; }
+  }
+  for (const f of (MG.getFicou ? MG.getFicou({ bookId: b.id }) : [])) dia(f.day).ficou = f;
+  const ini = String(b.startedAt || b.readingSince || '').slice(0, 10);
+  const fim = String(b.finishedAt || '').slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(ini)) dia(ini).marcos.push('começou');
+  if (/^\d{4}-\d{2}-\d{2}$/.test(fim)) dia(fim).marcos.push('terminou');
+  const lista = Object.values(dias).sort((x, y) => x.k.localeCompare(y.k));
+  const comFicou = lista.filter(d => d.ficou).length;
+  const fmtLongo = (k) => new Date(k + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short', year: k.slice(0, 4) !== hojeK.slice(0, 4) ? 'numeric' : undefined }).replace(/\./g, '');
+  const fmt = (p, m) => [p ? `${p} pág` : null, m ? `${m} min` : null].filter(Boolean).join(' · ');
+  const btn = (primario) => ({ background: primario ? T.terra : 'transparent', color: primario ? T.cream : T.brown, border: primario ? 0 : `1px solid ${T.hairline}`, borderRadius: 999, padding: '8px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: T.sans });
+  return (
+    <div>
+      <div style={{ fontFamily: T.serif, fontSize: 14, color: T.brown, fontStyle: 'italic', lineHeight: 1.5, marginBottom: 12 }}>
+        {lista.length ? `${lista.length} ${lista.length === 1 ? 'dia' : 'dias'} com este livro${comFicou ? ` · ${comFicou} com o que ficou` : ''}.` : 'O diário deste livro ainda está em branco.'}
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+        <button onClick={() => setEditando('novo')} style={btn(true)}>＋ O que ficou hoje</button>
+        <button onClick={() => setColar(true)} style={btn(false)}>Colar do Claude</button>
+      </div>
+      {editando === 'novo' && (
+        <div style={{ marginBottom: 14 }}>
+          <window.FicouEditor day={hojeK} bookId={b.id} inicial={(dias[hojeK] && dias[hojeK].ficou) || null} comData onFechar={() => setEditando(null)}/>
+        </div>
+      )}
+      <div style={{ position: 'relative', paddingLeft: 18 }}>
+        {lista.length > 0 && <div style={{ position: 'absolute', left: 4, top: 6, bottom: 6, width: 1, background: T.hairline }}/>}
+        {lista.map((d) => (
+          <div key={d.k} style={{ position: 'relative', paddingBottom: 16 }}>
+            <div style={{ position: 'absolute', left: -18, top: 5, width: 9, height: 9, borderRadius: 5, background: d.ficou ? T.terra : (d.marcos.length ? T.olive : T.parchment), border: `1px solid ${d.ficou ? T.terra : T.hairline}` }}/>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase', color: T.brown, fontWeight: 700 }}>{fmtLongo(d.k)}</span>
+              {(d.pages > 0 || d.minutes > 0) && <span style={{ fontSize: 11.5, color: T.terra, fontWeight: 600 }}>{fmt(d.pages, d.minutes)}</span>}
+              {d.marcos.map(m => <span key={m} style={{ fontSize: 11, color: T.olive, fontFamily: T.serif, fontStyle: 'italic' }}>{m === 'terminou' ? '✓ terminou' : '◆ começou'}</span>)}
+            </div>
+            {editando === d.k ? (
+              <window.FicouEditor day={d.k} bookId={b.id} inicial={d.ficou} onFechar={() => setEditando(null)}/>
+            ) : d.ficou ? (
+              <div onClick={() => setEditando(d.k)} style={{ cursor: 'pointer' }}><window.FicouTexto f={d.ficou}/></div>
+            ) : (
+              <button onClick={() => setEditando(d.k)} style={{ marginTop: 3, background: 'transparent', border: 0, padding: 0, color: T.muted, fontSize: 11.5, cursor: 'pointer', fontFamily: T.sans }}>＋ o que ficou</button>
+            )}
+          </div>
+        ))}
+      </div>
+      {colar && <window.ColarFicouSheet bookIdPadrao={b.id} onClose={() => setColar(false)}/>}
     </div>
   );
 }
