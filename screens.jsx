@@ -63,6 +63,8 @@ function ScreenBookDetail({ book = null, onNav = () => {}, onOpenSummary = () =>
   // equivalente (lido/lendo/quero) e a capa (não se perde). Reversível pelo ritual.
   const guardarNoAcervo = () => {
     if (typeof MG === 'undefined' || !MG.updateBook || !b.id) return;
+    // confirma antes — um toque sem querer tirava o livro em leitura da estante
+    if (window.confirm && !window.confirm(`Tirar “${b.title}” da estante?\n\nEle volta para o acervo como adormecido; dá para despertá-lo depois.`)) return;
     const mk = b.status === 'read' ? 'read' : (b.status === 'reading' || b.status === 'paused') ? 'reading' : 'tbr';
     MG.updateBook(b.id, { status: null, mark: mk });
     onNav(back);
@@ -4917,7 +4919,14 @@ function TirarPoeiraSheet({ book, onClose }) {
       cover: cover || b.cover || null,
       owned: true, // permanece no acervo — a posse é verdade, não muda
       ...(b.mark ? { mark: null } : {}), // a marca virou status real — não precisa mais
-      ...(status === 'reading' ? { readingSince: new Date().toISOString(), startedAt: hojeLocalISO() } : {}),
+      // em leitura: se o livro já estava sendo lido (marca 'reading', com início e sem fim),
+      // volta com a data de início antiga — devolver ao acervo e despertar não é recomeçar.
+      // Leitura nova (ou releitura de um livro terminado) começa hoje.
+      ...(status === 'reading'
+        ? ((b.mark === 'reading' && (b.startedAt || b.readingSince) && !b.finishedAt)
+          ? {}
+          : { readingSince: new Date().toISOString(), startedAt: hojeLocalISO() })
+        : {}),
       // "Já li" NÃO carimba data — despertar não é terminar (lido sem data >
       // data falsa); a data real, se lembrada, entra depois em Editar livro
       ...(status === 'read' ? { pct: 100 } : {}),
