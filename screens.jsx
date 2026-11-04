@@ -1804,6 +1804,9 @@ function AppAdminPanel() {
     if (cloud && cloud.curadoria) setCurPending(await cloud.curadoria.pending());
   };
   React.useEffect(() => { load(); }, []);
+  // hooks SEMPRE antes do return condicional (sair da conta com o painel aberto derrubava o app)
+  const [curPub, setCurPub] = React.useState(null); // null=não carregado | [] | [itens]
+  const [pubConfirm, setPubConfirm] = React.useState(null); // id aguardando confirmação de remoção
   if (!cloud || !cloud.available || !(typeof window !== 'undefined' && window.__isAppAdmin)) return null;
 
   const inviteBase = window.location.origin + window.location.pathname.replace(/(index|Marginalia)\.html$/, '');
@@ -1831,8 +1834,6 @@ function AppAdminPanel() {
   const descartarCur = async (id) => { setCurPending((p) => p.filter((x) => x.id !== id)); await cloud.curadoria.discard(id); };
 
   // gerir itens JÁ publicados (validated) — sem SQL
-  const [curPub, setCurPub] = React.useState(null); // null=não carregado | [] | [itens]
-  const [pubConfirm, setPubConfirm] = React.useState(null); // id aguardando confirmação de remoção
   const togglePub = async () => {
     if (curPub !== null) { setCurPub(null); return; } // fecha
     if (cloud && cloud.curadoria && cloud.curadoria.published) setCurPub(await cloud.curadoria.published());
@@ -6415,6 +6416,11 @@ function BookEditorSheet({ book = null, onClose = () => {} }) {
   const [pages, setPages] = React.useState(book?.pages || '');
   const [tone, setTone] = React.useState(book?.tone || 'terra');
   const [status, setStatus] = React.useState(book?.status || 'tbr');
+  // livro do ACERVO (adormecido, status null): editar o autor/capa não pode acordá-lo nem
+  // apagar as datas — o status só muda se ela tocar num chip de situação
+  const doAcervo = isEdit && !book?.status;
+  const [statusTocado, setStatusTocado] = React.useState(false);
+  const mudarStatus = (v) => { setStatusTocado(true); setStatus(v); };
   const [currentPage, setCurrentPage] = React.useState(book?.currentPage || '');
   const [cover, setCover] = React.useState(book?.cover || '');
   // datas de leitura (YYYY-MM-DD) — em branco = sem data; nunca inventamos
@@ -6534,6 +6540,10 @@ function BookEditorSheet({ book = null, onClose = () => {} }) {
       // (só na 1ª vez — reeditar um livro em leitura não muda a ordem)
       ...(status === 'reading' && !book?.readingSince ? { readingSince: new Date().toISOString() } : {}),
     };
+    if (doAcervo && !statusTocado) {
+      // continua adormecido, com as datas e a marca que tinha
+      delete patch.status; delete patch.startedAt; delete patch.finishedAt; delete patch.readingSince;
+    }
     let novo = null;
     if (isEdit) {
       MG.updateBook(book.id, patch);
@@ -6716,24 +6726,30 @@ function BookEditorSheet({ book = null, onClose = () => {} }) {
               { id: 'read',    l: 'Lido',  c: T.olive },
             ].map(s => (
               <button key={s.id} onClick={() => {
-                setStatus(s.id);
+                mudarStatus(s.id);
                 // sugere hoje quando o gesto é "estou começando/terminando agora" —
                 // visível e apagável (nunca gravamos data escondida)
                 if (s.id === 'reading' && !startedAt) setStartedAt(hojeLocalISO());
                 if (s.id === 'read' && !finishedAt && (book?.status === 'reading' || book?.status === 'paused')) setFinishedAt(hojeLocalISO());
               }} style={{
                 padding: '8px 14px', borderRadius: 999,
-                background: status === s.id ? s.c : 'transparent',
-                color: status === s.id ? T.cream : T.brown,
-                border: `1px solid ${status === s.id ? s.c : T.hairline}`,
+                background: ((!doAcervo || statusTocado) && status === s.id) ? s.c : 'transparent',
+                color: ((!doAcervo || statusTocado) && status === s.id) ? T.cream : T.brown,
+                border: `1px solid ${((!doAcervo || statusTocado) && status === s.id) ? s.c : T.hairline}`,
                 fontFamily: T.sans, fontSize: 12, fontWeight: 500, cursor: 'pointer',
               }}>{s.l}</button>
             ))}
           </div>
         </div>
 
+        {doAcervo && !statusTocado && (
+          <div style={{ fontSize: 11.5, color: T.brown, fontFamily: T.serif, fontStyle: 'italic', marginTop: -8, marginBottom: 14 }}>
+            Este livro está no acervo (adormecido). Ele continua lá — toque numa situação só se quiser trazê-lo para a estante.
+          </div>
+        )}
+
         {/* datas de leitura — aparecem conforme o status; em branco = sem data */}
-        {status !== 'tbr' && (
+        {(status !== 'tbr' && !(doAcervo && !statusTocado)) && (
           <>
             <div style={{ display: 'flex', gap: 10 }}>
               <FieldRow label="Início da leitura" value={startedAt} onChange={setStartedAt} small type="date"/>

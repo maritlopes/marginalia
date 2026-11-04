@@ -34,32 +34,68 @@
     catch { return null; }
   }
 
+  // lê a nuvem. Devolve { ok: true, row } — row null = ainda não há linha (conta nova) —
+  // ou { ok: false } quando a leitura FALHOU (rede, token). Falha nunca pode ser tratada
+  // como "nuvem vazia": subir o estado local por cima apagaria o que está lá.
   async function pull() {
-    const { data, error } = await sb
-      .from('marginalia_state')
-      .select('data, updated_at')
-      .maybeSingle();
-    if (error) { console.warn('[nuvem] pull:', error.message); return null; }
-    return data; // { data, updated_at } | null
+    try {
+      const { data, error } = await sb
+        .from('marginalia_state')
+        .select('data, updated_at')
+        .maybeSingle();
+      if (error) { console.warn('[nuvem] pull:', error.message); return { ok: false }; }
+      return { ok: true, row: data || null };
+    } catch (e) { console.warn('[nuvem] pull:', e && e.message); return { ok: false }; }
   }
 
+  // grava localmente o resultado de um merge SEM agendar outro envio (evita laço)
+  let silencio = false;
+  function salvarSilencioso(st) { silencio = true; try { MG.setState(st); } finally { silencio = false; } }
+  function atualizarTela() {
+    if (typeof window._refreshLive === 'function') window._refreshLive();
+    if (typeof window.__rerender === 'function') window.__rerender();
+  }
+  // o que importa comparar entre o estado local e o mesclado (ignora carimbos do estado)
+  const essencial = (st) => { try { return JSON.stringify([st.books, st.notes, st.readingLog, st.ficou, st.challenges, st.progress, st.ecos, st.dailyGoal, st.clubeAjustes, st.joinedGrupos, st.joinedDesafios]); } catch (e) { return String(Math.random()); } };
+
+  // ENVIO SEGURO: antes de subir, puxa a nuvem e mescla. Assim um aparelho que ficou dias
+  // aberto em segundo plano nunca sobe um estado velho por cima do que outro aparelho gravou.
+  // Se a leitura falhar, não sobe nada (fica guardado aqui e tenta de novo depois).
+  let enviando = false, enviarDeNovo = false, retryTimer = null;
   async function push() {
     const user = await currentUser();
     if (!user) return;
-    const state = MG.getState();
-    setStatus('Sincronizando…');
-    const { error } = await sb.from('marginalia_state').upsert({
-      user_id: user.id,
-      data: state,
-      updated_at: new Date().toISOString(),
-    });
-    if (error) { console.warn('[nuvem] push:', error.message); setStatus('Erro ao sincronizar'); }
-    else setStatus('Sincronizado');
+    if (enviando) { enviarDeNovo = true; return; }
+    enviando = true;
+    try {
+      setStatus('Sincronizando…');
+      const r = await pull();
+      if (!r.ok) {
+        setStatus('Sem conexão — guardado neste aparelho; tento de novo em instantes');
+        if (retryTimer) clearTimeout(retryTimer);
+        retryTimer = setTimeout(() => { retryTimer = null; push(); }, 30000);
+        return;
+      }
+      const local = MG.getState();
+      const merged = r.row ? mergeStates(local, r.row.data) : local;
+      if (r.row && essencial(merged) !== essencial(local)) { salvarSilencioso(merged); atualizarTela(); }
+      const { error } = await sb.from('marginalia_state').upsert({
+        user_id: user.id,
+        data: merged,
+        updated_at: new Date().toISOString(),
+      });
+      if (error) { console.warn('[nuvem] push:', error.message); setStatus('Erro ao sincronizar'); }
+      else setStatus('Sincronizado');
+    } finally {
+      enviando = false;
+      if (enviarDeNovo) { enviarDeNovo = false; schedulePush(); }
+    }
   }
 
   function schedulePush() {
+    if (silencio) return;
     if (pushTimer) clearTimeout(pushTimer);
-    pushTimer = setTimeout(push, 1500);
+    pushTimer = setTimeout(() => { pushTimer = null; push(); }, 1500);
   }
 
   // Se o app for pro fundo (troca de app no iPhone, fechar a aba) com um push
@@ -103,8 +139,23 @@
       return [...m.values()];
     };
     const bothNull = (k) => localS[k] === null && cloudS[k] === null;
+    // chaves "inteiras" (meta diária, ajustes dos clubes, círculos/desafios em que entrou):
+    // vence a versão com o carimbo DAQUELA chave mais recente — não a do estado inteiro,
+    // senão marcar uma página num aparelho desfazia a meta mudada no outro
+    const carA = localS._carimbos || {}, carB = cloudS._carimbos || {};
+    const porCarimbo = {};
+    for (const k of ['dailyGoal', 'clubeAjustes', 'joinedGrupos', 'joinedDesafios']) {
+      const a = carA[k] || '', b = carB[k] || '';
+      if (!a && !b) continue;                       // sem carimbo nos dois: comportamento antigo
+      const src = a >= b ? localS : cloudS;
+      if (src[k] !== undefined) porCarimbo[k] = src[k];
+    }
+    const carimbos = { ...carB, ...carA };
+    for (const k of Object.keys(carB)) if ((carB[k] || '') > (carA[k] || '')) carimbos[k] = carB[k];
     return {
       ...older, ...newer,
+      ...porCarimbo,
+      _carimbos: carimbos,
       books: bothNull('books') ? null : unionById('books'),
       notes: bothNull('notes') ? null : unionById('notes'),
       challenges: unionById('challenges'),
@@ -147,8 +198,14 @@
       const recebidos = [], pendentes = [];
       for (const r of data) {
         const b = MG.acharLivroPorTitulo ? MG.acharLivroPorTitulo(r.book_title) : null;
-        if (b) { MG.setFicou(r.day, b.id, { sentimento: r.sentimento, frase: r.frase, origem: 'claude' }); recebidos.push(r.id); }
-        else pendentes.push(r);
+        if (!b || !r.day) { pendentes.push(r); continue; }
+        // já existe um "o que ficou" escrito no app para esse livro e dia, e diferente?
+        // não sobrescreve sem perguntar — vira pendente para ela escolher
+        const atual = MG.getFicou ? MG.getFicou({ day: r.day, bookId: b.id })[0] : null;
+        const igual = atual && (atual.sentimento || '') === (r.sentimento || '') && (atual.frase || '') === (r.frase || '');
+        if (atual && !igual && atual.origem !== 'claude') { pendentes.push({ ...r, conflito: true, bookId: b.id }); continue; }
+        const ok = MG.setFicou(r.day, b.id, { sentimento: r.sentimento, frase: r.frase, origem: 'claude' });
+        if (ok) recebidos.push(r.id); else pendentes.push(r);   // só marca recebido o que gravou
       }
       if (recebidos.length) await marcarFicouRecebido(recebidos);
       window.__ficouPendentes = pendentes;
@@ -162,9 +219,15 @@
     window.__ficouPendentes = (window.__ficouPendentes || []).filter(r => !ids.includes(r.id));
     if (typeof window.__rerender === 'function') window.__rerender();
   }
-  // ao voltar para o app, confere se chegou algo novo do Claude
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && window.__appStatus === 'approved') pullFicouInbox();
+  // ao voltar para o app: traz o que mudou em outros aparelhos (puxa + mescla + envia)
+  // e o que chegou do Claude — no máximo a cada 20 s
+  let ultimaVolta = 0;
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState !== 'visible' || window.__appStatus !== 'approved') return;
+    if (Date.now() - ultimaVolta < 20000) return;
+    ultimaVolta = Date.now();
+    await pullFicouInbox();
+    push();
   });
 
   async function syncOnLogin() {
@@ -175,12 +238,17 @@
     // propaga o nome de exibição às memberships (para os outros verem o nome certo)
     try { const nm = (user.user_metadata && user.user_metadata.name); if (nm) await sb.rpc('set_my_member_name', { p_name: nm }); } catch (e) { /* ok */ }
     setStatus('Sincronizando…');
-    const cloud = await pull();
+    const r = await pull();
+    if (!r.ok) {
+      // leitura falhou: NÃO sobe nada (subir o local por cima apagaria a nuvem); tenta depois
+      setStatus('Sem conexão — seus dados estão guardados neste aparelho');
+      setTimeout(() => { syncOnLogin(); }, 30000);
+      return;
+    }
     const local = MG.getState();
-    const merged = mergeStates(local, cloud ? cloud.data : null);
-    MG.setState(merged);
-    if (typeof window._refreshLive === 'function') window._refreshLive();
-    if (typeof window.__rerender === 'function') window.__rerender();
+    const merged = mergeStates(local, r.row ? r.row.data : null);
+    salvarSilencioso(merged);
+    atualizarTela();
     await pullFicouInbox();                    // o que ficou, vindo do Claude
     await push();                              // sobe o resultado mesclado
     setStatus('Sincronizado');
