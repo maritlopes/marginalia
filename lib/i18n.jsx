@@ -11,7 +11,7 @@ const DICT = {
   tab_home: { pt: 'Hoje', en: 'Today' },
   tab_library: { pt: 'Biblioteca', en: 'Library' },
   tab_desafios: { pt: 'Desafios', en: 'Challenges' },
-  tab_grupos: { pt: 'Grupos', en: 'Circles' },
+  tab_grupos: { pt: 'Círculos', en: 'Circles' },
   tab_niveis: { pt: 'Nível', en: 'Level' },
 
   // ─── home sections ───────────────────────────────────────────
